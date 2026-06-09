@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a1a24">
+<title>Ocean Glass — окна, стекло, фасады в Оше</title>
+<meta name="description" content="Ocean Glass · Ош. Алюминиевые и ПВХ окна, собственный завод закалки стекла, перегородки, перила, фасады, монтаж под ключ.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#1FA9D6; --brand-2:#36C5E8; --brand-dk:#0e7aa3;
+  --bg:#0a1a24; --bg2:#0f2533; --panel:rgba(255,255,255,.05);
+  --line:rgba(255,255,255,.10); --ink:#eaf6fb; --mut:#9fc0cf; --rad:18px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:Manrope,system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;overflow-x:hidden}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+.btn{display:inline-flex;align-items:center;gap:9px;padding:14px 26px;border-radius:999px;font-weight:700;font-size:15px;cursor:pointer;border:0;transition:.2s;white-space:nowrap}
+.btn-pri{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#04222e;box-shadow:0 12px 34px rgba(31,169,214,.4)}
+.btn-pri:hover{transform:translateY(-2px);box-shadow:0 18px 44px rgba(31,169,214,.55)}
+.btn-gho{background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+.btn-gho:hover{background:rgba(255,255,255,.1)}
+/* header */
+header{position:fixed;top:0;left:0;right:0;z-index:50;backdrop-filter:blur(14px);background:rgba(10,26,36,.72);border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;gap:18px;height:70px}
+.logo{display:flex;align-items:center;gap:11px}
+.logo svg{height:34px;width:auto}
+.menu{display:flex;gap:26px;margin-left:30px}
+.menu a{color:var(--mut);font-weight:600;font-size:14.5px;transition:.15s}
+.menu a:hover{color:var(--ink)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.lang{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px}
+.lang button{background:0;border:0;color:var(--mut);font-weight:700;font-size:13px;padding:5px 11px;border-radius:999px;cursor:pointer}
+.lang button.on{background:var(--brand);color:#04222e}
+.tel{color:var(--ink);font-weight:700;font-size:15px}
+.burger{display:none;background:var(--panel);border:1px solid var(--line);border-radius:11px;width:42px;height:42px;color:#fff;font-size:20px;cursor:pointer}
+/* hero */
+.hero{position:relative;padding:150px 0 90px;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:
+  radial-gradient(60% 80% at 78% 18%,rgba(54,197,232,.22),transparent 60%),
+  radial-gradient(50% 60% at 10% 90%,rgba(31,169,214,.16),transparent 60%);z-index:0}
+.hero-grid{position:relative;z-index:1;display:grid;grid-template-columns:1.1fr .9fr;gap:50px;align-items:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);color:var(--brand-2);font-weight:700;font-size:13px;padding:7px 15px;border-radius:999px;margin-bottom:22px}
+.eyebrow b{width:7px;height:7px;border-radius:50%;background:var(--brand-2);box-shadow:0 0 12px var(--brand-2)}
+h1{font-size:clamp(34px,5.2vw,60px);line-height:1.04;font-weight:800;letter-spacing:-.02em}
+h1 .g{background:linear-gradient(120deg,var(--brand),var(--brand-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:var(--mut);font-size:18px;margin:22px 0 30px;max-width:540px}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+.stats{display:flex;gap:30px;margin-top:40px;flex-wrap:wrap}
+.stats .n{font-size:30px;font-weight:800;color:#fff}
+.stats .l{color:var(--mut);font-size:13.5px}
+.hero-card{position:relative}
+.glasspane{position:relative;border-radius:24px;overflow:hidden;border:1px solid var(--line);
+  background:linear-gradient(160deg,rgba(54,197,232,.16),rgba(10,26,36,.4));
+  aspect-ratio:4/4.4;display:flex;align-items:flex-end;padding:26px;
+  box-shadow:0 40px 90px rgba(0,0,0,.5)}
+.glasspane::before{content:"";position:absolute;inset:0;
+  background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.12) 50%,transparent 60%)}
+.gp-mull{position:absolute;inset:18px;border:2px solid rgba(255,255,255,.14);border-radius:14px}
+.gp-mull::before,.gp-mull::after{content:"";position:absolute;background:rgba(255,255,255,.12)}
+.gp-mull::before{left:50%;top:0;bottom:0;width:2px}
+.gp-mull::after{top:50%;left:0;right:0;height:2px}
+.gp-tag{position:relative;z-index:2;background:rgba(10,26,36,.7);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
+.gp-tag .t{font-weight:800;font-size:16px}
+.gp-tag .s{color:var(--mut);font-size:13px}
+.float{position:absolute;background:rgba(10,26,36,.82);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:14px;padding:13px 16px;box-shadow:0 18px 40px rgba(0,0,0,.4)}
+.float .t{font-weight:800;font-size:15px}
+.float .s{color:var(--mut);font-size:12.5px}
+.f1{top:-14px;left:-22px}
+.f2{bottom:50px;right:-26px}
+/* sections */
+section{position:relative;z-index:1}
+.sec{padding:80px 0}
+.sec-head{max-width:680px;margin-bottom:46px}
+.kicker{color:var(--brand-2);font-weight:800;font-size:13px;letter-spacing:.12em;text-transform:uppercase}
+h2{font-size:clamp(27px,3.6vw,40px);font-weight:800;letter-spacing:-.02em;margin:12px 0 14px;line-height:1.1}
+.sec-head p{color:var(--mut);font-size:17px}
+/* products */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);padding:26px;transition:.25s;position:relative;overflow:hidden}
+.card:hover{transform:translateY(-5px);border-color:rgba(54,197,232,.5);background:rgba(54,197,232,.07)}
+.card .ic{width:50px;height:50px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(31,169,214,.25),rgba(54,197,232,.15));margin-bottom:16px}
+.card .ic svg{width:26px;height:26px;stroke:var(--brand-2)}
+.card h3{font-size:18px;font-weight:700;margin-bottom:7px}
+.card p{color:var(--mut);font-size:14.5px}
+/* advantages */
+.adv-band{background:linear-gradient(135deg,var(--bg2),rgba(14,122,163,.18));border:1px solid var(--line);border-radius:26px;padding:46px}
+.adv{display:grid;grid-template-columns:repeat(4,1fr);gap:30px}
+.adv .n{font-size:34px;font-weight:800;background:linear-gradient(120deg,var(--brand),var(--brand-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.adv .t{font-weight:700;margin:6px 0 4px}
+.adv .s{color:var(--mut);font-size:14px}
+/* process */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;counter-reset:s}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);padding:24px;position:relative}
+.step::before{counter-increment:s;content:"0" counter(s);font-size:40px;font-weight:800;color:rgba(54,197,232,.25);position:absolute;top:14px;right:18px}
+.step h4{font-size:17px;margin-bottom:6px}
+.step p{color:var(--mut);font-size:14px}
+/* CTA form */
+.cta{background:linear-gradient(135deg,rgba(31,169,214,.16),rgba(54,197,232,.07));border:1px solid var(--line);border-radius:28px;padding:0;overflow:hidden;display:grid;grid-template-columns:1fr 1fr}
+.cta-left{padding:50px}
+.cta-left h2{margin-top:0}
+.cta-left ul{list-style:none;margin-top:22px;display:grid;gap:13px}
+.cta-left li{display:flex;gap:11px;color:var(--ink);font-weight:500}
+.cta-left li svg{flex:none;width:22px;height:22px;stroke:var(--brand-2)}
+.form{background:rgba(10,26,36,.55);padding:44px}
+.form h3{font-size:22px;margin-bottom:6px}
+.form .sub{color:var(--mut);font-size:14.5px;margin-bottom:22px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;color:var(--mut);font-weight:600;margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:13px 15px;color:#fff;font-size:15px;font-family:inherit}
+.field input:focus,.field select:focus,.field textarea:focus{outline:0;border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(54,197,232,.18)}
+.field select option{background:#0f2533}
+.form .btn-pri{width:100%;justify-content:center;margin-top:6px}
+.form .note{color:var(--mut);font-size:12px;text-align:center;margin-top:12px}
+.ok{display:none;text-align:center;padding:20px 0}
+.ok.show{display:block}
+.ok .big{font-size:46px}
+.ok h3{color:var(--brand-2)}
+/* footer */
+footer{border-top:1px solid var(--line);padding:50px 0 30px;margin-top:30px}
+.foot{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:30px}
+.foot p{color:var(--mut);font-size:14px;margin-top:14px;max-width:320px}
+.foot h5{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-bottom:14px}
+.foot a{display:block;color:var(--ink);margin-bottom:9px;font-size:14.5px}
+.foot a:hover{color:var(--brand-2)}
+.copy{border-top:1px solid var(--line);margin-top:36px;padding-top:22px;color:var(--mut);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+/* fab */
+.fab{position:fixed;right:20px;bottom:20px;z-index:60;display:flex;flex-direction:column;gap:12px}
+.fab a{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;box-shadow:0 12px 30px rgba(0,0,0,.4)}
+.fab .wa{background:#25D366}
+.fab svg{width:28px;height:28px}
+.reveal{opacity:0;transform:translateY(24px);transition:.7s}
+.reveal.in{opacity:1;transform:none}
+@media(max-width:920px){
+  .hero-grid,.cta{grid-template-columns:1fr}
+  .cards,.adv,.steps{grid-template-columns:1fr 1fr}
+  .menu,.tel{display:none}.burger{display:grid}
+  .foot{grid-template-columns:1fr 1fr}
+  .hero{padding-top:120px}
+  .float{display:none}
+}
+@media(max-width:560px){.cards,.adv,.steps,.foot{grid-template-columns:1fr}.cta-left,.form{padding:30px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="#top" aria-label="Ocean Glass">
+      <svg viewBox="0 0 240 56" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#36C5E8"/><stop offset="1" stop-color="#0e7aa3"/></linearGradient></defs>
+        <g transform="skewX(-12)"><rect x="6" y="8" width="20" height="40" rx="3" fill="url(#lg)" opacity=".55"/><rect x="30" y="8" width="20" height="40" rx="3" fill="url(#lg)"/></g>
+        <text x="66" y="27" font-family="Manrope,sans-serif" font-weight="800" font-size="22" fill="#eaf6fb">OCEAN</text>
+        <text x="66" y="49" font-family="Manrope,sans-serif" font-weight="800" font-size="22" fill="#36C5E8">GLASS</text>
+      </svg>
+    </a>
+    <nav class="menu">
+      <a href="#products" data-i="m_prod">Продукция</a>
+      <a href="#why" data-i="m_why">Преимущества</a>
+      <a href="#process" data-i="m_proc">Как работаем</a>
+      <a href="#contact" data-i="m_cont">Контакты</a>
+    </nav>
+    <div class="nav-right">
+      <div class="lang">
+        <button data-l="ky">KY</button><button data-l="ru" class="on">RU</button><button data-l="en">EN</button>
+      </div>
+      <a class="tel" href="tel:+996995031003">+996 995 031 003</a>
+      <a class="btn btn-pri" href="#contact" data-i="cta_top">Заявка</a>
+      <button class="burger" onclick="document.querySelector('.menu').style.display='flex';this.style.display='none'">☰</button>
+    </div>
+  </div>
+</header>
+
+<a name="top"></a>
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow"><b></b><span data-i="hero_eyebrow">Ош · Кыргызстан · с 2009</span></span>
+      <h1 data-i="hero_h1">Стекло, окна и фасады <span class="g">высшего класса</span></h1>
+      <p class="lead" data-i="hero_lead">Собственный завод закалки стекла, алюминий и ПВХ любой сложности, перегородки, перила и фасады под ключ. Сертифицированный монтаж с опытом более 15 лет.</p>
+      <div class="hero-cta">
+        <a class="btn btn-pri" href="#contact" data-i="hero_cta1">Рассчитать стоимость</a>
+        <a class="btn btn-gho" href="#products" data-i="hero_cta2">Смотреть продукцию</a>
+      </div>
+      <div class="stats">
+        <div><div class="n">15+</div><div class="l" data-i="st1">лет на рынке</div></div>
+        <div><div class="n">200+</div><div class="l" data-i="st2">цветов RAL</div></div>
+        <div><div class="n">5–7×</div><div class="l" data-i="st3">прочность стекла</div></div>
+      </div>
+    </div>
+    <div class="hero-card">
+      <div class="glasspane"><div class="gp-mull"></div>
+        <div class="gp-tag"><div class="t" data-i="hp_t">Панорамное остекление</div><div class="s" data-i="hp_s">Тёплый алюминий · терморазрыв</div></div>
+      </div>
+      <div class="float f1"><div class="t" data-i="f1t">Свой завод</div><div class="s" data-i="f1s">закалка 4–10 мм</div></div>
+      <div class="float f2"><div class="t" data-i="f2t">Срок 3–10 дней</div><div class="s" data-i="f2s">замер бесплатно</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="products">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="kicker" data-i="k_prod">Что мы делаем</span>
+      <h2 data-i="prod_h2">Полный спектр светопрозрачных конструкций</h2>
+      <p data-i="prod_p">От окна для квартиры до структурного фасада бизнес-центра — всё производим и монтируем сами.</p>
+    </div>
+    <div class="cards" id="prodCards"></div>
+  </div>
+</section>
+
+<section class="sec" id="why">
+  <div class="wrap">
+    <div class="adv-band reveal">
+      <div class="sec-head" style="margin-bottom:34px">
+        <span class="kicker" data-i="k_why">Почему Ocean Glass</span>
+        <h2 data-i="why_h2">Производим сами — отвечаем за результат</h2>
+      </div>
+      <div class="adv">
+        <div><div class="n" data-i="a1n">Свой завод</div><div class="t" data-i="a1t">Закалка стекла</div><div class="s" data-i="a1s">Контроль качества и сроков на каждом этапе, без посредников.</div></div>
+        <div><div class="n" data-i="a2n">15+ лет</div><div class="t" data-i="a2t">Опыт монтажа</div><div class="s" data-i="a2s">Сертифицированные мастера международного уровня.</div></div>
+        <div><div class="n" data-i="a3n">Под ключ</div><div class="t" data-i="a3t">Проект → монтаж</div><div class="s" data-i="a3s">Расчёт нагрузок, производство, установка и гарантия.</div></div>
+        <div><div class="n" data-i="a4n">200+ RAL</div><div class="t" data-i="a4t">Любой цвет</div><div class="s" data-i="a4s">Порошковая покраска, анодирование, дерево-декор.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="process">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="kicker" data-i="k_proc">Как мы работаем</span>
+      <h2 data-i="proc_h2">Четыре шага до готового объекта</h2>
+    </div>
+    <div class="steps reveal">
+      <div class="step"><h4 data-i="p1t">Заявка и замер</h4><p data-i="p1s">Оставляете заявку — выезжаем на бесплатный замер с расчётом.</p></div>
+      <div class="step"><h4 data-i="p2t">Проект и расчёт</h4><p data-i="p2s">Подбираем профиль и формулу стеклопакета, фиксируем цену.</p></div>
+      <div class="step"><h4 data-i="p3t">Производство</h4><p data-i="p3s">Изготавливаем на собственном оборудовании, закаляем стекло.</p></div>
+      <div class="step"><h4 data-i="p4t">Монтаж и гарантия</h4><p data-i="p4s">Устанавливаем по ГОСТ/ISO и даём расширенную гарантию.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="contact">
+  <div class="wrap">
+    <div class="cta reveal">
+      <div class="cta-left">
+        <span class="kicker" data-i="k_cta">Бесплатный замер</span>
+        <h2 data-i="cta_h2">Оставьте заявку — рассчитаем за 1 день</h2>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg><span data-i="cta_l1">Бесплатный выезд замерщика по Ошу и области</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg><span data-i="cta_l2">Точный расчёт стоимости на месте</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg><span data-i="cta_l3">Собственное производство — честная цена</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg><span data-i="cta_l4">Гарантия на изделия и монтаж</span></li>
+        </ul>
+      </div>
+      <form class="form" id="leadForm" novalidate>
+        <h3 data-i="frm_h3">Заявка на расчёт</h3>
+        <div class="sub" data-i="frm_sub">Перезвоним в течение рабочего дня.</div>
+        <div id="formBody">
+          <div class="field"><label data-i="frm_name">Ваше имя</label><input name="name" required></div>
+          <div class="field"><label data-i="frm_phone">Телефон / WhatsApp</label><input name="phone" type="tel" placeholder="+996 ___ ___ ___" required></div>
+          <div class="field"><label data-i="frm_prod">Что интересует</label>
+            <select name="product">
+              <option data-i="opt_win">Окна (алюминий / ПВХ)</option>
+              <option data-i="opt_part">Стеклянные / лофт перегородки</option>
+              <option data-i="opt_rail">Стеклянные перила</option>
+              <option data-i="opt_fac">Фасад / витражи</option>
+              <option data-i="opt_temp">Закалка / резка стекла</option>
+              <option data-i="opt_other">Другое</option>
+            </select>
+          </div>
+          <div class="field"><label data-i="frm_comm">Комментарий (необязательно)</label><textarea name="comment" rows="2"></textarea></div>
+          <button type="submit" class="btn btn-pri" data-i="frm_btn">Отправить заявку</button>
+          <div class="note" data-i="frm_note">Нажимая кнопку, вы соглашаетесь на обработку данных.</div>
+        </div>
+        <div class="ok" id="okMsg"><div class="big">✓</div><h3 data-i="ok_h">Заявка отправлена!</h3><p data-i="ok_p">Мы открыли WhatsApp — отправьте сообщение, чтобы мы сразу взяли заявку в работу.</p></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <a class="logo" href="#top">
+          <svg viewBox="0 0 240 56" height="34"><g transform="skewX(-12)"><rect x="6" y="8" width="20" height="40" rx="3" fill="#1FA9D6" opacity=".55"/><rect x="30" y="8" width="20" height="40" rx="3" fill="#1FA9D6"/></g><text x="66" y="27" font-family="Manrope" font-weight="800" font-size="22" fill="#eaf6fb">OCEAN</text><text x="66" y="49" font-family="Manrope" font-weight="800" font-size="22" fill="#36C5E8">GLASS</text></svg>
+        </a>
+        <p data-i="foot_p">Жашоо биз менен жарык. Окна, стекло и фасады для дома и бизнеса в Оше и по всему Кыргызстану.</p>
+      </div>
+      <div><h5 data-i="foot_prod">Продукция</h5>
+        <a href="#products" data-i="opt_win">Окна</a><a href="#products" data-i="opt_part">Перегородки</a><a href="#products" data-i="opt_fac">Фасады</a><a href="#products" data-i="opt_temp">Закалка стекла</a>
+      </div>
+      <div><h5 data-i="foot_cont">Контакты</h5>
+        <a href="tel:+996995031003">+996 995 031 003</a>
+        <a href="https://wa.me/996995031003" target="_blank">WhatsApp</a>
+        <a data-i="foot_addr">г. Ош, ул. Абдразакова 25</a>
+      </div>
+    </div>
+    <div class="copy"><span>© 2026 Ocean Glass · ОсОО «Оушн Гласс»</span><span data-i="copy_by">Сайт от Pllato</span></div>
+  </div>
+</footer>
+
+<div class="fab"><a class="wa" href="https://wa.me/996995031003" target="_blank" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="#fff"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.82 11.82 0 018.413 3.488 11.82 11.82 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.51 5.26l-.999 3.648 3.978-1.099zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.096 3.2 5.077 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg></a></div>
+
+<script>
+const PHONE="996995031003";
+const PRODUCTS=[
+ {i:'win', t:{ky:'Алюминий & ПВХ терезелер',ru:'Окна из алюминия и ПВХ',en:'Aluminium & PVC windows'}, d:{ky:'Жылуу жана муздак сериялар, ар кандай татаалдыктагы конструкциялар.',ru:'Тёплая и холодная серии, конструкции любой сложности и формы.',en:'Warm & cold series, any shape and complexity.'}, p:'M3 3h18v18H3z M12 3v18 M3 12h18'},
+ {i:'temp', t:{ky:'Айнек чыңдоо заводу',ru:'Завод закалки стекла',en:'Glass tempering plant'}, d:{ky:'4–10 мм, Low-E, Optiwhite, сатинат. 5–7 эсе бекем.',ru:'4–10 мм, Low-E, Optiwhite, сатинат. Прочнее в 5–7 раз.',en:'4–10 mm, Low-E, Optiwhite, satin. 5–7× stronger.'}, p:'M5 3l14 0 -2 18 -10 0z M9 3l-1 18 M15 3l1 18'},
+ {i:'part', t:{ky:'Айнек & лофт бөлмөлөр',ru:'Стеклянные и лофт-перегородки',en:'Glass & loft partitions'}, d:{ky:'Чыңдалган айнектен зоналоо, жука алюминий профиль.',ru:'Зонирование закалённым стеклом, тонкий алюминиевый профиль.',en:'Zoning with tempered glass, slim aluminium profile.'}, p:'M4 4h16v16H4z M12 4v16'},
+ {i:'rail', t:{ky:'Айнек тосмолор',ru:'Стеклянные перила',en:'Glass railings'}, d:{ky:'10–15 мм триплекс, “калкып турган” тосмолор.',ru:'Триплекс 10–15 мм, «парящие» ограждения для лестниц и террас.',en:'10–15 mm triplex, floating railings for stairs and terraces.'}, p:'M4 20h16 M6 20V8 M18 20V8 M4 8h16'},
+ {i:'fac', t:{ky:'Фасаддар & витраждар',ru:'Фасады и витражи',en:'Facades & curtain walls'}, d:{ky:'Стойка-ригель системалары, структуралык фасаддар.',ru:'Стоечно-ригельные и структурные фасады, видимый профиль 50 мм.',en:'Stick & structural facades, 50 mm sightline.'}, p:'M4 3h16v18H4z M4 9h16 M4 15h16 M12 3v18'},
+ {i:'loft', t:{ky:'Жылжыма лофт системалар',ru:'Раздвижные лофт-системы',en:'Sliding loft systems'}, d:{ky:'Босогосуз, асма роликтер, бесшумдуу жылуу.',ru:'Беспороговые подвесные системы, бесшумный плавный ход.',en:'Threshold-free suspended systems, silent smooth glide.'}, p:'M3 5h8v14H3z M13 5h8v14h-8z M11 12h2'},
+ {i:'waterjet', t:{ky:'Гидроабразивдик кесүү',ru:'Гидроабразивная резка стекла',en:'Waterjet glass cutting'}, d:{ky:'Татаал формалар, тешиктер, жогорку тактык.',ru:'Сложные формы, вырезы, отверстия — высокая точность реза.',en:'Complex shapes, cut-outs and holes with high precision.'}, p:'M12 2v6 M12 8c-3 4-3 8 0 12 3-4 3-8 0-12z M12 20v2'},
+ {i:'dgu', t:{ky:'Стеклопакет линиясы',ru:'Линия производства стеклопакетов',en:'Insulated glass line'}, d:{ky:'Автоматташтырылган герметикалык чогултуу, 1–3 камера.',ru:'Автоматизированная сборка герметичных стеклопакетов 1–3 камеры.',en:'Automated sealed double/triple-glazing assembly.'}, p:'M3 4h18v16H3z M7 4v16 M11 4v16 M15 4v16'},
+ {i:'mount', t:{ky:'Долбоорлоо & монтаж',ru:'Проектирование и монтаж',en:'Design & installation'}, d:{ky:'Жүк эсеби, 15+ жыл тажрыйбасы бар сертификаттуу усталар.',ru:'Расчёт нагрузок и монтаж сертифицированными мастерами 15+ лет.',en:'Load calc and install by certified masters, 15+ yrs.'}, p:'M3 21h18 M5 21V8l7-5 7 5v13 M9 21v-6h6v6'}
+];
+function renderProducts(l){
+  document.getElementById('prodCards').innerHTML=PRODUCTS.map(p=>`
+   <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="${p.p}"/></svg></div>
+   <h3>${p.t[l]}</h3><p>${p.d[l]}</p></div>`).join('');
+  observe();
+}
+const I={
+ ky:{m_prod:'Продукция',m_why:'Артыкчылыктар',m_proc:'Кантип иштейбиз',m_cont:'Байланыш',cta_top:'Арыз',
+  hero_eyebrow:'Ош · Кыргызстан · 2009-жылдан',hero_h1:['Айнек, терезе жана фасаддар — ',' жогорку класс'],
+  hero_lead:'Айнек чыңдоочу өз заводубуз, алюминий жана ПВХ ар кандай татаалдыкта, бөлмөлөр, тосмолор жана фасаддар «ачкычка чейин». 15 жылдан ашык тажрыйбасы бар сертификаттуу монтаж.',
+  hero_cta1:'Баасын эсептөө',hero_cta2:'Продукцияны көрүү',st1:'жыл базарда',st2:'RAL түсү',st3:'айнектин бекемдиги',
+  hp_t:'Панорамалык айнектөө',hp_s:'Жылуу алюминий · терморазрыв',f1t:'Өз заводу',f1s:'чыңдоо 4–10 мм',f2t:'Мөөнөт 3–10 күн',f2s:'өлчөө акысыз',
+  k_prod:'Биз эмне жасайбыз',prod_h2:'Светопрозрачтуу конструкциялардын толук спектри',prod_p:'Батирдин терезесинен бизнес-борбордун фасадына чейин — баарын өзүбүз жасап, орнотобуз.',
+  k_why:'Эмне үчүн Ocean Glass',why_h2:'Өзүбүз жасайбыз — натыйжага жооп беребиз',
+  a1n:'Өз заводу',a1t:'Айнек чыңдоо',a1s:'Ар бир этапта сапат жана мөөнөт көзөмөлү, ортомчусуз.',
+  a2n:'15+ жыл',a2t:'Монтаж тажрыйбасы',a2s:'Эл аралык деңгээлдеги сертификаттуу усталар.',
+  a3n:'Ачкычка чейин',a3t:'Долбоор → монтаж',a3s:'Жүк эсеби, өндүрүш, орнотуу жана кепилдик.',
+  a4n:'200+ RAL',a4t:'Каалаган түс',a4s:'Порошок боёо, анодирлөө, жыгач-декор.',
+  k_proc:'Кантип иштейбиз',proc_h2:'Даяр объектке чейин төрт кадам',
+  p1t:'Арыз жана өлчөө',p1s:'Арыз калтырасыз — акысыз өлчөөгө жана эсепке чыгабыз.',
+  p2t:'Долбоор жана эсеп',p2s:'Профиль жана стеклопакет формуласын тандап, бааны бекитебиз.',
+  p3t:'Өндүрүш',p3s:'Өз жабдыгыбызда жасайбыз, айнекти чыңдайбыз.',
+  p4t:'Монтаж жана кепилдик',p4s:'ГОСТ/ISO боюнча орнотуп, кеңейтилген кепилдик беребиз.',
+  k_cta:'Акысыз өлчөө',cta_h2:'Арыз калтырыңыз — 1 күндө эсептейбиз',
+  cta_l1:'Ош жана облус боюнча акысыз өлчөөчүнүн чыгуусу',cta_l2:'Жеринде так баа эсеби',cta_l3:'Өз өндүрүшү — адилет баа',cta_l4:'Буюмга жана монтажга кепилдик',
+  frm_h3:'Эсептөөгө арыз',frm_sub:'Жумуш күнү ичинде чалабыз.',frm_name:'Атыңыз',frm_phone:'Телефон / WhatsApp',frm_prod:'Эмне кызыктырат',frm_comm:'Комментарий (милдеттүү эмес)',frm_btn:'Арыз жөнөтүү',frm_note:'Баскычты басуу менен маалыматты иштетүүгө макул болосуз.',
+  opt_win:'Терезелер (алюминий / ПВХ)',opt_part:'Айнек / лофт бөлмөлөр',opt_rail:'Айнек тосмолор',opt_fac:'Фасад / витраждар',opt_temp:'Айнек чыңдоо / кесүү',opt_other:'Башка',
+  ok_h:'Арыз жөнөтүлдү!',ok_p:'WhatsApp ачылды — арызды дароо иштетүү үчүн билдирүү жөнөтүңүз.',
+  foot_p:'Жашоо биз менен жарык. Ош жана бүт Кыргызстан боюнча үй жана бизнес үчүн терезе, айнек жана фасаддар.',
+  foot_prod:'Продукция',foot_cont:'Байланыш',foot_addr:'Ош ш., Абдразаков көч. 25',copy_by:'Сайт Pllato тарабынан'},
+ ru:{m_prod:'Продукция',m_why:'Преимущества',m_proc:'Как работаем',m_cont:'Контакты',cta_top:'Заявка',
+  hero_eyebrow:'Ош · Кыргызстан · с 2009',hero_h1:['Стекло, окна и фасады ','высшего класса'],
+  hero_lead:'Собственный завод закалки стекла, алюминий и ПВХ любой сложности, перегородки, перила и фасады под ключ. Сертифицированный монтаж с опытом более 15 лет.',
+  hero_cta1:'Рассчитать стоимость',hero_cta2:'Смотреть продукцию',st1:'лет на рынке',st2:'цветов RAL',st3:'прочность стекла',
+  hp_t:'Панорамное остекление',hp_s:'Тёплый алюминий · терморазрыв',f1t:'Свой завод',f1s:'закалка 4–10 мм',f2t:'Срок 3–10 дней',f2s:'замер бесплатно',
+  k_prod:'Что мы делаем',prod_h2:'Полный спектр светопрозрачных конструкций',prod_p:'От окна для квартиры до структурного фасада бизнес-центра — всё производим и монтируем сами.',
+  k_why:'Почему Ocean Glass',why_h2:'Производим сами — отвечаем за результат',
+  a1n:'Свой завод',a1t:'Закалка стекла',a1s:'Контроль качества и сроков на каждом этапе, без посредников.',
+  a2n:'15+ лет',a2t:'Опыт монтажа',a2s:'Сертифицированные мастера международного уровня.',
+  a3n:'Под ключ',a3t:'Проект → монтаж',a3s:'Расчёт нагрузок, производство, установка и гарантия.',
+  a4n:'200+ RAL',a4t:'Любой цвет',a4s:'Порошковая покраска, анодирование, дерево-декор.',
+  k_proc:'Как мы работаем',proc_h2:'Четыре шага до готового объекта',
+  p1t:'Заявка и замер',p1s:'Оставляете заявку — выезжаем на бесплатный замер с расчётом.',
+  p2t:'Проект и расчёт',p2s:'Подбираем профиль и формулу стеклопакета, фиксируем цену.',
+  p3t:'Производство',p3s:'Изготавливаем на собственном оборудовании, закаляем стекло.',
+  p4t:'Монтаж и гарантия',p4s:'Устанавливаем по ГОСТ/ISO и даём расширенную гарантию.',
+  k_cta:'Бесплатный замер',cta_h2:'Оставьте заявку — рассчитаем за 1 день',
+  cta_l1:'Бесплатный выезд замерщика по Ошу и области',cta_l2:'Точный расчёт стоимости на месте',cta_l3:'Собственное производство — честная цена',cta_l4:'Гарантия на изделия и монтаж',
+  frm_h3:'Заявка на расчёт',frm_sub:'Перезвоним в течение рабочего дня.',frm_name:'Ваше имя',frm_phone:'Телефон / WhatsApp',frm_prod:'Что интересует',frm_comm:'Комментарий (необязательно)',frm_btn:'Отправить заявку',frm_note:'Нажимая кнопку, вы соглашаетесь на обработку данных.',
+  opt_win:'Окна (алюминий / ПВХ)',opt_part:'Стеклянные / лофт перегородки',opt_rail:'Стеклянные перила',opt_fac:'Фасад / витражи',opt_temp:'Закалка / резка стекла',opt_other:'Другое',
+  ok_h:'Заявка отправлена!',ok_p:'Мы открыли WhatsApp — отправьте сообщение, чтобы мы сразу взяли заявку в работу.',
+  foot_p:'Жашоо биз менен жарык. Окна, стекло и фасады для дома и бизнеса в Оше и по всему Кыргызстану.',
+  foot_prod:'Продукция',foot_cont:'Контакты',foot_addr:'г. Ош, ул. Абдразакова 25',copy_by:'Сайт от Pllato'},
+ en:{m_prod:'Products',m_why:'Why us',m_proc:'How we work',m_cont:'Contacts',cta_top:'Get a quote',
+  hero_eyebrow:'Osh · Kyrgyzstan · since 2009',hero_h1:['Glass, windows & facades ','of the highest class'],
+  hero_lead:'Our own glass tempering plant, aluminium and PVC of any complexity, partitions, railings and facades turnkey. Certified installation with 15+ years of experience.',
+  hero_cta1:'Get a quote',hero_cta2:'See products',st1:'years on the market',st2:'RAL colours',st3:'glass strength',
+  hp_t:'Panoramic glazing',hp_s:'Warm aluminium · thermal break',f1t:'Own plant',f1s:'tempering 4–10 mm',f2t:'3–10 days',f2s:'free measurement',
+  k_prod:'What we do',prod_h2:'A full range of glazing solutions',prod_p:'From a flat window to a structural facade of a business centre — we make and install everything ourselves.',
+  k_why:'Why Ocean Glass',why_h2:'We manufacture ourselves — we own the result',
+  a1n:'Own plant',a1t:'Glass tempering',a1s:'Quality and lead-time control at every step, no middlemen.',
+  a2n:'15+ yrs',a2t:'Installation',a2s:'Certified masters of international level.',
+  a3n:'Turnkey',a3t:'Design → install',a3s:'Load calculation, production, installation and warranty.',
+  a4n:'200+ RAL',a4t:'Any colour',a4s:'Powder coating, anodising, wood-effect finishes.',
+  k_proc:'How we work',proc_h2:'Four steps to a finished project',
+  p1t:'Request & measure',p1s:'Leave a request — we come for a free measurement with a quote.',
+  p2t:'Design & quote',p2s:'We pick the profile and glass formula and fix the price.',
+  p3t:'Production',p3s:'We manufacture on our own equipment and temper the glass.',
+  p4t:'Install & warranty',p4s:'We install to GOST/ISO standards and give an extended warranty.',
+  k_cta:'Free measurement',cta_h2:'Leave a request — we quote within 1 day',
+  cta_l1:'Free measurer visit across Osh and the region',cta_l2:'Accurate on-site price calculation',cta_l3:'In-house production — fair price',cta_l4:'Warranty on products and installation',
+  frm_h3:'Request a quote',frm_sub:'We will call you back within a business day.',frm_name:'Your name',frm_phone:'Phone / WhatsApp',frm_prod:'What you need',frm_comm:'Comment (optional)',frm_btn:'Send request',frm_note:'By submitting you agree to data processing.',
+  opt_win:'Windows (aluminium / PVC)',opt_part:'Glass / loft partitions',opt_rail:'Glass railings',opt_fac:'Facade / curtain wall',opt_temp:'Glass tempering / cutting',opt_other:'Other',
+  ok_h:'Request sent!',ok_p:'We opened WhatsApp — send the message so we can pick up your request right away.',
+  foot_p:'Life is bright with us. Windows, glass and facades for home and business in Osh and across Kyrgyzstan.',
+  foot_prod:'Products',foot_cont:'Contacts',foot_addr:'Osh, Abdrazakova st. 25',copy_by:'Website by Pllato'}
+};
+let LANG='ru';
+function setLang(l){
+  LANG=l;document.documentElement.lang=l;
+  document.querySelectorAll('.lang button').forEach(b=>b.classList.toggle('on',b.dataset.l===l));
+  document.querySelectorAll('[data-i]').forEach(el=>{
+    const v=I[l][el.dataset.i];if(v===undefined)return;
+    if(Array.isArray(v)){el.innerHTML=v[0]+'<span class="g">'+v[1]+'</span>';}
+    else el.textContent=v;
+  });
+  renderProducts(l);
+}
+document.querySelectorAll('.lang button').forEach(b=>b.onclick=()=>setLang(b.dataset.l));
+function observe(){const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.12});document.querySelectorAll('.reveal:not(.in)').forEach(e=>io.observe(e));}
+// form -> WhatsApp lead delivery (works today; in prod also posts to Okna CRM)
+document.getElementById('leadForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const f=e.target;if(!f.name.value.trim()||!f.phone.value.trim()){f.reportValidity?.();return;}
+  const L={ky:'Жаңы арыз',ru:'Новая заявка',en:'New request'}[LANG];
+  const msg=`${L} — Ocean Glass%0A`+
+    `${I[LANG].frm_name}: ${encodeURIComponent(f.name.value)}%0A`+
+    `${I[LANG].frm_phone}: ${encodeURIComponent(f.phone.value)}%0A`+
+    `${I[LANG].frm_prod}: ${encodeURIComponent(f.product.value)}%0A`+
+    `${I[LANG].frm_comm}: ${encodeURIComponent(f.comment.value||'-')}`;
+  window.open(`https://wa.me/${PHONE}?text=${msg}`,'_blank');
+  document.getElementById('formBody').style.display='none';
+  document.getElementById('okMsg').classList.add('show');
+});
+setLang('ru');
+</script>
+</body>
+</html>

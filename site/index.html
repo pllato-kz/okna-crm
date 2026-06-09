@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0c2531">
+<title>Ocean Glass — макеты сайта · выбор дизайна</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#1296c4;--brand-2:#36c5e8;--ink:#0c2531;--ink2:#3f5b68;--mut:#7c98a6;--bg:#eef6fa;--card:#fff;--line:#d9e9f0;--cta:#ff7a2f}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Manrope,system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1240px;margin:0 auto;padding:0 22px}
+header{background:linear-gradient(135deg,var(--ink),#15425a);color:#fff;padding:34px 0}
+.htop{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.logo svg{height:38px}
+.htop .pll{margin-left:auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);padding:8px 15px;border-radius:999px;font-weight:700;font-size:13px}
+h1{font-size:clamp(26px,4vw,40px);font-weight:800;letter-spacing:-.02em;margin-top:22px}
+.sub{color:#aecbd6;font-size:17px;margin-top:10px;max-width:680px}
+.tabs{display:flex;gap:10px;margin:26px 0 0;flex-wrap:wrap}
+.tabs a{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:10px 18px;border-radius:10px;font-weight:700;font-size:14px}
+.tabs a.cta{background:var(--cta);border-color:var(--cta)}
+.tabs a:hover{background:rgba(255,255,255,.22)}
+main{padding:40px 0 70px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.mock{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 10px 30px rgba(12,37,49,.07);transition:.2s}
+.mock:hover{transform:translateY(-5px);box-shadow:0 22px 50px rgba(12,37,49,.16)}
+.frame{position:relative;height:300px;overflow:hidden;border-bottom:1px solid var(--line);background:#fff}
+.frame iframe{position:absolute;top:0;left:0;width:1280px;height:960px;border:0;transform:scale(.385);transform-origin:top left;pointer-events:none}
+.frame .ov{position:absolute;inset:0;cursor:pointer;z-index:2}
+.badge{position:absolute;top:12px;left:12px;z-index:3;background:var(--ink);color:#fff;font-weight:800;font-size:12px;padding:6px 11px;border-radius:8px}
+.badge.rec{background:var(--cta)}
+.mbody{padding:20px;display:flex;flex-direction:column;flex:1}
+.mbody h3{font-size:19px;font-weight:800}
+.mbody .tagline{color:var(--brand);font-weight:700;font-size:13px;margin:3px 0 9px}
+.mbody p{color:var(--ink2);font-size:14px;flex:1}
+.feat{list-style:none;margin:12px 0 16px;display:grid;gap:6px}
+.feat li{font-size:13px;color:var(--ink2);display:flex;gap:7px}
+.feat li::before{content:"✓";color:var(--brand);font-weight:800}
+.mact{display:flex;gap:9px}
+.btn{flex:1;text-align:center;padding:12px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;transition:.18s}
+.btn-p{background:var(--brand);color:#fff}.btn-p:hover{background:#0c6f93}
+.btn-g{background:var(--bg);color:var(--ink);border:1px solid var(--line)}.btn-g:hover{border-color:var(--brand)}
+.note{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px 28px;margin-top:26px;display:flex;gap:18px;align-items:flex-start}
+.note .i{font-size:26px}
+.note h4{font-size:16px;margin-bottom:5px}
+.note p{color:var(--ink2);font-size:14px}
+.note code{background:var(--bg);padding:2px 7px;border-radius:6px;font-size:13px}
+footer{text-align:center;color:var(--mut);font-size:13px;padding:30px 0}
+@media(max-width:980px){.grid{grid-template-columns:1fr 1fr}}
+@media(max-width:680px){.grid{grid-template-columns:1fr}.frame iframe{transform:scale(.62)}.frame{height:360px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="htop">
+      <span class="logo"><svg viewBox="0 0 240 56" height="38"><g transform="skewX(-12)"><rect x="6" y="8" width="20" height="40" rx="3" fill="#36c5e8" opacity=".55"/><rect x="30" y="8" width="20" height="40" rx="3" fill="#36c5e8"/></g><text x="66" y="27" font-family="Manrope" font-weight="800" font-size="22" fill="#fff">OCEAN</text><text x="66" y="49" font-family="Manrope" font-weight="800" font-size="22" fill="#36c5e8">GLASS</text></svg></span>
+      <span class="pll">Презентация от Pllato</span>
+    </div>
+    <h1>Сайт Ocean Glass — три концепции на выбор</h1>
+    <p class="sub">Три рабочих макета лендинга на кыргызском, русском и английском с формой заявок (WhatsApp). Откройте каждый, переключите язык, попробуйте форму. Ниже — коммерческое предложение и техническое задание.</p>
+    <div class="tabs">
+      <a href="#mockups">Макеты</a>
+      <a href="kp.html">📄 Коммерческое предложение</a>
+      <a href="prompt.html">🧠 ТЗ / промт</a>
+      <a class="cta" href="https://wa.me/996995031003" target="_blank">Обсудить в WhatsApp</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="grid" id="mockups">
+
+      <div class="mock">
+        <div class="frame"><span class="badge">Вариант 1</span><iframe src="v1/index.html" loading="lazy" tabindex="-1"></iframe><a class="ov" href="v1/index.html" target="_blank"></a></div>
+        <div class="mbody">
+          <h3>«Глубина»</h3>
+          <div class="tagline">Премиальный, тёмный</div>
+          <p>Эффектный тёмный дизайн с эффектом стекла. Подчёркивает статус и масштаб — для B2B, фасадов, крупных объектов.</p>
+          <ul class="feat"><li>Кинематографичный hero</li><li>Стеклянные акценты и анимация</li><li>Сильное «премиум» впечатление</li></ul>
+          <div class="mact"><a class="btn btn-p" href="v1/index.html" target="_blank">Открыть макет</a></div>
+        </div>
+      </div>
+
+      <div class="mock">
+        <div class="frame"><span class="badge">Вариант 2</span><iframe src="v2/index.html" loading="lazy" tabindex="-1"></iframe><a class="ov" href="v2/index.html" target="_blank"></a></div>
+        <div class="mbody">
+          <h3>«Чистота»</h3>
+          <div class="tagline">Светлый, корпоративный</div>
+          <p>Светлый, понятный и универсальный дизайн. Баланс доверия и продаж — одинаково хорош для частных клиентов и бизнеса.</p>
+          <ul class="feat"><li>Лёгкий и понятный</li><li>Удобен для каталога услуг</li><li>Максимально читаемый</li></ul>
+          <div class="mact"><a class="btn btn-p" href="v2/index.html" target="_blank">Открыть макет</a></div>
+        </div>
+      </div>
+
+      <div class="mock">
+        <div class="frame"><span class="badge rec">Вариант 3 · под заявки</span><iframe src="v3/index.html" loading="lazy" tabindex="-1"></iframe><a class="ov" href="v3/index.html" target="_blank"></a></div>
+        <div class="mbody">
+          <h3>«Заявка»</h3>
+          <div class="tagline">Конверсионный — для рекламы</div>
+          <p>Форма заявки сразу на первом экране, отзывы, FAQ и призывы к действию. Заточен под Instagram-рекламу и максимум заявок.</p>
+          <ul class="feat"><li>Форма в первом экране</li><li>Отзывы, FAQ, акценты</li><li>Лучший для платного трафика</li></ul>
+          <div class="mact"><a class="btn btn-p" href="v3/index.html" target="_blank">Открыть макет</a></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="note">
+      <span class="i">📩</span>
+      <div>
+        <h4>Как работает форма заявок</h4>
+        <p>В макетах форма уже рабочая: после отправки открывается WhatsApp с готовым текстом заявки на номер <code>+996 995 031 003</code> — то есть заявки можно принимать уже сегодня. В боевой версии форма дополнительно сохраняет заявку прямо в <b>Окна CRM</b> (модуль «Лиды и воронка»), чтобы менеджер вёл её по этапам.</p>
+      </div>
+    </div>
+
+    <div class="note">
+      <span class="i">🌐</span>
+      <div>
+        <h4>Три языка</h4>
+        <p>Каждый макет переключается между кыргызским, русским и английским (кнопки KY / RU / EN в шапке). Контент и форма переведены полностью.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>© 2026 Ocean Glass · ОсОО «Оушн Гласс» · макеты сайта подготовил Pllato · pllato.kz</footer>
+</body>
+</html>
