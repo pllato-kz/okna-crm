@@ -1,14 +1,23 @@
 'use strict';
 /* ============ ACTIONS ============ */
 function login(id){ state.user=userById(id); state.module=defaultModule(state.user.role); state.measureDealId=null; render(); }
-function logout(){ try{ if(window.API) API.logout(); }catch(e){} state.user=null; render(); }
+function logout(){ try{ if(window.API){ API.logout(); API.enabled=false; } }catch(e){} state.user=null; render(); }
 
 /* ====== ВХОД ЧЕРЕЗ API (Слой 4) ====== */
 /* Заменяет данные демо серверными (bootstrap), оставляя справочники-константы. */
 async function bootFromApi(){
   const mapped = await API.loadBootstrap();
   DB = mapped.DB;            // данные с сервера в формате фронта
+  API.enabled = true;        // включаем запись на сервер
   return mapped;
+}
+/* persist: запускает запись на сервер только в API-режиме; ошибку показывает тостом */
+function apiOn(){ return !!(window.API && API.enabled); }
+function persist(p){ if (p && p.catch) p.catch(e => toast('Не сохранено на сервере: ' + (e && e.message || ''), 'warn')); }
+function snapshotStock(){ const m = {}; for (const x of DB.materials) m['m:' + x.id] = x.stock; for (const x of DB.components) m['c:' + x.id] = x.stock; return m; }
+function persistStockDiff(before){
+  for (const x of DB.materials)  if (before['m:' + x.id] !== x.stock) persist(API.persist.saveMaterial(x));
+  for (const x of DB.components) if (before['c:' + x.id] !== x.stock) persist(API.persist.saveComponent(x));
 }
 async function apiLoginSubmit(){
   const emEl=document.getElementById('api-email'), pwEl=document.getElementById('api-pass');
@@ -32,16 +41,19 @@ function moveStage(id, stage){
   d.stage=stage; d.stageSince=SEED_NOW.toISOString();
   if(['production','install'].includes(stage) && !d.prodStage) d.prodStage='queue';
   if(stage!=='lead' && !d.sum && (d.items||[]).length) d.sum=computeMeasure(d).total;
-  saveDB(); closeModal(); render();
+  saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); closeModal(); render();
   toast(`Сделка перемещена в «${stageById(stage).name}»`);
 }
 function moveProd(id, stage){ const d=dealById(id); if(!d) return; d.prodStage=stage;
   if(stage==='installing' && d.stage==='production') d.stage='install';
+  const before = apiOn() ? snapshotStock() : null;
   const used=consumeForStage(d, stage);
   if(used.length){
     DB.activity.unshift({who:state.user.id,text:`Списано со склада (${PROD_STAGES.find(s=>s.id===stage).name}) — ${clientById(d.clientId).name}`,at:SEED_NOW.toISOString(),kind:'wh'});
   }
-  saveDB(); closeModal(); render();
+  saveDB();
+  if(apiOn()){ persist(API.persist.saveDeal(d)); if(before) persistStockDiff(before); if(used.length) persist(API.persist.createActivity(DB.activity[0])); }
+  closeModal(); render();
   if(used.length){ toast(`Этап «${PROD_STAGES.find(s=>s.id===stage).name}» · списано: ${used.join(', ')}`); }
   else { toast(`Этап: ${PROD_STAGES.find(s=>s.id===stage).name}`); }
   const low=[...DB.materials,...DB.components].filter(x=>x.stock<x.min).map(x=>x.name);
@@ -50,11 +62,14 @@ function moveProd(id, stage){ const d=dealById(id); if(!d) return; d.prodStage=s
 function applyPrepay(id){
   const d=dealById(id); if(!d) return; const k=computeMeasure(d);
   d.sum=k.total;
-  if(dealPaid(d)===0){ d.payments=d.payments||[]; d.payments.push({id:uid('p'),type:'Аванс',amount:k.prepay,date:SEED_NOW.toISOString()}); }
+  let addedPay=null;
+  if(dealPaid(d)===0){ d.payments=d.payments||[]; addedPay={id:uid('p'),type:'Аванс',amount:k.prepay,date:SEED_NOW.toISOString()}; d.payments.push(addedPay); }
   d.stage='prepaid'; d.stageSince=SEED_NOW.toISOString(); d.prodStage='queue';
   DB.activity.unshift({who:state.user.id,text:`Принял предоплату ${money(k.prepay)} — ${clientById(d.clientId).name}`,at:SEED_NOW.toISOString(),kind:'money'});
   state.measureDealId=null;
-  saveDB(); closeModal(); render();
+  saveDB();
+  if(apiOn()){ persist(API.persist.saveDeal(d)); if(addedPay) persist(API.persist.createPayment(d.id, addedPay)); persist(API.persist.createActivity(DB.activity[0])); }
+  closeModal(); render();
   toast(`Аванс ${money(k.prepay)} принят · заказ в очереди производства`);
 }
 function addPaymentModal(id){
@@ -66,9 +81,12 @@ function addPaymentModal(id){
 }
 function confirmPayment(id){
   const d=dealById(id); const amt=parseFloat(document.getElementById('pay-amt').value)||0; if(amt<=0){closeModal();return;}
-  d.payments=d.payments||[]; d.payments.push({id:uid('p'),type:'Доплата',amount:amt,date:SEED_NOW.toISOString()});
+  d.payments=d.payments||[]; const addedPay={id:uid('p'),type:'Доплата',amount:amt,date:SEED_NOW.toISOString()}; d.payments.push(addedPay);
+  const wasDone = d.stage==='done';
   if(dealDebt(d)<=0 && d.stage==='install') d.stage='done';
-  saveDB(); closeModal(); render(); toast(`Оплата ${money(amt)} зачислена`);
+  saveDB();
+  if(apiOn()){ persist(API.persist.createPayment(d.id, addedPay)); if(!wasDone && d.stage==='done') persist(API.persist.saveDeal(d)); }
+  closeModal(); render(); toast(`Оплата ${money(amt)} зачислена`);
 }
 function newDealModal(){
   const opts=DB.clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
@@ -79,8 +97,9 @@ function newDealModal(){
 }
 function createDeal(){
   const cid=document.getElementById('nd-client').value; const note=document.getElementById('nd-note').value||'Новая заявка';
-  DB.deals.unshift({id:uid('d'),clientId:cid,stage:'lead',manager:state.user.id,sum:0,createdAt:SEED_NOW.toISOString(),stageSince:SEED_NOW.toISOString(),note,source:'Звонок',payments:[],items:[],kp:null,prodStage:null});
-  saveDB(); closeModal(); renderModule(); toast('Лид создан');
+  const nd={id:uid('d'),clientId:cid,stage:'lead',manager:state.user.id,sum:0,createdAt:SEED_NOW.toISOString(),stageSince:SEED_NOW.toISOString(),note,source:'Звонок',payments:[],items:[],kp:null,prodStage:null};
+  DB.deals.unshift(nd);
+  saveDB(); if(apiOn()) persist(API.persist.createDeal(nd)); closeModal(); renderModule(); toast('Лид создан');
 }
 function newClientModal(){
   openModal(`<div class="modal-h">${icon('clients')}<h3>Новый клиент</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
@@ -93,8 +112,9 @@ function newClientModal(){
 }
 function createClient(){
   const name=document.getElementById('nc-name').value.trim(); if(!name){toast('Укажите имя','warn');return;}
-  DB.clients.unshift({id:uid('cl'),name,phone:document.getElementById('nc-phone').value||'—',address:document.getElementById('nc-addr').value||DB.company.city,type:name.match(/ТОО|ИП|ОО/)?'Юр. лицо':'Физ. лицо'});
-  saveDB(); closeModal(); renderModule(); toast('Клиент добавлен');
+  const nc={id:uid('cl'),name,phone:document.getElementById('nc-phone').value||'—',address:document.getElementById('nc-addr').value||DB.company.city,type:name.match(/ТОО|ИП|ОО/)?'Юр. лицо':'Физ. лицо'};
+  DB.clients.unshift(nc);
+  saveDB(); if(apiOn()) persist(API.persist.createClient(nc)); closeModal(); renderModule(); toast('Клиент добавлен');
 }
 
 /* warehouse — приход (пополнение) */
@@ -119,19 +139,26 @@ function whConfirmReceive(id, kind){
   const supEl=document.getElementById('wr-sup'); if(supEl && supEl.value.trim()) it.supplier=supEl.value.trim();
   it.stock = Math.round((it.stock+qty)*10)/10;
   DB.activity.unshift({who:state.user.id,text:`Приход на склад: ${it.name} +${qty} ${it.unit}`,at:SEED_NOW.toISOString(),kind:'wh'});
-  saveDB(); closeModal(); render();
+  saveDB();
+  if(apiOn()){ persist(kind==='mat'?API.persist.saveMaterial(it):API.persist.saveComponent(it)); persist(API.persist.createActivity(DB.activity[0])); }
+  closeModal(); render();
   toast(`Оприходовано: ${it.name} +${qty} ${it.unit} · остаток ${it.stock} ${it.unit}`);
 }
 
 /* measure mutations */
 function mAdd(){ const d=currentMeasureDeal(); if(!d) return; d.items=d.items||[];
-  d.items.push({id:uid('cn'),profileId:'m4',w:1300,h:1400,glassId:'g2',openId:'tilt',sashes:2,qty:1,extras:['sill','slopes']});
-  saveDB(); renderModule(); }
-function mDel(cid){ const d=currentMeasureDeal(); d.items=d.items.filter(c=>c.id!==cid); saveDB(); renderModule(); }
+  const nit={id:uid('cn'),profileId:'m4',w:1300,h:1400,glassId:'g2',openId:'tilt',sashes:2,qty:1,extras:['sill','slopes']};
+  d.items.push(nit);
+  saveDB();
+  if(apiOn()){ persist(API.persist.createItem(d.id, nit).then(()=>{ (nit.extras||[]).forEach(ex=>persist(API.persist.setItemExtra(nit.id, ex, true))); })); }
+  renderModule(); }
+function mDel(cid){ const d=currentMeasureDeal(); d.items=d.items.filter(c=>c.id!==cid); saveDB(); if(apiOn()) persist(API.persist.deleteItem(cid)); renderModule(); }
 function mSet(cid,field,val){ const d=currentMeasureDeal(); const c=d.items.find(x=>x.id===cid); if(!c)return;
   if(field==='extras'){ c.extras=c.extras||[]; const i=c.extras.indexOf(val); if(i>=0)c.extras.splice(i,1); else c.extras.push(val); }
   else c[field]=val;
-  saveDB(); renderModule(); }
+  saveDB();
+  if(apiOn()){ if(field==='extras') persist(API.persist.setItemExtra(cid, val, c.extras.includes(val))); else persist(API.persist.saveItem(c)); }
+  renderModule(); }
 
 /* ============ ССЫЛКА ДЛЯ КЛИЕНТА ============ */
 function sharePick(t){
@@ -197,7 +224,10 @@ document.addEventListener('click', e=>{
     case 'logout': logout(); break;
     case 'nav': nav(t.dataset.mod); break;
     case 'toggle-side': state.sideOpen=!state.sideOpen; render(); break;
-    case 'reset': resetDB(); state.measureDealId=null; render(); toast('Демо-данные сброшены'); break;
+    case 'reset':
+      if(apiOn()){ bootFromApi().then(()=>{ state.measureDealId=null; render(); toast('Данные обновлены с сервера'); }).catch(e=>toast('Ошибка обновления: '+(e&&e.message||''),'warn')); }
+      else { resetDB(); state.measureDealId=null; render(); toast('Демо-данные сброшены'); }
+      break;
     case 'notif': notifModal(); break;
     case 'theme': state.theme = state.theme==='light' ? 'dark' : 'light'; try{ localStorage.setItem(THEME_KEY, state.theme); }catch(e){} applyTheme(state.theme); render(); break;
     case 'noop': break;
@@ -219,7 +249,7 @@ document.addEventListener('click', e=>{
     case 'm-del': mDel(t.dataset.cid); break;
     case 'm-open': mSet(t.dataset.cid,'openId',t.dataset.v); break;
     case 'm-extra': mSet(t.dataset.cid,'extras',t.dataset.v); break;
-    case 'gen-kp': { const d=dealById(id); d.sum=computeMeasure(d).total; saveDB(); openKp(id); } break;
+    case 'gen-kp': { const d=dealById(id); d.sum=computeMeasure(d).total; saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); openKp(id); } break;
     case 'print-kp': printKp(id); break;
     case 'quick-prepay': applyPrepay(id); break;
     case 'confirm-prepay': applyPrepay(id); break;
@@ -245,8 +275,8 @@ document.addEventListener('change', e=>{
 document.addEventListener('input', e=>{
   const t=e.target.closest('[data-act]'); if(!t) return;
   if(t.dataset.act==='search'){ globalSearch(t.value); return; }
-  if(t.dataset.act==='m-discount'){ const d=dealById(t.dataset.id); d.discount=Math.max(0,Math.min(30,parseFloat(t.value)||0)); saveDB(); patchMeasure(); }
-  if(t.dataset.act==='m-prepay'){ const d=dealById(t.dataset.id); d.prepayPct=Math.max(0,Math.min(100,parseFloat(t.value)||0)); saveDB(); patchMeasure(); }
+  if(t.dataset.act==='m-discount'){ const d=dealById(t.dataset.id); d.discount=Math.max(0,Math.min(30,parseFloat(t.value)||0)); saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); patchMeasure(); }
+  if(t.dataset.act==='m-prepay'){ const d=dealById(t.dataset.id); d.prepayPct=Math.max(0,Math.min(100,parseFloat(t.value)||0)); saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); patchMeasure(); }
 });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); clearSearch(); } });
 document.addEventListener('keydown', e=>{ if(e.key==='Enter' && (e.target.id==='api-email'||e.target.id==='api-pass')){ e.preventDefault(); apiLoginSubmit(); } });

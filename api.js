@@ -112,11 +112,57 @@ function apiMapBootstrap(boot){
 /* Загружает полный снимок с сервера и возвращает {DB, catalogs}. */
 async function apiLoadBootstrap(){
   const boot = await apiFetch('bootstrap');
+  API._cat = boot.catalogs || {};   // сохраняем справочники для обратного маппинга при записи
   return apiMapBootstrap(boot);
 }
 
+/* ---- обратный маппинг (лейбл → id) для записи ---- */
+function apiRevId(catArr, label){ for (const x of (catArr || [])) if (x.name === label) return x.id; return null; }
+function apiDealToServer(d, withId){
+  const b = {
+    client_id: d.clientId, stage_id: d.stage, manager_id: d.manager || null,
+    source_id: apiRevId((API._cat || {}).lead_sources, d.source),
+    prod_stage_id: d.prodStage || null, sum: d.sum || 0, note: d.note || '',
+    hot: d.hot ? 1 : 0, discount: d.discount || 0, prepay_pct: (d.prepayPct != null ? d.prepayPct : 30),
+    consumed_profile: d.consumed && d.consumed.profile ? 1 : 0,
+    consumed_glass: d.consumed && d.consumed.glass ? 1 : 0,
+    consumed_fittings: d.consumed && d.consumed.fittings ? 1 : 0,
+    stage_since: d.stageSince || null,
+  };
+  if (withId) b.id = d.id;
+  return b;
+}
+
+/* ---- методы записи (используются фронтом в API-режиме) ---- */
+const apiPersist = {
+  createClient: (c) => apiFetch('clients', { method: 'POST', body: {
+    id: c.id, name: c.name, phone: c.phone, address: c.address, type_id: apiRevId((API._cat || {}).client_types, c.type),
+  }}),
+  createDeal: (d) => apiFetch('deals', { method: 'POST', body: apiDealToServer(d, true) }),
+  saveDeal:   (d) => apiFetch('deals/' + d.id, { method: 'PUT', body: apiDealToServer(d, false) }),
+  createItem: (dealId, it) => apiFetch('deal_items', { method: 'POST', body: {
+    id: it.id, deal_id: dealId, profile_id: it.profileId, glass_id: it.glassId, opening_id: it.openId,
+    w: it.w, h: it.h, sashes: it.sashes, qty: it.qty,
+  }}),
+  saveItem:   (it) => apiFetch('deal_items/' + it.id, { method: 'PUT', body: {
+    profile_id: it.profileId, glass_id: it.glassId, opening_id: it.openId, w: it.w, h: it.h, sashes: it.sashes, qty: it.qty,
+  }}),
+  deleteItem: (itemId) => apiFetch('deal_items/' + itemId, { method: 'DELETE' }),
+  setItemExtra: (itemId, extraId, on) => on
+    ? apiFetch('deal_item_extras', { method: 'POST', body: { item_id: itemId, extra_id: extraId } })
+    : apiFetch('deal_item_extras?item_id=' + encodeURIComponent(itemId) + '&extra_id=' + encodeURIComponent(extraId), { method: 'DELETE' }),
+  createPayment: (dealId, p) => apiFetch('payments', { method: 'POST', body: {
+    id: p.id, deal_id: dealId, type_id: apiRevId((API._cat || {}).payment_types, p.type), amount: p.amount, date: p.date,
+  }}),
+  saveMaterial:  (m) => apiFetch('materials/' + m.id, { method: 'PUT', body: { stock: m.stock, rate: m.rate, supplier: m.supplier } }),
+  saveComponent: (c) => apiFetch('components/' + c.id, { method: 'PUT', body: { stock: c.stock } }),
+  createActivity:(a) => apiFetch('activity', { method: 'POST', body: { user_id: a.who, text: a.text, kind_id: a.kind, at: a.at } }),
+};
+
 const API = {
   TOKEN_KEY: API_TOKEN_KEY,
+  enabled: false,            // включается после успешного входа/bootstrap; в демо-режиме остаётся false
+  _cat: {},
   getToken: apiGetToken,
   setToken: apiSetToken,
   fetch: apiFetch,
@@ -126,5 +172,6 @@ const API = {
   loadBootstrap: apiLoadBootstrap,
   mapBootstrap: apiMapBootstrap,
   isAuthed: () => !!apiGetToken(),
+  persist: apiPersist,
 };
 try { globalThis.API = API; } catch (e) {}
