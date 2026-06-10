@@ -86,7 +86,13 @@ function renderLogin(g){
       </div>
     </div>
     <div class="login-main">
-      <h2>Выберите демо-доступ</h2>
+      <div class="api-login-box">
+        <h2>Вход для сотрудников</h2>
+        <div class="fld full" style="margin-bottom:10px"><label>Email</label><input id="api-email" type="email" placeholder="you@company.kz" autocomplete="username" style="width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:11px;color:var(--txt)"></div>
+        <div class="fld full" style="margin-bottom:12px"><label>Пароль</label><input id="api-pass" type="password" autocomplete="current-password" style="width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:11px;color:var(--txt)"></div>
+        <button class="btn primary" data-act="api-login" style="width:100%;justify-content:center">${icon('logout','sm')} Войти</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin:18px 0 14px;color:var(--muted2);font-size:11px;text-transform:uppercase;letter-spacing:.5px"><span style="flex:1;height:1px;background:var(--line)"></span>или демо-доступ без входа<span style="flex:1;height:1px;background:var(--line)"></span></div>
       <div class="lead">Каждая роль открывает свой набор модулей. Все данные демонстрационные.</div>
       <div class="accounts">${accts}</div>
       <div class="login-extra">Демо: ${DB.company.legal}, ${DB.company.city}. ${DB.company.workshop}. Оборот ${DB.company.revenueYear}.<br>Все цифры и клиенты вымышленные — можно смело кликать, двигать сделки и принимать оплаты.</div>

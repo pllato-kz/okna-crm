@@ -1,7 +1,30 @@
 'use strict';
 /* ============ ACTIONS ============ */
 function login(id){ state.user=userById(id); state.module=defaultModule(state.user.role); state.measureDealId=null; render(); }
-function logout(){ state.user=null; render(); }
+function logout(){ try{ if(window.API) API.logout(); }catch(e){} state.user=null; render(); }
+
+/* ====== ВХОД ЧЕРЕЗ API (Слой 4) ====== */
+/* Заменяет данные демо серверными (bootstrap), оставляя справочники-константы. */
+async function bootFromApi(){
+  const mapped = await API.loadBootstrap();
+  DB = mapped.DB;            // данные с сервера в формате фронта
+  return mapped;
+}
+async function apiLoginSubmit(){
+  const emEl=document.getElementById('api-email'), pwEl=document.getElementById('api-pass');
+  const email=(emEl&&emEl.value||'').trim(), password=(pwEl&&pwEl.value||'');
+  if(!email||!password){ toast('Введите email и пароль','warn'); return; }
+  try{
+    const r=await API.login(email,password);
+    await bootFromApi();
+    const u=r.user||{};
+    state.user={ id:u.id, name:u.name, role:u.role_id, title:u.title, email:u.email };
+    state.module=defaultModule(state.user.role); state.measureDealId=null;
+    render(); toast('Вход выполнен: '+(u.name||email));
+  }catch(e){
+    toast(e&&e.status===401?'Неверный логин или пароль':('Ошибка входа: '+(e&&e.message||'')), 'warn');
+  }
+}
 function nav(mod){ state.module=mod; state.sideOpen=false; render(); }
 
 function moveStage(id, stage){
@@ -170,6 +193,7 @@ document.addEventListener('click', e=>{
   const a=t.dataset.act, id=t.dataset.id;
   switch(a){
     case 'login': login(id); break;
+    case 'api-login': apiLoginSubmit(); break;
     case 'logout': logout(); break;
     case 'nav': nav(t.dataset.mod); break;
     case 'toggle-side': state.sideOpen=!state.sideOpen; render(); break;
@@ -225,6 +249,7 @@ document.addEventListener('input', e=>{
   if(t.dataset.act==='m-prepay'){ const d=dealById(t.dataset.id); d.prepayPct=Math.max(0,Math.min(100,parseFloat(t.value)||0)); saveDB(); patchMeasure(); }
 });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); clearSearch(); } });
+document.addEventListener('keydown', e=>{ if(e.key==='Enter' && (e.target.id==='api-email'||e.target.id==='api-pass')){ e.preventDefault(); apiLoginSubmit(); } });
 /* закрыть выпадашку поиска по клику вне неё */
 document.addEventListener('click', e=>{
   const dd=document.getElementById('search-dd'); if(!dd||!dd.classList.contains('open')) return;
@@ -252,4 +277,16 @@ document.addEventListener('drop', e=>{
 });
 
 /* ============ INIT ============ */
-render();
+/* Если есть сохранённый токен — пробуем поднять данные с сервера и войти автоматически.
+   При любой ошибке — тихий откат в демо-режим (localStorage), сайт не ломается. */
+(async function init(){
+  try{
+    if(window.API && API.isAuthed()){
+      await bootFromApi();
+      const me=await API.me();
+      state.user={ id:me.id, name:me.name, role:me.role_id, title:me.title, email:me.email };
+      state.module=defaultModule(state.user.role);
+    }
+  }catch(e){ try{ API.logout(); }catch(_){ } }
+  render();
+})();
