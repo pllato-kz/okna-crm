@@ -106,7 +106,7 @@ function navGroups(){
   ];
 }
 const MODULE_META = {
-  dashboard:{name:'Дашборд',  icon:'dashboard', sub:'Ключевые показатели бизнеса'},
+  dashboard:{name:'dashboard1',  icon:'dashboard', sub:'Ключевые показатели бизнеса'},
   funnel:   {name:'Воронка',  icon:'funnel',    sub:'Сделки по стадиям'},
   clients:  {name:'Клиенты',  icon:'clients',   sub:'База клиентов и история'},
   measure:  {name:'Замер и КП',icon:'ruler',    sub:'Расчёт конструкций на объекте'},
