@@ -110,7 +110,7 @@ function buildSeed(){
   const users = [
     {id:'u_isk', name:'Исхак Сапаров',  role:'director',  title:'Директор',            primary:true},
     {id:'u_pm',  name:'Платон Цай',      role:'manager',   title:'Менеджер по продажам',primary:true},
-    {id:'u_ps',  name:'Платон Цай',      role:'surveyor',  title:'Замерщик',            primary:true},
+    {id:'u_ps',  name:'Данияр Оспанов',  role:'surveyor',  title:'Замерщик',            primary:true},
     {id:'u_as',  name:'Бауыржан Омаров', role:'production', title:'Сборщик',            primary:false},
     {id:'u_wh',  name:'Марат Ким',       role:'warehouse', title:'Завсклад',            primary:false},
   ];
