@@ -1,0 +1,252 @@
+// functions/api/[[path]].js — REST API ОКНА CRM на Cloudflare Pages Functions.
+// Бэкенд работает с D1 (env.DB) и R2 (env.BUCKET). Ответы — JSON.
+//
+// Клиент-независимость: никаких данных конкретного клиента в коде — только
+// доступ к таблицам и справочникам, заданным схемой schema.sql.
+// Авторизация добавляется на Слое 3 (пока эндпоинты открыты).
+
+'use strict';
+
+/* ============ ХЕЛПЕРЫ ОТВЕТОВ ============ */
+const HEADERS = { 'content-type': 'application/json; charset=utf-8' };
+const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: HEADERS });
+const ok = (data) => json(data, 200);
+const created = (data) => json(data, 201);
+const fail = (status, message) => json({ error: message }, status);
+
+/* ============ РЕЕСТР ТАБЛИЦ (whitelist для generic CRUD) ============ */
+// Для каждого ресурса: имя таблицы, первичный ключ и разрешённые колонки.
+// Запись идёт только по этим колонкам — защита от инъекций и лишних полей.
+const TABLES = {
+  company:          { table: 'company',          pk: 'id', cols: ['id','name','legal','city','phone','workshop','revenue_year'] },
+  roles:            { table: 'roles',            pk: 'id', cols: ['id','name','sort'] },
+  modules:          { table: 'modules',          pk: 'id', cols: ['id','name','sort'] },
+  module_roles:     { table: 'module_roles',     pk: null, cols: ['module_id','role_id'], composite: ['module_id','role_id'] },
+  client_types:     { table: 'client_types',     pk: 'id', cols: ['id','name'] },
+  lead_sources:     { table: 'lead_sources',     pk: 'id', cols: ['id','name','sort'] },
+  deal_stages:      { table: 'deal_stages',      pk: 'id', cols: ['id','name','color','sort'] },
+  prod_stages:      { table: 'prod_stages',      pk: 'id', cols: ['id','name','sort'] },
+  material_types:   { table: 'material_types',   pk: 'id', cols: ['id','name'] },
+  material_series:  { table: 'material_series',  pk: 'id', cols: ['id','name','sort'] },
+  glass_types:      { table: 'glass_types',      pk: 'id', cols: ['id','name','rate','sort'] },
+  openings:         { table: 'openings',         pk: 'id', cols: ['id','name','rate','sort'] },
+  extras:           { table: 'extras',           pk: 'id', cols: ['id','name','price','per','sort'] },
+  payment_types:    { table: 'payment_types',    pk: 'id', cols: ['id','name'] },
+  payable_statuses: { table: 'payable_statuses', pk: 'id', cols: ['id','name'] },
+  activity_kinds:   { table: 'activity_kinds',   pk: 'id', cols: ['id','name'] },
+  // password_hash намеренно НЕ в cols — пароль выставляется отдельно (Слой 3),
+  // и наружу через generic CRUD не отдаётся/не принимается.
+  users:            { table: 'users',            pk: 'id', cols: ['id','name','email','role_id','title','is_primary','is_active'], prefix: 'u' },
+  clients:          { table: 'clients',          pk: 'id', cols: ['id','name','phone','address','type_id'], prefix: 'cl' },
+  materials:        { table: 'materials',         pk: 'id', cols: ['id','name','type_id','series_id','rate','stock','min_stock','unit','supplier'], prefix: 'm' },
+  components:       { table: 'components',        pk: 'id', cols: ['id','name','stock','min_stock','unit'], prefix: 'c' },
+  deals:            { table: 'deals',             pk: 'id', cols: ['id','client_id','stage_id','manager_id','source_id','prod_stage_id','sum','note','hot','discount','prepay_pct','consumed_profile','consumed_glass','consumed_fittings','stage_since'], prefix: 'd' },
+  deal_items:       { table: 'deal_items',        pk: 'id', cols: ['id','deal_id','profile_id','glass_id','opening_id','w','h','sashes','qty','sort'], prefix: 'cn' },
+  deal_item_extras: { table: 'deal_item_extras',  pk: null, cols: ['item_id','extra_id'], composite: ['item_id','extra_id'] },
+  payments:         { table: 'payments',          pk: 'id', cols: ['id','deal_id','type_id','amount','date'], prefix: 'p' },
+  payables:         { table: 'payables',          pk: 'id', cols: ['id','supplier','for_what','amount','due','status_id'], prefix: 'pay' },
+  activity:         { table: 'activity',          pk: 'id', cols: ['id','user_id','text','kind_id','at'], prefix: 'a' },
+};
+
+// Какие ресурсы считаются справочниками (для /api/catalogs)
+const CATALOGS = ['roles','modules','module_roles','client_types','lead_sources',
+  'deal_stages','prod_stages','material_types','material_series','glass_types',
+  'openings','extras','payment_types','payable_statuses','activity_kinds'];
+
+const uid = (p = 'id') => `${p}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
+
+/* ============ DB-ХЕЛПЕРЫ (generic) ============ */
+async function listRows(env, def) {
+  const { results } = await env.DB.prepare(`SELECT * FROM ${def.table}`).all();
+  return results || [];
+}
+async function getRow(env, def, id) {
+  return await env.DB.prepare(`SELECT * FROM ${def.table} WHERE ${def.pk} = ?`).bind(id).first();
+}
+async function insertRow(env, def, body) {
+  const data = {};
+  for (const c of def.cols) if (body[c] !== undefined) data[c] = body[c];
+  // автогенерация PK, если не передан
+  if (def.pk && (data[def.pk] === undefined || data[def.pk] === null || data[def.pk] === '')) {
+    data[def.pk] = uid(def.prefix || 'id');
+  }
+  const keys = Object.keys(data);
+  if (!keys.length) throw new Error('Нет полей для вставки');
+  const placeholders = keys.map(() => '?').join(', ');
+  const sql = `INSERT INTO ${def.table} (${keys.join(', ')}) VALUES (${placeholders})`;
+  await env.DB.prepare(sql).bind(...keys.map(k => data[k])).run();
+  return data;
+}
+async function updateRow(env, def, id, body) {
+  const sets = [];
+  const vals = [];
+  for (const c of def.cols) {
+    if (c === def.pk) continue;
+    if (body[c] !== undefined) { sets.push(`${c} = ?`); vals.push(body[c]); }
+  }
+  if (!sets.length) return await getRow(env, def, id);
+  vals.push(id);
+  await env.DB.prepare(`UPDATE ${def.table} SET ${sets.join(', ')} WHERE ${def.pk} = ?`).bind(...vals).run();
+  return await getRow(env, def, id);
+}
+async function deleteRow(env, def, id) {
+  const r = await env.DB.prepare(`DELETE FROM ${def.table} WHERE ${def.pk} = ?`).bind(id).run();
+  return r.meta;
+}
+
+/* ============ АГРЕГАТЫ ============ */
+// Все справочники одним ответом
+async function getCatalogs(env) {
+  const out = {};
+  for (const name of CATALOGS) out[name] = await listRows(env, TABLES[name]);
+  return out;
+}
+// Сделка целиком: позиции (+опции) и оплаты
+async function getDealFull(env, id) {
+  const deal = await getRow(env, TABLES.deals, id);
+  if (!deal) return null;
+  const items = (await env.DB.prepare(`SELECT * FROM deal_items WHERE deal_id = ? ORDER BY sort`).bind(id).all()).results || [];
+  for (const it of items) {
+    const ex = (await env.DB.prepare(`SELECT extra_id FROM deal_item_extras WHERE item_id = ?`).bind(it.id).all()).results || [];
+    it.extras = ex.map(r => r.extra_id);
+  }
+  const payments = (await env.DB.prepare(`SELECT * FROM payments WHERE deal_id = ? ORDER BY date`).bind(id).all()).results || [];
+  deal.items = items;
+  deal.payments = payments;
+  return deal;
+}
+// Полный снимок для фронта (заменит buildSeed/localStorage на Слое 4)
+async function getBootstrap(env) {
+  const company = await env.DB.prepare(`SELECT * FROM company LIMIT 1`).first();
+  const [users, clients, materials, components, payables, activity, dealsRaw] = await Promise.all([
+    listRows(env, TABLES.users),
+    listRows(env, TABLES.clients),
+    listRows(env, TABLES.materials),
+    listRows(env, TABLES.components),
+    listRows(env, TABLES.payables),
+    listRows(env, TABLES.activity),
+    listRows(env, TABLES.deals),
+  ]);
+  // password_hash не отдаём наружу
+  for (const u of users) delete u.password_hash;
+  const allItems = (await env.DB.prepare(`SELECT * FROM deal_items ORDER BY sort`).all()).results || [];
+  const allExtras = (await env.DB.prepare(`SELECT * FROM deal_item_extras`).all()).results || [];
+  const allPayments = (await env.DB.prepare(`SELECT * FROM payments ORDER BY date`).all()).results || [];
+  const extrasByItem = {};
+  for (const e of allExtras) (extrasByItem[e.item_id] ||= []).push(e.extra_id);
+  for (const it of allItems) it.extras = extrasByItem[it.id] || [];
+  const itemsByDeal = {};
+  for (const it of allItems) (itemsByDeal[it.deal_id] ||= []).push(it);
+  const paymentsByDeal = {};
+  for (const p of allPayments) (paymentsByDeal[p.deal_id] ||= []).push(p);
+  const deals = dealsRaw.map(d => ({ ...d, items: itemsByDeal[d.id] || [], payments: paymentsByDeal[d.id] || [] }));
+  return { company, catalogs: await getCatalogs(env), users, clients, materials, components, deals, payables, activity };
+}
+
+/* ============ R2-ФАЙЛЫ ============ */
+async function putFile(env, request, name) {
+  const key = `${uid('f')}${name ? '-' + name.replace(/[^\w.\-]+/g, '_') : ''}`;
+  const body = await request.arrayBuffer();
+  await env.BUCKET.put(key, body, {
+    httpMetadata: { contentType: request.headers.get('content-type') || 'application/octet-stream' },
+  });
+  return { key, url: `/api/files/${key}` };
+}
+async function getFile(env, key) {
+  const obj = await env.BUCKET.get(key);
+  if (!obj) return fail(404, 'Файл не найден');
+  const headers = new Headers();
+  obj.writeHttpMetadata(headers);
+  headers.set('etag', obj.httpEtag);
+  return new Response(obj.body, { headers });
+}
+
+/* ============ ЧТЕНИЕ ТЕЛА ============ */
+async function readBody(request) {
+  if (request.method === 'GET' || request.method === 'DELETE') return {};
+  try { return await request.json(); } catch (_) { return {}; }
+}
+
+/* ============ ТОЧКА ВХОДА ============ */
+export async function onRequest(context) {
+  const { request, env, params } = context;
+  const segs = (params.path || []).filter(Boolean); // напр. ['deals','d1','full']
+  const method = request.method.toUpperCase();
+  const url = new URL(request.url);
+
+  try {
+    if (!segs.length) return ok({ name: 'okna-crm API', version: 1 });
+
+    // health
+    if (segs[0] === 'health') return ok({ status: 'ok', time: new Date().toISOString() });
+
+    // полный снимок данных
+    if (segs[0] === 'bootstrap') return ok(await getBootstrap(env));
+
+    // все справочники
+    if (segs[0] === 'catalogs') return ok(await getCatalogs(env));
+
+    // файлы (R2)
+    if (segs[0] === 'files') {
+      if (method === 'POST') return created(await putFile(env, request, url.searchParams.get('name')));
+      if (method === 'GET' && segs[1]) return await getFile(env, segs.slice(1).join('/'));
+      return fail(405, 'Метод не поддерживается для /files');
+    }
+
+    // сделка целиком
+    if (segs[0] === 'deals' && segs[1] && segs[2] === 'full') {
+      if (method !== 'GET') return fail(405, 'Только GET');
+      const d = await getDealFull(env, segs[1]);
+      return d ? ok(d) : fail(404, 'Сделка не найдена');
+    }
+
+    // generic CRUD по реестру таблиц
+    const resource = segs[0];
+    const def = TABLES[resource];
+    if (!def) return fail(404, `Неизвестный ресурс: ${resource}`);
+    const id = segs[1];
+
+    // составной ключ (deal_item_extras, module_roles)
+    if (def.composite) {
+      if (method === 'GET') return ok(await listRows(env, def));
+      const body = await readBody(request);
+      if (method === 'POST') {
+        const data = {};
+        for (const c of def.cols) data[c] = body[c];
+        await env.DB.prepare(`INSERT OR IGNORE INTO ${def.table} (${def.cols.join(', ')}) VALUES (${def.cols.map(() => '?').join(', ')})`)
+          .bind(...def.cols.map(c => data[c])).run();
+        return created(data);
+      }
+      if (method === 'DELETE') {
+        const where = def.composite.map(c => `${c} = ?`).join(' AND ');
+        const vals = def.composite.map(c => body[c] ?? url.searchParams.get(c));
+        await env.DB.prepare(`DELETE FROM ${def.table} WHERE ${where}`).bind(...vals).run();
+        return ok({ deleted: true });
+      }
+      return fail(405, 'Метод не поддерживается');
+    }
+
+    if (method === 'GET') {
+      if (id) { const row = await getRow(env, def, id); return row ? ok(row) : fail(404, 'Не найдено'); }
+      return ok(await listRows(env, def));
+    }
+    if (method === 'POST') {
+      const body = await readBody(request);
+      return created(await insertRow(env, def, body));
+    }
+    if (method === 'PUT' || method === 'PATCH') {
+      if (!id) return fail(400, 'Нужен id в пути');
+      const body = await readBody(request);
+      const row = await updateRow(env, def, id, body);
+      return row ? ok(row) : fail(404, 'Не найдено');
+    }
+    if (method === 'DELETE') {
+      if (!id) return fail(400, 'Нужен id в пути');
+      await deleteRow(env, def, id);
+      return ok({ deleted: true });
+    }
+    return fail(405, `Метод ${method} не поддерживается`);
+  } catch (e) {
+    return fail(500, e && e.message ? e.message : 'Внутренняя ошибка');
+  }
+}

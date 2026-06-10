@@ -1,0 +1,22 @@
+# wrangler.toml — конфиг Cloudflare для ОКНА CRM (Pages + Functions).
+#
+# Клиент-независимость: всё, что специфично для аккаунта/клиента (ID базы,
+# имена ресурсов), живёт ТОЛЬКО здесь. При передаче клиенту меняется один файл.
+# Имена биндингов универсальные (DB, BUCKET) — код к именам ресурсов не привязан.
+
+name = "okna-crm"
+compatibility_date = "2026-06-01"
+
+# Проект — статический сайт в корне + серверная логика в ./functions (Pages Functions).
+pages_build_output_dir = "."
+
+# База D1 (создана пользователем — Слой 0). Биндинг в коде: env.DB
+[[d1_databases]]
+binding = "DB"
+database_name = "okna-crm-db"
+database_id = "594d93ca-6552-410c-a873-4ba99f6915d6"
+
+# Хранилище файлов R2 (создано пользователем — Слой 0). Биндинг в коде: env.BUCKET
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "okna-crm-files"
