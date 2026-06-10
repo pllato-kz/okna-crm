@@ -127,14 +127,12 @@ function initMeasureBindings(){
   });
 }
 /* KP doc */
-function openKp(id){
-  const d=dealById(id); if(!d) return; const cl=clientById(d.clientId); const k=computeMeasure(d);
+/* Разметка КП — общая для модалки и для окна печати */
+function kpDocHtml(d){
+  const cl=clientById(d.clientId); const k=computeMeasure(d);
   const rows=(d.items||[]).map((c,i)=>{const m=matById(c.profileId);
     return `<tr><td>${i+1}</td><td>${m.name} (${m.series})<br><span style="color:#64748b">${c.w}×${c.h}мм, ${openById(c.openId).name}, ${c.sashes} ств., ${glassById(c.glassId).name}</span></td><td style="text-align:center">${c.qty||1}</td><td style="text-align:right">${money(constrPrice(c))}</td></tr>`;}).join('');
-  openModal(`
-    <div class="modal-h">${icon('doc')}<div><h3>Коммерческое предложение</h3><div class="mh-sub">${cl.name} · сформировано ${dateFull(SEED_NOW)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
-    <div class="modal-b">
-      <div class="kp-doc">
+  return `<div class="kp-doc">
         <div class="kp-co"><div><h2>${DB.company.name}</h2><div style="color:#64748b;font-size:12px">${DB.company.legal} · ${DB.company.city}<br>${DB.company.phone}</div></div>
           <div style="text-align:right;font-size:12px;color:#64748b">КП №${d.id.replace('d','')}-${new Date().getFullYear()}<br>${dateFull(SEED_NOW)}</div></div>
         <div style="font-size:13px;margin-bottom:6px">Заказчик: <b>${cl.name}</b>, ${cl.address}</div>
@@ -142,13 +140,39 @@ function openKp(id){
         <div style="text-align:right;color:#64748b;font-size:12.5px">Сумма: ${money(k.subtotal)}${k.discount?` · Скидка: −${money(k.discount)}`:''}</div>
         <div class="kp-tot">Итого к оплате: ${money(k.total)}</div>
         <div class="kp-pre"><b>Предоплата ${k.prepayPct}%: ${money(k.prepay)}</b><br><span style="font-size:12px">Остальное — после монтажа. Срок изготовления 4–6 недель. Гарантия 5 лет.</span></div>
-      </div>
+      </div>`;
+}
+function openKp(id){
+  const d=dealById(id); if(!d) return; const cl=clientById(d.clientId); const k=computeMeasure(d);
+  openModal(`
+    <div class="modal-h">${icon('doc')}<div><h3>Коммерческое предложение</h3><div class="mh-sub">${cl.name} · сформировано ${dateFull(SEED_NOW)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b">
+      ${kpDocHtml(d)}
     </div>
     <div class="modal-f">
+      <button class="btn" data-act="print-kp" data-id="${d.id}">${icon('doc','sm')} Печать / PDF</button>
       <button class="btn" data-act="wa-deal" data-id="${d.id}">${icon('wa','sm')} Отправить в WhatsApp</button>
       <button class="btn green" data-act="confirm-prepay" data-id="${d.id}">${icon('money','sm')} Принять предоплату ${money(k.prepay)}</button>
     </div>
   `, true);
+}
+/* Печать КП: открываем отдельный чистый документ и вызываем печать (можно «Сохранить как PDF») */
+function printKp(id){
+  const d=dealById(id); if(!d) return; const cl=clientById(d.clientId);
+  const w=window.open('','_blank','width=840,height=960');
+  if(!w){ toast('Разрешите всплывающие окна, чтобы распечатать КП','warn'); return; }
+  const css=`*{box-sizing:border-box} body{margin:0;background:#fff;font-family:Inter,system-ui,-apple-system,Arial,sans-serif;color:#1a2233}
+    .wrap{max-width:720px;margin:0 auto;padding:28px}
+    .kp-doc h2{font-size:18px;color:#0b1220;margin:0 0 4px}
+    .kp-doc .kp-co{display:flex;justify-content:space-between;border-bottom:2px solid #e5e9f0;padding-bottom:14px;margin-bottom:14px}
+    .kp-doc table{width:100%;border-collapse:collapse;margin:14px 0;font-size:12.5px}
+    .kp-doc th{background:#f1f4f9;text-align:left;padding:9px 10px;color:#475569;font-size:11px;text-transform:uppercase}
+    .kp-doc td{padding:9px 10px;border-bottom:1px solid #eef1f6}
+    .kp-doc .kp-tot{text-align:right;font-size:16px;font-weight:800;color:#0b1220;margin-top:6px}
+    .kp-doc .kp-pre{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 14px;margin-top:14px;color:#1e3a8a}
+    @page{margin:14mm}`;
+  w.document.write(`<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><title>КП — ${cl.name}</title><style>${css}</style></head><body><div class="wrap">${kpDocHtml(d)}</div><script>window.onload=function(){window.focus();window.print();};<\/script></body></html>`);
+  w.document.close();
 }
 
 /* ============ WAREHOUSE ============ */

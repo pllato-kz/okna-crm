@@ -171,6 +171,7 @@ document.addEventListener('click', e=>{
     case 'm-open': mSet(t.dataset.cid,'openId',t.dataset.v); break;
     case 'm-extra': mSet(t.dataset.cid,'extras',t.dataset.v); break;
     case 'gen-kp': { const d=dealById(id); d.sum=computeMeasure(d).total; saveDB(); openKp(id); } break;
+    case 'print-kp': printKp(id); break;
     case 'quick-prepay': applyPrepay(id); break;
     case 'confirm-prepay': applyPrepay(id); break;
     case 'wh-tab': state.whTab=t.dataset.v; renderModule(); break;
