@@ -96,7 +96,7 @@ const EXTRAS = [
   {id:'mosquito', name:'Москитная сетка', price:6500, per:'шт'},
   {id:'sill',     name:'Подоконник',      price:4500, per:'м'},
   {id:'ebb',      name:'Отлив',           price:3200, per:'м'},
-  {id:'slopes',   name:'Откосы',          price:5500, per:'шт'},
+  {id:'slopes',   name:'Откосы',          price:1500, per:'периметр'},
   {id:'mount',    name:'Монтаж',          price:8000, per:'шт'},
   {id:'demount',  name:'Демонтаж старого',price:3000, per:'шт'},
 ];
@@ -307,13 +307,20 @@ function consumeForStage(d, stage){
 
 /* ============ PRICING ============ */
 function constrArea(c){ return (c.w*c.h)/1e6; }
+/* длина опции в пог.м: «м» — вдоль низа (подоконник/отлив = ширина);
+   «периметр» — откосы по трём сторонам проёма (2 высоты + верх, низ занят подоконником) */
+function extraLength(c, e){
+  if(e.per==='м')        return c.w/1000;
+  if(e.per==='периметр') return (2*c.h + c.w)/1000;
+  return 0;
+}
 function constrPrice(c){
   const m=matById(c.profileId); const g=glassById(c.glassId); const o=openById(c.openId);
   const area=constrArea(c);
   let p = (m?m.rate:0)*area + (g?g.rate:0)*area + (o?o.rate:0)*(c.sashes||1);
   (c.extras||[]).forEach(eid=>{ const e=extraById(eid); if(!e) return;
-    if(e.per==='м') p += e.price * ((c.w+c.w)/1000); // periметр-ish: 2 ширины
-    else p += e.price;
+    const len=extraLength(c, e);
+    p += len>0 ? e.price*len : e.price;   // длинномерные — по длине, прочее — за штуку
   });
   return Math.round(p*(c.qty||1));
 }
