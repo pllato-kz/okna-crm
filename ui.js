@@ -208,3 +208,25 @@ function bars(rows, max){
       <span class="bv">${r.display!=null?r.display:r.value}</span>
     </div>`).join('')+`</div>`;
 }
+
+/* ============ УВЕДОМЛЕНИЯ ============ */
+function notifKindMeta(kind){
+  return ({
+    money:  {icon:'money',     color:'#16a34a'},
+    measure:{icon:'ruler',     color:'#0891b2'},
+    funnel: {icon:'funnel',    color:'#2563eb'},
+    prod:   {icon:'production',color:'#db2777'},
+    lead:   {icon:'flame',     color:'#d97706'},
+    wh:     {icon:'box',       color:'#7c3aed'},
+  })[kind] || {icon:'bell', color:'var(--accent)'};
+}
+function notifModal(){
+  const acts=(DB.activity||[]).slice(0,12);
+  const items=acts.map(a=>{ const u=userById(a.who); const m=notifKindMeta(a.kind);
+    return `<div class="tl-item"><div class="tl-dot" style="background:${m.color}24;color:${m.color}">${icon(m.icon,'sm')}</div>
+      <div class="tl-c"><div class="tl-t">${a.text}</div><div class="tl-d">${u?u.name:'—'} · ${dateStr(a.at)}</div></div></div>`;
+  }).join('') || '<div class="muted" style="padding:16px;text-align:center">Событий пока нет</div>';
+  openModal(`<div class="modal-h">${icon('bell')}<div><h3>Уведомления</h3><div class="mh-sub">Последние события · ${acts.length}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="timeline">${items}</div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Закрыть</button></div>`);
+}

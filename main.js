@@ -174,7 +174,7 @@ document.addEventListener('click', e=>{
     case 'nav': nav(t.dataset.mod); break;
     case 'toggle-side': state.sideOpen=!state.sideOpen; render(); break;
     case 'reset': resetDB(); state.measureDealId=null; render(); toast('Демо-данные сброшены'); break;
-    case 'notif': toast('Уведомления — демо: 3 новых события'); break;
+    case 'notif': notifModal(); break;
     case 'theme': state.theme = state.theme==='light' ? 'dark' : 'light'; try{ localStorage.setItem(THEME_KEY, state.theme); }catch(e){} applyTheme(state.theme); render(); break;
     case 'noop': break;
     case 'go-finance': state.module='finance'; state.financeTab='recv'; render(); break;
