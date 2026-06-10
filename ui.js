@@ -43,7 +43,7 @@ function renderModule(){
   const m=state.module;
   let html='';
   if(!canSee(m)){ html=renderNoAccess(); }
-  else if(m==='dashboard1') html=renderDashboard();
+  else if(m==='dashboard') html=renderDashboard();
   else if(m==='funnel')    html=renderFunnel();
   else if(m==='clients')   html=renderClients();
   else if(m==='measure')   html=renderMeasure();
@@ -98,7 +98,7 @@ function roleRu(r){ return ({director:'Директор',manager:'Менедже
 /* ============ SHELL ============ */
 function navGroups(){
   return [
-    {title:'Продажи', items:['dashboard1','funnel','clients']},
+    {title:'Продажи', items:['dashboard','funnel','clients']},
     {title:'Поле',    items:['measure']},
     {title:'Операции',items:['warehouse','production']},
     {title:'Финансы', items:['finance']},
@@ -106,7 +106,7 @@ function navGroups(){
   ];
 }
 const MODULE_META = {
-  dashboard1:{name:'Дашборд',  icon:'dashboard', sub:'Ключевые показатели бизнеса'},
+  dashboard:{name:'dashboard1',  icon:'dashboard', sub:'Ключевые показатели бизнеса'},
   funnel:   {name:'Воронка',  icon:'funnel',    sub:'Сделки по стадиям'},
   clients:  {name:'Клиенты',  icon:'clients',   sub:'База клиентов и история'},
   measure:  {name:'Замер и КП',icon:'ruler',    sub:'Расчёт конструкций на объекте'},
