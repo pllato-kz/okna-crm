@@ -323,7 +323,7 @@ function dealDebt(d){ const sum=d.sum||dealItemsSum(d); return Math.max(0, sum-d
 
 /* ============ PERMISSIONS ============ */
 const MODULE_ROLES = {
-  dashboard:['director','manager'],
+  dashboard1:['director','manager'],
   funnel:   ['director','manager'],
   clients:  ['director','manager'],
   measure:  ['director','manager','surveyor'],
@@ -338,5 +338,5 @@ function defaultModule(role){
   if(role==='surveyor') return 'measure';
   if(role==='production') return 'production';
   if(role==='warehouse') return 'warehouse';
-  return 'dashboard';
+  return 'dashboard1';
 }
