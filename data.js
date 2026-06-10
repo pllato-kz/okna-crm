@@ -255,7 +255,7 @@ function gateStatus(){
   if(isOwner()) return {mode:'owner'};
   const g=currentGrant();
   if(g && g.exp){ return Date.now()<g.exp ? {mode:'valid', exp:g.exp, label:g.label} : {mode:'expired', exp:g.exp, label:g.label}; }
-  return {mode:'locked'};
+  return {mode:'open'}; // публичный доступ: демо открыто всем, без ссылки-гейта
 }
 function initGate(){
   try{
