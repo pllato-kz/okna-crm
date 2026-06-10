@@ -158,7 +158,7 @@ function renderShell(){
           <div class="page-title">${meta.name}</div>
           <div class="page-sub">${meta.sub}</div>
         </div>
-        <div class="search">${icon('search','sm')}<input placeholder="Поиск клиента, сделки…" data-act="noop"></div>
+        <div class="search">${icon('search','sm')}<input id="global-search" placeholder="Поиск клиента, сделки…" data-act="search" autocomplete="off"><div class="search-dd" id="search-dd"></div></div>
         <button class="icon-btn" data-act="theme" title="Сменить тему">${icon(state.theme==='light'?'moon':'sun')}</button>
         <button class="icon-btn" data-act="notif" title="Уведомления">${icon('bell')}<span class="dot"></span></button>
         <button class="icon-btn" data-act="reset" title="Сбросить демо-данные">${icon('refresh')}</button>

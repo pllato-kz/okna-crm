@@ -139,6 +139,31 @@ function copyShareLink(){
   catch(e){ ta.select(); try{ document.execCommand('copy'); done(); }catch(_){ toast('Скопируйте ссылку вручную','warn'); } }
 }
 
+/* ============ ГЛОБАЛЬНЫЙ ПОИСК ============ */
+function clearSearch(){
+  const dd=document.getElementById('search-dd'); if(dd){ dd.classList.remove('open'); dd.innerHTML=''; }
+  const si=document.getElementById('global-search'); if(si) si.value='';
+}
+function globalSearch(q){
+  const dd=document.getElementById('search-dd'); if(!dd) return;
+  q=(q||'').trim().toLowerCase();
+  if(q.length<2){ dd.classList.remove('open'); dd.innerHTML=''; return; }
+  const has=s=>(s||'').toLowerCase().includes(q);
+  let html='';
+  if(canSee('clients')){
+    const cls=DB.clients.filter(c=>has(c.name)||has(c.phone)||has(c.address)).slice(0,5);
+    if(cls.length) html+=`<div class="sd-group">Клиенты</div>`+cls.map(c=>
+      `<button class="sd-item" data-act="open-client" data-id="${c.id}">${avatarXs(c.name,c.id)}<span class="sd-main">${c.name}</span><span class="sd-sub">${c.phone}</span></button>`).join('');
+  }
+  if(canSee('funnel')){
+    const dls=DB.deals.filter(d=>{const cl=clientById(d.clientId); return has(cl&&cl.name)||has(d.note);}).slice(0,6);
+    if(dls.length) html+=`<div class="sd-group">Сделки</div>`+dls.map(d=>{const cl=clientById(d.clientId);const st=stageById(d.stage);
+      return `<button class="sd-item" data-act="open-deal" data-id="${d.id}"><span class="dot-i" style="background:${st.color}"></span><span class="sd-main">${cl.name}</span><span class="sd-sub">${st.name}${d.sum?' · '+moneyK(d.sum):''}</span></button>`;}).join('');
+  }
+  if(!html) html=`<div class="sd-empty">Ничего не найдено</div>`;
+  dd.innerHTML=html; dd.classList.add('open');
+}
+
 /* ============ EVENT DELEGATION ============ */
 document.addEventListener('click', e=>{
   const t=e.target.closest('[data-act]'); if(!t) return;
@@ -155,11 +180,11 @@ document.addEventListener('click', e=>{
     case 'go-finance': state.module='finance'; state.financeTab='recv'; render(); break;
     case 'go-prod': state.module='production'; render(); break;
     case 'go-measure-deal': state.measureDealId=id; state.module='measure'; closeModal(); render(); break;
-    case 'open-deal': openDeal(id); break;
+    case 'open-deal': openDeal(id); clearSearch(); break;
     case 'move-stage': moveStage(id, t.dataset.stage); break;
     case 'new-deal': newDealModal(); break;
     case 'create-deal': createDeal(); break;
-    case 'open-client': openClient(id); break;
+    case 'open-client': openClient(id); clearSearch(); break;
     case 'new-client': newClientModal(); break;
     case 'create-client': createClient(); break;
     case 'wa-deal': case 'wa-client': toast('Сообщение клиенту отправлено в WhatsApp (демо)'); break;
@@ -195,10 +220,17 @@ document.addEventListener('change', e=>{
 });
 document.addEventListener('input', e=>{
   const t=e.target.closest('[data-act]'); if(!t) return;
+  if(t.dataset.act==='search'){ globalSearch(t.value); return; }
   if(t.dataset.act==='m-discount'){ const d=dealById(t.dataset.id); d.discount=Math.max(0,Math.min(30,parseFloat(t.value)||0)); saveDB(); patchMeasure(); }
   if(t.dataset.act==='m-prepay'){ const d=dealById(t.dataset.id); d.prepayPct=Math.max(0,Math.min(100,parseFloat(t.value)||0)); saveDB(); patchMeasure(); }
 });
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); clearSearch(); } });
+/* закрыть выпадашку поиска по клику вне неё */
+document.addEventListener('click', e=>{
+  const dd=document.getElementById('search-dd'); if(!dd||!dd.classList.contains('open')) return;
+  if(e.target.closest('.search')) return;
+  dd.classList.remove('open');
+});
 
 /* ============ DRAG & DROP ============ */
 let dragId=null, dragKind=null;
