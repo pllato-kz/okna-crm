@@ -3,9 +3,11 @@
 //
 // Клиент-независимость: никаких данных конкретного клиента в коде — только
 // доступ к таблицам и справочникам, заданным схемой schema.sql.
-// Авторизация добавляется на Слое 3 (пока эндпоинты открыты).
+// Авторизация (Слой 3): JWT в заголовке Authorization, защита эндпоинтов, роли.
 
 'use strict';
+
+import { hashPassword, verifyPassword, signJWT, verifyJWT, bearerToken } from './_auth.js';
 
 /* ============ ХЕЛПЕРЫ ОТВЕТОВ ============ */
 const HEADERS = { 'content-type': 'application/json; charset=utf-8' };
@@ -52,6 +54,14 @@ const TABLES = {
 const CATALOGS = ['roles','modules','module_roles','client_types','lead_sources',
   'deal_stages','prod_stages','material_types','material_series','glass_types',
   'openings','extras','payment_types','payable_statuses','activity_kinds'];
+
+// Изменять эти ресурсы (справочники, пользователи, компания, права) может только директор.
+// Чтение доступно любому авторизованному пользователю.
+const ADMIN_WRITE = new Set(['users','company','module_roles','roles','modules',
+  'client_types','lead_sources','deal_stages','prod_stages','material_types',
+  'material_series','glass_types','openings','extras','payment_types',
+  'payable_statuses','activity_kinds']);
+const isWrite = (m) => m === 'POST' || m === 'PUT' || m === 'PATCH' || m === 'DELETE';
 
 const uid = (p = 'id') => `${p}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
 
@@ -177,8 +187,37 @@ export async function onRequest(context) {
   try {
     if (!segs.length) return ok({ name: 'okna-crm API', version: 1 });
 
-    // health
+    // health (публичный)
     if (segs[0] === 'health') return ok({ status: 'ok', time: new Date().toISOString() });
+
+    // вход (публичный): email + password → JWT
+    if (segs[0] === 'login') {
+      if (method !== 'POST') return fail(405, 'Только POST');
+      const { email, password } = await readBody(request);
+      if (!email || !password) return fail(400, 'Нужны email и password');
+      if (!env.JWT_SECRET) return fail(500, 'JWT_SECRET не задан (wrangler secret put JWT_SECRET)');
+      const user = await env.DB.prepare(`SELECT * FROM users WHERE email = ? AND is_active = 1`).bind(email).first();
+      if (!user || !(await verifyPassword(password, user.password_hash))) return fail(401, 'Неверный логин или пароль');
+      const token = await signJWT({ sub: user.id, role: user.role_id, name: user.name, email: user.email }, env.JWT_SECRET);
+      return ok({ token, user: { id: user.id, name: user.name, email: user.email, role_id: user.role_id, title: user.title } });
+    }
+
+    // ---- GUARD: всё остальное требует валидный JWT ----
+    // Исключение: GET /api/files/:key открыт (чтобы файлы можно было встраивать как ресурсы).
+    const publicFileGet = (segs[0] === 'files' && method === 'GET');
+    if (!publicFileGet) {
+      if (!env.JWT_SECRET) return fail(500, 'JWT_SECRET не задан (wrangler secret put JWT_SECRET)');
+      const auth = await verifyJWT(bearerToken(request), env.JWT_SECRET);
+      if (!auth) return fail(401, 'Требуется авторизация');
+      context.auth = auth;
+    }
+
+    // текущий пользователь
+    if (segs[0] === 'me') {
+      const u = await getRow(env, TABLES.users, context.auth.sub);
+      if (u) delete u.password_hash;
+      return u ? ok(u) : ok({ id: context.auth.sub, role_id: context.auth.role, name: context.auth.name, email: context.auth.email });
+    }
 
     // полный снимок данных
     if (segs[0] === 'bootstrap') return ok(await getBootstrap(env));
@@ -205,6 +244,24 @@ export async function onRequest(context) {
     const def = TABLES[resource];
     if (!def) return fail(404, `Неизвестный ресурс: ${resource}`);
     const id = segs[1];
+
+    // установка/смена пароля: POST /api/users/:id/password { password }
+    // разрешено директору или самому пользователю
+    if (resource === 'users' && id && segs[2] === 'password') {
+      if (method !== 'POST' && method !== 'PUT') return fail(405, 'Только POST/PUT');
+      if (context.auth.role !== 'director' && context.auth.sub !== id) return fail(403, 'Недостаточно прав');
+      const { password } = await readBody(request);
+      if (!password || String(password).length < 6) return fail(400, 'Пароль минимум 6 символов');
+      const hash = await hashPassword(String(password));
+      const r = await env.DB.prepare(`UPDATE users SET password_hash = ? WHERE id = ?`).bind(hash, id).run();
+      if (!r.meta || r.meta.changes === 0) return fail(404, 'Пользователь не найден');
+      return ok({ updated: true });
+    }
+
+    // guard: изменение справочников/пользователей/компании/прав — только директор
+    if (ADMIN_WRITE.has(resource) && isWrite(method) && context.auth.role !== 'director') {
+      return fail(403, 'Недостаточно прав: изменять может только директор');
+    }
 
     // составной ключ (deal_item_extras, module_roles)
     if (def.composite) {
