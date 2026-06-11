@@ -65,13 +65,23 @@ async function apiLoginSubmit(){
 }
 function nav(mod){ state.module=mod; state.sideOpen=false; render(); }
 
-function moveStage(id, stage){
-  const d=dealById(id); if(!d) return;
+function setDealStage(d, stage){
   d.stage=stage; d.stageSince=SEED_NOW.toISOString();
   if(['production','install'].includes(stage) && !d.prodStage) d.prodStage='queue';
   if(stage!=='lead' && !d.sum && (d.items||[]).length) d.sum=computeMeasure(d).total;
-  saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); closeModal(); render();
+  saveDB(); if(apiOn()) persist(API.persist.saveDeal(d));
+}
+function moveStage(id, stage){
+  const d=dealById(id); if(!d) return;
+  setDealStage(d, stage); closeModal(); render();
   toast(`Сделка перемещена в «${stageById(stage).name}»`);
+}
+/* смена стадии из совмещённого вида (чат сделки) — обновляем модалку, не закрывая чат */
+function waMoveStage(id, stage){
+  const d=dealById(id); if(!d) return;
+  if(d.stage===stage) return;
+  setDealStage(d, stage); waDealChatModal(id);
+  toast(`Стадия: «${stageById(stage).name}»`);
 }
 function moveProd(id, stage){ const d=dealById(id); if(!d) return; d.prodStage=stage;
   if(stage==='installing' && d.stage==='production') d.stage='install';
@@ -409,8 +419,8 @@ function waDealChatModal(dealId){
         <div><div style="font-weight:700">${cl.name} ${d.hot?icon('flame','sm'):''}</div><div class="muted2" style="font-size:11.5px">${cl.phone}</div></div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
-        <span class="tag" style="border-color:${st.color}55;color:${st.color}"><span class="dot-i" style="background:${st.color}"></span>${st.name}</span>
         <span class="tag">${icon('layers','sm')} ${d.source}</span>
+        <span class="tag">${icon('user','sm')} ${(userById(d.manager)||{}).name||'—'}</span>
       </div>
       <div class="stat-line"><span>${icon('pin','sm')} Адрес</span><span class="muted" style="text-align:right;max-width:60%">${cl.address}</span></div>
       ${moneyBlock}
@@ -423,8 +433,10 @@ function waDealChatModal(dealId){
       </div>
     </div>`;
   const hint = (apiOn() && !canSend) ? `<div class="muted2" style="text-align:center;font-size:11px;padding:6px 14px;color:#fbbf24">WhatsApp не подключён — отправка недоступна (Настройки → WhatsApp)</div>` : '';
+  const stageBar = STAGES.map(s=>`<button class="chip ${s.id===d.stage?'on':''}" data-act="wa-move-stage" data-id="${d.id}" data-stage="${s.id}">${s.name}</button>`).join('');
   openModal(`<div class="modal-h">${icon('wa')}<div><h3>Сделка и чат · ${cl.name}</h3><div class="mh-sub">${cl.phone} · ${st.name}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b" style="padding:0">
+      <div class="wa-stagebar"><span class="muted2" style="font-size:11px;margin-right:4px">Стадия:</span>${stageBar}</div>
       <div class="wa-split">
         ${info}
         <div class="wa-chat-pane">
@@ -590,6 +602,7 @@ document.addEventListener('click', e=>{
     case 'go-measure-deal': state.measureDealId=id; state.module='measure'; closeModal(); render(); break;
     case 'open-deal': openDeal(id); clearSearch(); break;
     case 'move-stage': moveStage(id, t.dataset.stage); break;
+    case 'wa-move-stage': waMoveStage(id, t.dataset.stage); break;
     case 'new-deal': newDealModal(); break;
     case 'create-deal': createDeal(); break;
     case 'open-client': openClient(id); clearSearch(); break;
