@@ -72,7 +72,7 @@ function renderLogin(g){
   return `<div class="login-wrap"><div class="login-fabs">${ownerBtn}<button class="theme-fab" data-act="theme" title="Сменить тему">${icon(state.theme==='light'?'moon':'sun')}</button></div>${clientBanner}<div class="login-card">
     <div class="login-side">
       <div class="brand">
-        <div class="brand-logo">${icon('grid','lg')}</div>
+        <div class="brand-logo">${icon('oglass','lg')}</div>
         <div><div class="brand-name">Ocean Glass</div><div class="brand-sub">окна · стекло · фасады</div></div>
       </div>
       <h1>CRM, <span class="grad">собранная под оконный бизнес</span></h1>
@@ -140,7 +140,7 @@ function renderShell(){
     <aside class="sidebar ${state.sideOpen?'open':''}">
       <div class="side-top">
         <div class="brand">
-          <div class="brand-logo">${icon('grid','lg')}</div>
+          <div class="brand-logo">${icon('oglass','lg')}</div>
           <div><div class="brand-name">Ocean Glass</div><div class="brand-sub">CRM · Ош</div></div>
         </div>
         <div class="company-pill">

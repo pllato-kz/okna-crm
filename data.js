@@ -47,6 +47,7 @@ const ICON = {
   edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
   trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/>',
   minus:'<path d="M5 12h14"/>',
+  oglass:'<g transform="skewX(-11)" stroke="none"><rect x="4" y="4.5" width="7" height="15" rx="1.6" fill="currentColor" opacity=".5"/><rect x="12.5" y="4.5" width="7" height="15" rx="1.6" fill="currentColor"/></g>',
 };
 function icon(name, cls){ return `<svg class="svg-i ${cls||''}" viewBox="0 0 24 24">${ICON[name]||''}</svg>`; }
 
