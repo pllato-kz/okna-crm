@@ -141,8 +141,8 @@ function openDeal(id){
       <button class="x" data-act="close-modal">${icon('x')}</button>
     </div>
     <div class="modal-b">
+      <div class="fld full" style="margin-bottom:14px"><label>Стадия — нажмите, чтобы переключить</label><div class="chips">${stageOpts}</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-        <span class="tag" style="border-color:${st.color}55;color:${st.color}"><span class="dot-i" style="background:${st.color}"></span>${st.name}</span>
         <span class="tag">${icon('user','sm')} ${m.name}</span>
         <span class="tag">${icon('layers','sm')} ${d.source}</span>
       </div>
@@ -154,7 +154,6 @@ function openDeal(id){
       ${items?`<div class="panel" style="margin-bottom:16px"><div class="panel-h" style="padding:12px 14px">${icon('ruler','sm')}<h3 style="font-size:13.5px">Конструкции (${d.items.length})</h3></div>
         <table class="tbl"><tbody>${items}</tbody></table></div>`:''}
       ${canMoney?`<div class="panel" style="margin-bottom:16px"><div class="panel-h" style="padding:12px 14px">${icon('money','sm')}<h3 style="font-size:13.5px">Оплаты</h3></div><div class="panel-b" style="padding:12px 14px">${pays}</div></div>`:''}
-      <div class="fld full" style="margin-bottom:6px"><label>Сменить стадию</label><div class="chips">${stageOpts}</div></div>
     </div>
     <div class="modal-f">
       <button class="btn green" data-act="wa-deal-chat" data-id="${d.id}">${icon('wa','sm')} Чат WhatsApp</button>
