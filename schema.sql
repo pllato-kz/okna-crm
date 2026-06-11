@@ -220,6 +220,19 @@ CREATE TABLE warehouse_movements (
 CREATE INDEX idx_wh_mov_item ON warehouse_movements(item_id);
 CREATE INDEX idx_wh_mov_at   ON warehouse_movements(at);
 
+-- Задачи и напоминания по сделкам (follow-up)
+CREATE TABLE tasks (
+  id           TEXT PRIMARY KEY,
+  deal_id      TEXT REFERENCES deals(id),
+  title        TEXT NOT NULL,
+  due          TEXT,                          -- срок (ISO)
+  assignee_id  TEXT REFERENCES users(id),
+  done         INTEGER NOT NULL DEFAULT 0,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX idx_tasks_deal ON tasks(deal_id);
+CREATE INDEX idx_tasks_due  ON tasks(due);
+
 -- ============================================================
 -- СДЕЛКИ
 -- ============================================================

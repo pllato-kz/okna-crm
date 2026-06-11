@@ -241,14 +241,22 @@ function buildSeed(){
     {id:'wamsg_e3', clientId:'cl4', dir:'in',  text:'Отлично, ждём!', status:null, at:'2026-05-28T11:25:00.000Z'},
   ];
 
-  return { v:1, company, users, materials, components, clients, deals, payables, activity, movements, waMessages };
+  const tasks = [
+    {id:'t_seed1', dealId:'d1', title:'Перезвонить по остеклению балкона', due:daysAgo(1).toISOString(),  assignee:'u_pm',  done:false},
+    {id:'t_seed2', dealId:'d4', title:'Выехать на замер, 10:00',           due:SEED_NOW.toISOString(),     assignee:'u_ps',  done:false},
+    {id:'t_seed3', dealId:'d6', title:'Отправить КП клиенту',              due:daysAgo(-2).toISOString(),  assignee:'u_isk', done:false},
+    {id:'t_seed4', dealId:'d8', title:'Согласовать договор',               due:daysAgo(-1).toISOString(),  assignee:'u_pm',  done:false},
+    {id:'t_seed5', dealId:'d2', title:'Уточнить размеры проёмов',          due:daysAgo(2).toISOString(),   assignee:'u_pm',  done:true},
+  ];
+
+  return { v:1, company, users, materials, components, clients, deals, payables, activity, movements, waMessages, tasks };
 }
 
 /* ============ STATE / PERSISTENCE ============ */
 const DB_KEY = 'okna_crm_db_v1';
 let DB;
 function loadDB(){
-  try{ const raw=localStorage.getItem(DB_KEY); if(raw){ const d=JSON.parse(raw); if(d&&d.v===1){ if(!Array.isArray(d.movements)) d.movements=[]; if(!Array.isArray(d.waMessages)) d.waMessages=[]; return d; } } }catch(e){}
+  try{ const raw=localStorage.getItem(DB_KEY); if(raw){ const d=JSON.parse(raw); if(d&&d.v===1){ if(!Array.isArray(d.movements)) d.movements=[]; if(!Array.isArray(d.waMessages)) d.waMessages=[]; if(!Array.isArray(d.tasks)) d.tasks=[]; return d; } } }catch(e){}
   const seed=buildSeed(); localStorage.setItem(DB_KEY, JSON.stringify(seed)); return seed;
 }
 function saveDB(){ try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(e){} }

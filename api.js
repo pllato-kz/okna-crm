@@ -99,6 +99,9 @@ function apiMapBootstrap(boot){
     dir: m.dir, type: m.type, qty: m.qty, reason: m.reason,
     balanceAfter: m.balance_after, dealId: m.deal_id, who: m.user_id, at: m.at,
   }));
+  const tasks = (boot.tasks || []).map(t => ({
+    id: t.id, dealId: t.deal_id, title: t.title, due: t.due, assignee: t.assignee_id, done: !!t.done,
+  }));
 
   // справочники-константы фронта (раньше хардкод в data.js)
   const STAGES      = apiSortByOrder(cat.deal_stages).map(s => ({ id: s.id, name: s.name, color: s.color }));
@@ -110,7 +113,7 @@ function apiMapBootstrap(boot){
   for (const mr of (cat.module_roles || [])) (MODULE_ROLES[mr.module_id] = MODULE_ROLES[mr.module_id] || []).push(mr.role_id);
 
   return {
-    DB: { v: 1, company, users, materials, components, clients, deals, payables, activity, movements },
+    DB: { v: 1, company, users, materials, components, clients, deals, payables, activity, movements, tasks },
     catalogs: { STAGES, PROD_STAGES, GLASS, OPENINGS, EXTRAS, MODULE_ROLES },
   };
 }
@@ -187,6 +190,13 @@ const apiPersist = {
     supplier: p.supplier, for_what: p.forWhat, amount: p.amount, due: p.due, status_id: apiRevId((API._cat || {}).payable_statuses, p.status),
   }}),
   deletePayable: (id) => apiFetch('payables/' + id, { method: 'DELETE' }),
+  createTask: (t) => apiFetch('tasks', { method: 'POST', body: {
+    id: t.id, deal_id: t.dealId || null, title: t.title, due: t.due || null, assignee_id: t.assignee || null, done: t.done ? 1 : 0,
+  }}),
+  saveTask: (t) => apiFetch('tasks/' + t.id, { method: 'PUT', body: {
+    title: t.title, due: t.due || null, assignee_id: t.assignee || null, done: t.done ? 1 : 0,
+  }}),
+  deleteTask: (id) => apiFetch('tasks/' + id, { method: 'DELETE' }),
   createMovement: (m) => apiFetch('warehouse_movements', { method: 'POST', body: {
     id: m.id, kind: m.kind, item_id: m.itemId, name: m.name, unit: m.unit,
     dir: m.dir, type: m.type, qty: m.qty, reason: m.reason || '',

@@ -167,6 +167,42 @@ function saveDealEdit(id){
   saveDB(); if(apiOn()) persist(API.persist.saveDeal(d));
   closeModal(); render(); toast('Сделка обновлена');
 }
+/* ====== ЗАДАЧИ / НАПОМИНАНИЯ ПО СДЕЛКАМ ====== */
+function tasksForDeal(id){ return (DB.tasks||[]).filter(t=>t.dealId===id).sort((a,b)=>(a.done-b.done)||String(a.due||'').localeCompare(String(b.due||''))); }
+function taskDayDiff(due){ if(!due) return 0; const d=new Date(due); const a=new Date(d.getFullYear(),d.getMonth(),d.getDate()); const n=new Date(SEED_NOW.getFullYear(),SEED_NOW.getMonth(),SEED_NOW.getDate()); return Math.round((a-n)/864e5); }
+function taskClass(t){ if(t.done) return {k:'done',txt:'выполнено',color:'#4ade80'}; const dd=taskDayDiff(t.due); if(dd<0) return {k:'overdue',txt:'просрочено',color:'#f87171'}; if(dd===0) return {k:'today',txt:'сегодня',color:'#fbbf24'}; if(dd===1) return {k:'soon',txt:'завтра',color:'#93c5fd'}; return {k:'upcoming',txt:'через '+dd+' дн.',color:'var(--muted)'}; }
+function taskRefresh(dealId){ if(dealId && document.getElementById('deal-tasks')) openDeal(dealId); else renderModule(); }
+function addTaskModal(dealId){
+  const d=dealById(dealId);
+  const users=DB.users.filter(u=>['director','manager','surveyor','production'].includes(u.role));
+  const opts=users.map(u=>`<option value="${u.id}"${u.id===(d&&d.manager)?' selected':''}>${u.name}</option>`).join('');
+  openModal(`<div class="modal-h">${icon('clock')}<h3>Новая задача</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">
+      <div class="fld full"><label>Что сделать</label><input id="tk-title" placeholder="напр. Перезвонить клиенту"></div>
+      <div class="fld"><label>Срок</label><input id="tk-due" type="date" value="${SEED_NOW.toISOString().slice(0,10)}"></div>
+      <div class="fld"><label>Ответственный</label><select id="tk-assignee">${opts}</select></div>
+    </div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="create-task" data-id="${dealId}">${icon('check','sm')} Добавить</button></div>`);
+}
+function createTask(dealId){
+  const v=i=>{const el=document.getElementById(i);return el?el.value.trim():'';};
+  const title=v('tk-title'); if(!title){ toast('Опишите задачу','warn'); return; }
+  const dueRaw=v('tk-due'); const due=dueRaw?new Date(dueRaw).toISOString():SEED_NOW.toISOString();
+  const assignee=v('tk-assignee')||(dealById(dealId)||{}).manager||(state.user&&state.user.id);
+  const nt={id:uid('t'),dealId,title,due,assignee,done:false};
+  DB.tasks=DB.tasks||[]; DB.tasks.push(nt);
+  saveDB(); if(apiOn()) persist(API.persist.createTask(nt));
+  closeModal(); if(dealId) openDeal(dealId); else renderModule(); toast('Задача добавлена');
+}
+function toggleTask(id){
+  const t=(DB.tasks||[]).find(x=>x.id===id); if(!t) return; t.done=!t.done;
+  saveDB(); if(apiOn()) persist(API.persist.saveTask(t)); taskRefresh(t.dealId);
+}
+function delTask(id){
+  const t=(DB.tasks||[]).find(x=>x.id===id); const dealId=t&&t.dealId;
+  DB.tasks=(DB.tasks||[]).filter(x=>x.id!==id);
+  saveDB(); if(apiOn()) persist(API.persist.deleteTask(id)); taskRefresh(dealId);
+}
 function newClientModal(){
   openModal(`<div class="modal-h">${icon('clients')}<h3>Новый клиент</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b">
@@ -924,6 +960,10 @@ document.addEventListener('click', e=>{
     case 'del-deal-confirm': delDealConfirm(id); break;
     case 'edit-deal': editDealModal(id); break;
     case 'save-deal-edit': saveDealEdit(t.dataset.id); break;
+    case 'add-task': addTaskModal(id); break;
+    case 'create-task': createTask(t.dataset.id); break;
+    case 'task-toggle': toggleTask(id); break;
+    case 'task-del': delTask(id); break;
     case 'open-client': openClient(id); clearSearch(); break;
     case 'new-client': newClientModal(); break;
     case 'create-client': createClient(); break;
