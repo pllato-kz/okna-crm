@@ -264,6 +264,55 @@ function delPayableConfirm(id){
   closeModal(); renderModule(); toast('Запись удалена');
 }
 
+/* ====== КАТАЛОГИ И ПРАЙС (стеклопакеты, открывания, опции) — только директор ====== */
+function catBody(cfg,row){ const b={id:row.id, name:row.name, sort:row.sort||0}; b[cfg.priceKey]=row[cfg.priceKey]; if(cfg.hasPer) b.per=row.per; return b; }
+function catModal(type,id){
+  if(!isDirector()) return;
+  const cfg=CATALOGS_EDIT[type]; if(!cfg) return;
+  const row=id?cfg.arr().find(x=>x.id===id):null;
+  const perRow = cfg.hasPer ? `<div class="fld"><label>Расчёт цены</label><select id="cat-per">${['шт','м','периметр'].map(o=>`<option value="${o}"${row&&row.per===o?' selected':''}>${o==='шт'?'за штуку':o==='м'?'за пог.м':'по периметру'}</option>`).join('')}</select></div>` : '';
+  openModal(`<div class="modal-h">${icon('money')}<h3>${row?'Изменить — '+cfg.title.toLowerCase():cfg.title+': добавить'}</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">
+      <div class="fld full"><label>Наименование</label><input id="cat-name" value="${row?escA(row.name):''}" placeholder="напр. Двухкамерный 32мм"></div>
+      <div class="fld"><label>Цена, ${cfg.unit}</label><input id="cat-price" type="number" min="0" value="${row?row[cfg.priceKey]:''}"></div>
+      ${perRow}
+    </div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="cat-save" data-type="${type}"${row?` data-id="${row.id}"`:''}>${icon('check','sm')} Сохранить</button></div>`);
+}
+function catSave(type,id){
+  if(!isDirector()) return;
+  const cfg=CATALOGS_EDIT[type]; if(!cfg) return; const arr=cfg.arr();
+  const v=i=>{const el=document.getElementById(i);return el?el.value.trim():'';};
+  const name=v('cat-name'); if(!name){ toast('Укажите наименование','warn'); return; }
+  const price=Math.max(0,Math.round(parseFloat(v('cat-price'))||0));
+  let row;
+  if(id){ row=arr.find(x=>x.id===id); if(!row) return; row.name=name; row[cfg.priceKey]=price; if(cfg.hasPer) row.per=v('cat-per')||'шт'; }
+  else { row={id:uid(cfg.prefix), name, sort:arr.length}; row[cfg.priceKey]=price; if(cfg.hasPer) row.per=v('cat-per')||'шт'; arr.push(row); }
+  saveDB();
+  if(apiOn()) persist(id ? API.fetch(cfg.api+'/'+id,{method:'PUT',body:catBody(cfg,row)}) : API.fetch(cfg.api,{method:'POST',body:catBody(cfg,row)}));
+  closeModal(); render(); toast(id?'Сохранено':'Добавлено');
+}
+function catDelModal(type,id){
+  if(!isDirector()) return;
+  const cfg=CATALOGS_EDIT[type]; if(!cfg) return; const row=cfg.arr().find(x=>x.id===id); if(!row) return;
+  if(cfg.usedBy(id)){
+    openModal(`<div class="modal-h">${icon('alert')}<h3>Нельзя удалить</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+      <div class="modal-b"><p style="margin:0;color:var(--muted);line-height:1.5">«${escA(row.name)}» используется в сделках. Сначала измените эти конструкции, потом можно будет удалить позицию.</p></div>
+      <div class="modal-f"><button class="btn" data-act="close-modal">Понятно</button></div>`);
+    return;
+  }
+  openModal(`<div class="modal-h">${icon('trash')}<h3>Удалить из каталога?</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><p style="margin:0;color:var(--muted)">«${escA(row.name)}». Действие необратимо.</p></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="cat-del-confirm" data-type="${type}" data-id="${id}">${icon('trash','sm')} Удалить</button></div>`);
+}
+function catDelConfirm(type,id){
+  if(!isDirector()) return;
+  const cfg=CATALOGS_EDIT[type]; if(!cfg) return; const arr=cfg.arr();
+  const i=arr.findIndex(x=>x.id===id); if(i>=0) arr.splice(i,1);
+  saveDB(); if(apiOn()) persist(API.fetch(cfg.api+'/'+id,{method:'DELETE'}));
+  closeModal(); render(); toast('Удалено из каталога');
+}
+
 /* warehouse — приход (пополнение) */
 function whReceiveModal(id, kind){
   const it = kind==='mat' ? matById(id) : compById(id);
@@ -774,6 +823,11 @@ document.addEventListener('click', e=>{
     case 'new-deal': newDealModal(); break;
     case 'create-deal': createDeal(); break;
     case 'export': doExport(t.dataset.what); break;
+    case 'cat-add': catModal(t.dataset.type, null); break;
+    case 'cat-edit': catModal(t.dataset.type, id); break;
+    case 'cat-save': catSave(t.dataset.type, t.dataset.id||null); break;
+    case 'cat-del': catDelModal(t.dataset.type, id); break;
+    case 'cat-del-confirm': catDelConfirm(t.dataset.type, id); break;
     case 'new-payable': payableModal(null); break;
     case 'edit-payable': payableModal(id); break;
     case 'save-payable': savePayable(t.dataset.id||null); break;
