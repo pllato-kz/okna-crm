@@ -30,8 +30,8 @@ input,select,textarea{font-family:inherit}
 .svg-i.lg{width:22px;height:22px}
 
 /* ====== LOGIN ====== */
-.login-wrap{min-height:100vh;display:grid;place-items:center;padding:24px}
-.login-card{width:100%;max-width:920px;background:linear-gradient(180deg,var(--panel2),var(--panel));
+.login-wrap{min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:24px;overflow-y:auto}
+.login-card{width:100%;max-width:920px;margin:auto;background:linear-gradient(180deg,var(--panel2),var(--panel));
   border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow-lg);overflow:hidden;
   display:grid;grid-template-columns:1fr 1fr}
 .login-side{padding:42px 38px;background:
