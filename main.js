@@ -159,6 +159,27 @@ function createClient(){
   DB.clients.unshift(nc);
   saveDB(); if(apiOn()) persist(API.persist.createClient(nc)); closeModal(); renderModule(); toast('Клиент добавлен');
 }
+function editClientModal(id){
+  const cl=clientById(id); if(!cl) return;
+  const types=['Физ. лицо','Юр. лицо'];
+  const opts=types.map(t=>`<option value="${t}"${cl.type===t?' selected':''}>${t}</option>`).join('');
+  openModal(`<div class="modal-h">${icon('clients')}<h3>Изменить клиента</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">
+      <div class="fld full"><label>Имя / организация</label><input id="ec-name" value="${escA(cl.name)}"></div>
+      <div class="fld"><label>Телефон</label><input id="ec-phone" value="${escA(cl.phone||'')}"></div>
+      <div class="fld"><label>Тип</label><select id="ec-type">${opts}</select></div>
+      <div class="fld full"><label>Адрес</label><input id="ec-addr" value="${escA(cl.address||'')}"></div>
+    </div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="save-client" data-id="${id}">${icon('check','sm')} Сохранить</button></div>`);
+}
+function saveClient(id){
+  const cl=clientById(id); if(!cl) return;
+  const v=i=>{const el=document.getElementById(i);return el?el.value.trim():'';};
+  const name=v('ec-name'); if(!name){ toast('Укажите имя','warn'); return; }
+  cl.name=name; cl.phone=v('ec-phone')||'—'; cl.address=v('ec-addr')||cl.address; cl.type=v('ec-type')||cl.type;
+  saveDB(); if(apiOn()) persist(API.persist.saveClient(cl));
+  closeModal(); render(); toast('Клиент обновлён');
+}
 function delClientModal(id){
   const cl=clientById(id); if(!cl) return;
   const deals=DB.deals.filter(d=>d.clientId===id);
@@ -766,6 +787,8 @@ document.addEventListener('click', e=>{
     case 'create-client': createClient(); break;
     case 'del-client': delClientModal(id); break;
     case 'del-client-confirm': delClientConfirm(id); break;
+    case 'edit-client': editClientModal(id); break;
+    case 'save-client': saveClient(t.dataset.id); break;
     case 'wa-deal': waSendModal(null, id); break;
     case 'wa-client': waSendModal(id, null); break;
     case 'wa-send': waDoSend(t.dataset.id||null, t.dataset.deal||null); break;
