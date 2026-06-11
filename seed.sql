@@ -68,7 +68,7 @@ INSERT INTO payable_statuses(id,name) VALUES ('await','ожидает'),('overdu
 INSERT INTO activity_kinds(id,name) VALUES ('money','Оплата'),('measure','Замер'),('funnel','Воронка'),('prod','Производство'),('lead','Лид'),('wh','Склад');
 
 -- ============ B. ДЕМО-ДАННЫЕ ============
-INSERT INTO company(id,name,legal,city,phone,workshop,revenue_year) VALUES ('main','Ocean Glass','ОсОО «Ocean Glass»','Ош','+996 995 031 003','цех 8 человек · 3 сборщика · бригада монтажа','≈ 1 млн $/год');
+INSERT INTO company(id,name,legal,city,phone,workshop,revenue_year) VALUES ('main','Ocean Glass','ОсОО «Ocean Glass»','Ош','+996 995 031 003','Ноокатский тракт 6-км · завод закалки стекла, окна, фасады, перегородки','≈ 1 млн $/год');
 INSERT INTO users(id,name,email,password_hash,role_id,title,is_primary) VALUES ('u_isk','Исхак Сапаров','director@okna.kz','pbkdf2$100000$EQVwy6e1Q5qmVHpTuspE_w$ggqLqpSEeDyvNcaqK6JAWBqYO7Cyoj9xnoyHYdEAAlU','director','Директор',1);
 INSERT INTO users(id,name,email,password_hash,role_id,title,is_primary) VALUES ('u_pm','Платон Цай','manager@okna.kz','pbkdf2$100000$DhHsl0FTjdQSQfG8DbupmQ$tJVjr1gmjhiq6Hy_O3OuNJm1yEKg_fmYyiop6D9ORZQ','manager','Менеджер по продажам',1);
 INSERT INTO users(id,name,email,password_hash,role_id,title,is_primary) VALUES ('u_ps','Данияр Оспанов','surveyor@okna.kz','pbkdf2$100000$ZqnVvOzHLskhqCSfBxgRdg$nfwTluUolRExKQz6N3U2obxZ7Qk0ofJy6dqWGozzrPk','surveyor','Замерщик',1);
