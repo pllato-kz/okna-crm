@@ -368,6 +368,24 @@ function renderSettings(){
       : `<td style="text-align:center">${inner}</td>`;}).join('')}</tr>`).join('');
   const coEdit = dir ? `<button class="btn sm ghost" style="margin-left:auto" data-act="edit-company">${icon('edit','sm')} Изменить</button>` : '';
   const usAdd  = dir ? `<button class="btn sm" style="margin-left:auto" data-act="add-user">${icon('plus','sm')} Добавить</button>` : '';
+  const wa = (typeof waConfig==='object'&&waConfig) ? waConfig : {configured:false,enabled:false,idInstance:''};
+  const waOn = wa.enabled && wa.configured;
+  const waPanel = dir ? `
+  <div class="panel section-gap"><div class="panel-h">${icon('wa')}<h3>WhatsApp · Green API</h3>
+    <span class="ph-sub">${waOn?'<span class="tag green">подключено</span>':(wa.configured?'<span class="tag amber">выключено</span>':'<span class="tag">не настроено</span>')}</span></div>
+    <div class="panel-b">
+      <div class="constr-body" style="padding:0">
+        <div class="fld"><label>idInstance</label><input id="wa-id" value="${escA(wa.idInstance||'')}" placeholder="напр. 1101000001"></div>
+        <div class="fld"><label>apiTokenInstance</label><input id="wa-token" type="password" placeholder="${wa.configured?'•••••••• (задан, оставьте пустым чтобы не менять)':'вставьте токен'}"></div>
+        <div class="fld full"><label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--txt);text-transform:none"><input type="checkbox" id="wa-enabled" ${wa.enabled?'checked':''} style="width:auto"> Включить отправку сообщений через Green API</label></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center">
+        <button class="btn primary" data-act="wa-save-config">${icon('check','sm')} Сохранить</button>
+        <button class="btn" data-act="wa-check">${icon('refresh','sm')} Проверить подключение</button>
+        <span id="wa-status" class="muted2" style="font-size:12px"></span>
+      </div>
+      <div class="muted2" style="font-size:11.5px;margin-top:10px;line-height:1.5">Данные инстанса — в личном кабинете Green API (idInstance и apiTokenInstance). Токен хранится на сервере и в браузер не передаётся. Когда инстанс готов и переключатель включён — кнопки «Написать в WhatsApp» отправляют сообщения реально.</div>
+    </div></div>` : '';
   return `
   <div class="grid-2b">
     <div class="panel"><div class="panel-h">${icon('settings')}<h3>Компания</h3>${coEdit}</div><div class="panel-b">
@@ -382,6 +400,7 @@ function renderSettings(){
   </div>
   <div class="panel section-gap"><div class="panel-h">${icon('shield')}<h3>Права доступа</h3><span class="ph-sub">${dir?'нажмите на ячейку, чтобы открыть/закрыть доступ роли к модулю':'кто что видит — сборщики и склад не видят финансы'}</span></div>
     <div class="tbl-scroll"><table class="tbl perm-tbl"><thead>${permHead}</thead><tbody>${permRows}</tbody></table></div></div>
+  ${waPanel}
   <div class="panel section-gap"><div class="panel-h">${icon('refresh')}<h3>Демо-данные</h3></div><div class="panel-b">
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><span class="muted" style="font-size:13px">Сбросить все изменения и вернуть исходные демо-данные.</span>
     <button class="btn danger" data-act="reset">${icon('refresh','sm')} Сбросить демо</button></div></div></div>`;

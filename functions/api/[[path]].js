@@ -241,6 +241,67 @@ export async function onRequest(context) {
       return d ? ok(d) : fail(404, 'Сделка не найдена');
     }
 
+    // ---- WhatsApp / Green API ----
+    if (segs[0] === 'wa') {
+      const getCfg = async () => await env.DB.prepare(`SELECT * FROM wa_config WHERE id = 'main'`).first();
+
+      // GET /api/wa/config — НИКОГДА не отдаёт api_token (только факт, что он задан)
+      if (segs[1] === 'config' && method === 'GET') {
+        const c = await getCfg();
+        return ok({ idInstance: (c && c.id_instance) || '', enabled: !!(c && c.enabled), configured: !!(c && c.id_instance && c.api_token) });
+      }
+      // PUT /api/wa/config — только директор. Пустой apiToken = не менять токен.
+      if (segs[1] === 'config' && (method === 'PUT' || method === 'POST')) {
+        if (context.auth.role !== 'director') return fail(403, 'Изменять может только директор');
+        const b = await readBody(request);
+        const cur = await getCfg();
+        const idInstance = (b.idInstance != null ? String(b.idInstance).trim() : (cur && cur.id_instance) || '');
+        const token = (b.apiToken != null && String(b.apiToken).trim() !== '') ? String(b.apiToken).trim() : ((cur && cur.api_token) || '');
+        const enabled = b.enabled ? 1 : 0;
+        await env.DB.prepare(`INSERT INTO wa_config (id, id_instance, api_token, enabled, updated_at) VALUES ('main', ?, ?, ?, datetime('now'))
+          ON CONFLICT(id) DO UPDATE SET id_instance = excluded.id_instance, api_token = excluded.api_token, enabled = excluded.enabled, updated_at = excluded.updated_at`)
+          .bind(idInstance, token, enabled).run();
+        return ok({ idInstance, enabled: !!enabled, configured: !!(idInstance && token) });
+      }
+      // GET /api/wa/status — состояние инстанса в Green API
+      if (segs[1] === 'status' && method === 'GET') {
+        const c = await getCfg();
+        if (!c || !c.id_instance || !c.api_token) return ok({ configured: false });
+        try {
+          const r = await fetch(`https://api.green-api.com/waInstance${c.id_instance}/getStateInstance/${c.api_token}`);
+          const d = await r.json().catch(() => null);
+          return ok({ configured: true, ok: r.ok, stateInstance: d && d.stateInstance });
+        } catch (e) { return ok({ configured: true, ok: false, error: (e && e.message) || 'нет связи' }); }
+      }
+      // POST /api/wa/send — отправка сообщения (любой авторизованный)
+      if (segs[1] === 'send' && method === 'POST') {
+        const c = await getCfg();
+        if (!c || !c.enabled) return fail(400, 'WhatsApp-интеграция выключена');
+        if (!c.id_instance || !c.api_token) return fail(400, 'Не заданы данные инстанса Green API');
+        const b = await readBody(request);
+        const message = String(b.message || '').trim();
+        if (!message) return fail(400, 'Пустое сообщение');
+        let chatId = b.chatId ? String(b.chatId) : '';
+        if (!chatId) {
+          let digits = String(b.phone || '').replace(/\D/g, '');
+          if (digits.length === 11 && digits[0] === '8') digits = '7' + digits.slice(1);
+          if (!digits) return fail(400, 'Не указан номер получателя');
+          chatId = digits + '@c.us';
+        }
+        let res;
+        try {
+          res = await fetch(`https://api.green-api.com/waInstance${c.id_instance}/sendMessage/${c.api_token}`, {
+            method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chatId, message }),
+          });
+        } catch (e) { return fail(502, 'Green API недоступен: ' + ((e && e.message) || '')); }
+        const txt = await res.text();
+        let data = null; try { data = JSON.parse(txt); } catch (_) { data = txt; }
+        if (!res.ok) return fail(502, 'Green API: ' + (data && data.message ? data.message : (typeof data === 'string' ? data : JSON.stringify(data))));
+        return ok({ sent: true, chatId, idMessage: data && data.idMessage });
+      }
+      return fail(404, 'Неизвестный метод wa');
+    }
+
     // generic CRUD по реестру таблиц
     const resource = segs[0];
     const def = TABLES[resource];

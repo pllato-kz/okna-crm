@@ -10,6 +10,7 @@ async function bootFromApi(){
   DB = mapped.DB;            // данные с сервера в формате фронта
   applyServerCatalogs(mapped.catalogs); // справочники и права с сервера → живые глобали
   API.enabled = true;        // включаем запись на сервер
+  try { waConfig = await API.wa.getConfig(); } catch(e){ waConfig = { configured:false, enabled:false, idInstance:'' }; }
   return mapped;
 }
 /* Заменяет содержимое глобальных справочников-констант данными с сервера
@@ -324,6 +325,75 @@ function togglePerm(mod, role){
   renderModule();
 }
 
+/* ============ WHATSAPP (Green API) ============ */
+function waPreset(cl, d){
+  const co=DB.company.name;
+  if(d && (d.sum || (d.items||[]).length)){ const k=computeMeasure(d);
+    return `${cl.name}, здравствуйте! Это ${co}. Подготовили коммерческое предложение по вашим окнам на сумму ${money(k.total)}. Для запуска заказа предоплата — ${money(k.prepay)}. С радостью ответим на вопросы.`; }
+  return `${cl.name}, здравствуйте! Это ${co}. Спасибо за обращение — готовы помочь с расчётом и замером по вашим окнам.`;
+}
+function waSendModal(clientId, dealId){
+  const d = dealId ? dealById(dealId) : null;
+  const cl = clientId ? clientById(clientId) : (d ? clientById(d.clientId) : null);
+  if(!cl){ toast('Клиент не найден','warn'); return; }
+  const preset = waPreset(cl, d);
+  let notice='';
+  if(!apiOn()){
+    notice = `<div class="muted2" style="font-size:11.5px;margin-top:10px;line-height:1.5;color:#fbbf24">Демо-режим: реальная отправка доступна после входа по логину и подключения Green API в Настройках.</div>`;
+  } else if(!(waConfig && waConfig.enabled && waConfig.configured)){
+    notice = `<div class="muted2" style="font-size:11.5px;margin-top:10px;line-height:1.5;color:#fbbf24">WhatsApp не подключён. Директор может подключить инстанс в Настройки → WhatsApp · Green API.</div>`;
+  }
+  openModal(`<div class="modal-h">${icon('wa')}<div><h3>Сообщение в WhatsApp</h3><div class="mh-sub">${cl.name} · ${cl.phone}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b">
+      <div class="fld full"><label>Текст сообщения</label><textarea id="wa-msg" rows="5" style="background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--txt);font-family:inherit;font-size:13.5px;resize:vertical">${escA(preset)}</textarea></div>
+      ${notice}
+    </div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button>
+      <button class="btn green" data-act="wa-send" data-id="${clientId||''}" data-deal="${dealId||''}">${icon('send','sm')} Отправить</button></div>`);
+}
+function logWaActivity(cl){
+  if(!cl) return;
+  DB.activity.unshift({who:(state.user&&state.user.id)||null, text:`Отправлено сообщение в WhatsApp — ${cl.name}`, at:SEED_NOW.toISOString(), kind:'lead'});
+  saveDB(); if(apiOn()) persist(API.persist.createActivity(DB.activity[0]));
+}
+function waDoSend(clientId, dealId){
+  const d = dealId ? dealById(dealId) : null;
+  const cl = clientId ? clientById(clientId) : (d ? clientById(d.clientId) : null);
+  const msg=((document.getElementById('wa-msg')||{}).value||'').trim();
+  if(!msg){ toast('Пустое сообщение','warn'); return; }
+  if(!apiOn()){ closeModal(); logWaActivity(cl); toast('Демо: сообщение «отправлено» в WhatsApp'); return; }
+  if(!(waConfig && waConfig.enabled && waConfig.configured)){ toast('WhatsApp не подключён — настройте в Настройках','warn'); return; }
+  if(!cl || !cl.phone){ toast('У клиента нет номера телефона','warn'); return; }
+  const btn=document.querySelector('[data-act="wa-send"]'); if(btn){ btn.disabled=true; btn.textContent='Отправляем…'; }
+  API.wa.send(cl.phone, msg, dealId?{dealId}:{}).then(()=>{
+    closeModal(); logWaActivity(cl); toast(`Сообщение отправлено в WhatsApp — ${cl.name}`);
+  }).catch(e=>{
+    if(btn){ btn.disabled=false; btn.innerHTML=`${icon('send','sm')} Отправить`; }
+    toast('Не отправлено: '+((e&&e.message)||''),'warn');
+  });
+}
+/* настройки интеграции */
+function waSaveConfig(){
+  if(!isDirector()){ return; }
+  const idInstance=((document.getElementById('wa-id')||{}).value||'').trim();
+  const apiToken=((document.getElementById('wa-token')||{}).value||'').trim();
+  const enabled=!!(document.getElementById('wa-enabled')||{}).checked;
+  if(!apiOn()){ toast('Подключение доступно только в серверном режиме (вход по логину)','warn'); return; }
+  if(enabled && !idInstance && !(waConfig&&waConfig.configured)){ toast('Укажите idInstance','warn'); return; }
+  API.wa.saveConfig({idInstance, apiToken, enabled}).then(c=>{ waConfig=c; render(); toast('Настройки WhatsApp сохранены'); })
+    .catch(e=>toast('Не сохранено: '+((e&&e.message)||''),'warn'));
+}
+function waCheck(){
+  const el=document.getElementById('wa-status'); if(el) el.textContent='Проверяем…';
+  if(!apiOn()){ if(el) el.textContent='доступно только в серверном режиме'; return; }
+  API.wa.status().then(s=>{
+    if(!el) return;
+    if(!s.configured){ el.textContent='инстанс не задан'; el.style.color='var(--muted)'; return; }
+    if(s.stateInstance==='authorized'){ el.textContent='✓ авторизован (готов к отправке)'; el.style.color='#4ade80'; }
+    else { el.textContent='состояние: '+(s.stateInstance||s.error||'нет связи'); el.style.color='#fbbf24'; }
+  }).catch(e=>{ if(el){ el.textContent='ошибка: '+((e&&e.message)||''); el.style.color='#f87171'; } });
+}
+
 /* ============ ССЫЛКА ДЛЯ КЛИЕНТА ============ */
 function sharePick(t){
   document.querySelectorAll('.share-opt').forEach(b=>b.classList.remove('on'));
@@ -413,7 +483,11 @@ document.addEventListener('click', e=>{
     case 'open-client': openClient(id); clearSearch(); break;
     case 'new-client': newClientModal(); break;
     case 'create-client': createClient(); break;
-    case 'wa-deal': case 'wa-client': toast('Сообщение клиенту отправлено в WhatsApp (демо)'); break;
+    case 'wa-deal': waSendModal(null, id); break;
+    case 'wa-client': waSendModal(id, null); break;
+    case 'wa-send': waDoSend(t.dataset.id||null, t.dataset.deal||null); break;
+    case 'wa-save-config': waSaveConfig(); break;
+    case 'wa-check': waCheck(); break;
     case 'add-payment': addPaymentModal(id); break;
     case 'confirm-payment': confirmPayment(id); break;
     case 'm-pick': state.measureDealId=id; renderModule(); break;
