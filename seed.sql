@@ -201,7 +201,7 @@ INSERT INTO payables(id,supplier,for_what,amount,due,status_id) VALUES ('pay2','
 INSERT INTO payables(id,supplier,for_what,amount,due,status_id) VALUES ('pay3','Стеклопакет-Сервис','Стеклопакеты (партия)',540000,'2026-05-26T11:00:00.000Z','overdue');
 INSERT INTO payables(id,supplier,for_what,amount,due,status_id) VALUES ('pay4','MACO KZ','Фурнитура',320000,'2026-06-10T11:00:00.000Z','await');
 INSERT INTO payables(id,supplier,for_what,amount,due,status_id) VALUES ('pay5','Аренда цеха','Аренда, май',450000,'2026-05-30T11:00:00.000Z','await');
-INSERT INTO activity(id,user_id,text,kind_id,at) VALUES ('a1','u_pm','Принял предоплату 110 000 ₸ по сделке «Жанна Калиева»','money','2026-05-28T11:00:00.000Z');
+INSERT INTO activity(id,user_id,text,kind_id,at) VALUES ('a1','u_pm','Принял предоплату 110 000 сом по сделке «Жанна Калиева»','money','2026-05-28T11:00:00.000Z');
 INSERT INTO activity(id,user_id,text,kind_id,at) VALUES ('a2','u_ps','Завершил замер по адресу ул. Тарана 58','measure','2026-05-28T11:00:00.000Z');
 INSERT INTO activity(id,user_id,text,kind_id,at) VALUES ('a3','u_isk','Сделка ТОО «СтройДом» переведена в «Аванс»','funnel','2026-05-26T11:00:00.000Z');
 INSERT INTO activity(id,user_id,text,kind_id,at) VALUES ('a4','u_as','Заказ «Канат Жумабеков» переведён в «Сборка»','prod','2026-05-27T11:00:00.000Z');
@@ -216,7 +216,7 @@ INSERT INTO warehouse_movements(id,kind,item_id,name,unit,dir,type,qty,reason,ba
 
 -- WhatsApp: демо-переписка (двусторонний чат)
 INSERT INTO wa_messages(id,chat_id,client_id,direction,text,sender_name,status,ts,at) VALUES ('wamsg_d1','77053182241@c.us','cl1','in','Здравствуйте! Сколько будет стоить остеклить балкон 3 метра?','Айгуль',NULL,1748500200,'2026-05-29T09:30:00.000Z');
-INSERT INTO wa_messages(id,chat_id,client_id,direction,text,sender_name,status,ts,at) VALUES ('wamsg_d2','77053182241@c.us','cl1','out','Айгуль, здравствуйте! Это Тёплый Контур. Ориентировочно от 180 000 ₸, точнее посчитаем на замере. Когда удобно?','Менеджер','read',1748500800,'2026-05-29T09:40:00.000Z');
+INSERT INTO wa_messages(id,chat_id,client_id,direction,text,sender_name,status,ts,at) VALUES ('wamsg_d2','77053182241@c.us','cl1','out','Айгуль, здравствуйте! Это Тёплый Контур. Ориентировочно от 180 000 сом, точнее посчитаем на замере. Когда удобно?','Менеджер','read',1748500800,'2026-05-29T09:40:00.000Z');
 INSERT INTO wa_messages(id,chat_id,client_id,direction,text,sender_name,status,ts,at) VALUES ('wamsg_d3','77053182241@c.us','cl1','in','Давайте завтра после обеда','Айгуль',NULL,1748501400,'2026-05-29T09:50:00.000Z');
 INSERT INTO wa_messages(id,chat_id,client_id,direction,text,sender_name,status,ts,at) VALUES ('wamsg_d4','77053182241@c.us','cl1','out','Отлично, записал замерщика на завтра 14:00. Пришлю КП сразу после замера.','Менеджер','delivered',1748501700,'2026-05-29T09:55:00.000Z');
 INSERT INTO wa_messages(id,chat_id,client_id,direction,text,sender_name,status,ts,at) VALUES ('wamsg_e1','77142391170@c.us','cl4','in','Добрый день! По объекту — когда планируете монтаж?','СтройДом',NULL,1748430600,'2026-05-28T11:10:00.000Z');
