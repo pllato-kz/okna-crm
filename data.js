@@ -234,6 +234,9 @@ function buildSeed(){
     {id:'wamsg_d2', clientId:'cl1', dir:'out', text:'Айгуль, здравствуйте! Это Тёплый Контур. Ориентировочно от 180 000 ₸, точнее посчитаем на замере. Когда удобно?', status:'read',     at:'2026-05-29T09:40:00.000Z'},
     {id:'wamsg_d3', clientId:'cl1', dir:'in',  text:'Давайте завтра после обеда', status:null,                                          at:'2026-05-29T09:50:00.000Z'},
     {id:'wamsg_d4', clientId:'cl1', dir:'out', text:'Отлично, записал замерщика на завтра 14:00. Пришлю КП сразу после замера.', status:'delivered', at:'2026-05-29T09:55:00.000Z'},
+    {id:'wamsg_e1', clientId:'cl4', dir:'in',  text:'Добрый день! По объекту — когда планируете монтаж?', status:null,      at:'2026-05-28T11:10:00.000Z'},
+    {id:'wamsg_e2', clientId:'cl4', dir:'out', text:'Здравствуйте! Аванс получили, профиль уже в цеху. Монтаж ориентировочно через 10 дней — подтвердим точную дату.', status:'read', at:'2026-05-28T11:20:00.000Z'},
+    {id:'wamsg_e3', clientId:'cl4', dir:'in',  text:'Отлично, ждём!', status:null, at:'2026-05-28T11:25:00.000Z'},
   ];
 
   return { v:1, company, users, materials, components, clients, deals, payables, activity, movements, waMessages };

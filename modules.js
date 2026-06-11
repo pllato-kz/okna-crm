@@ -157,7 +157,8 @@ function openDeal(id){
       <div class="fld full" style="margin-bottom:6px"><label>Сменить стадию</label><div class="chips">${stageOpts}</div></div>
     </div>
     <div class="modal-f">
-      <button class="btn" data-act="wa-deal" data-id="${d.id}">${icon('wa','sm')} Написать в WhatsApp</button>
+      <button class="btn green" data-act="wa-deal-chat" data-id="${d.id}">${icon('wa','sm')} Чат WhatsApp</button>
+      <button class="btn" data-act="wa-deal" data-id="${d.id}">${icon('send','sm')} Быстрое сообщение</button>
       ${d.stage==='measure'?`<button class="btn primary" data-act="go-measure-deal" data-id="${d.id}">${icon('ruler','sm')} Открыть замер</button>`:''}
       ${canMoney&&debt>0?`<button class="btn green" data-act="add-payment" data-id="${d.id}">${icon('money','sm')} Принять оплату</button>`:''}
     </div>
