@@ -299,7 +299,7 @@ function renderFinance(){
     <button class="tab ${tab==='pl'?'on':''}" data-act="fin-tab" data-v="pl">Отчётность</button></div>`;
   const debtors=DB.deals.filter(d=>dealDebt(d)>0 && d.sum>0);
   const totalDebt=debtors.reduce((s,d)=>s+dealDebt(d),0);
-  const totalPay=DB.payables.reduce((s,p)=>s+p.amount,0);
+  const totalPay=DB.payables.filter(p=>p.status!=='оплачено').reduce((s,p)=>s+p.amount,0);
   let body;
   if(tab==='recv'){
     const rows=debtors.map(d=>{const cl=clientById(d.clientId); const debt=dealDebt(d); const paid=dealPaid(d);
@@ -312,10 +312,17 @@ function renderFinance(){
         <td><button class="btn green sm" data-act="add-payment" data-id="${d.id}">${icon('money','sm')} Оплата</button></td></tr>`;}).join('');
     body=`<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Клиент</th><th>Стадия</th><th class="num">Заказ</th><th class="num">Оплачено</th><th class="num">Долг</th><th>Статус</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan=7 class="muted" style="text-align:center;padding:30px">Дебиторки нет</td></tr>'}</tbody></table></div>`;
   } else if(tab==='pay'){
-    const rows=DB.payables.map(p=>`<tr><td style="font-weight:600">${p.supplier}</td><td class="muted">${p.forWhat}</td>
-      <td class="num" style="font-weight:700">${money(p.amount)}</td><td class="muted">${dateFull(p.due)}</td>
-      <td>${p.status==='просрочено'?'<span class="tag red">просрочено</span>':'<span class="tag amber">ожидает</span>'}</td></tr>`).join('');
-    body=`<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Поставщик</th><th>За что</th><th class="num">Сумма</th><th>Срок</th><th>Статус</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    const rows=DB.payables.map(p=>{
+      const stt=p.status==='оплачено'?'<span class="tag green">оплачено</span>':(p.status==='просрочено'?'<span class="tag red">просрочено</span>':'<span class="tag amber">ожидает</span>');
+      return `<tr style="${p.status==='оплачено'?'opacity:.6':''}"><td style="font-weight:600">${p.supplier}</td><td class="muted">${p.forWhat||''}</td>
+      <td class="num" style="font-weight:700">${money(p.amount)}</td><td class="muted">${p.due?dateFull(p.due):'—'}</td>
+      <td>${stt}</td>
+      <td class="row-acts" style="white-space:nowrap;text-align:right">
+        ${p.status!=='оплачено'?`<button class="btn sm green" data-act="payable-paid" data-id="${p.id}" title="Отметить оплаченным">${icon('check','sm')}</button>`:''}
+        <button class="btn sm ghost" data-act="edit-payable" data-id="${p.id}" title="Изменить">${icon('edit','sm')}</button>
+        <button class="btn sm ghost" data-act="del-payable" data-id="${p.id}" title="Удалить">${icon('trash','sm')}</button></td></tr>`;}).join('')
+      ||'<tr><td colspan=6 class="muted" style="text-align:center;padding:30px">Кредиторки нет</td></tr>';
+    body=`<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Поставщик</th><th>За что</th><th class="num">Сумма</th><th>Срок</th><th>Статус</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
   } else {
     const revenue=DB.deals.reduce((s,d)=>s+dealPaid(d),0);
     const orders=DB.deals.filter(d=>d.sum>0).reduce((s,d)=>s+d.sum,0);
@@ -342,7 +349,9 @@ function renderFinance(){
     ${kpi({icon:'doc',label:'Мы должны (кредиторка)',value:moneyK(totalPay),color:'#dc2626',soft:'var(--red-soft)',sub:DB.payables.length+' поставщиков'})}
     ${kpi({icon:'trend',label:'Сальдо',value:moneyK(totalDebt-totalPay),color:(totalDebt-totalPay)>=0?'#16a34a':'#dc2626'})}
   </div>
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">${tabs}<button class="btn sm" style="margin-left:auto" data-act="export" data-what="finance">${icon('doc','sm')} Экспорт</button></div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">${tabs}
+    ${tab==='pay'?`<button class="btn primary sm" data-act="new-payable">${icon('plus','sm')} Добавить долг</button>`:''}
+    <button class="btn sm" style="margin-left:auto" data-act="export" data-what="finance">${icon('doc','sm')} Экспорт</button></div>
   <div class="panel">${body}</div>`;
 }
 
