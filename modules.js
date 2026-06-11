@@ -6,7 +6,7 @@ function renderDashboard(){
   const revenue=DB.deals.reduce((s,d)=>s+dealPaid(d),0);
   const monthRevenue=DB.deals.reduce((s,d)=>s+(d.payments||[]).filter(p=>(SEED_NOW-new Date(p.date))<32*864e5).reduce((a,p)=>a+p.amount,0),0);
   const debt=deals.reduce((s,d)=>s+dealDebt(d),0);
-  const payable=DB.payables.reduce((s,p)=>s+p.amount,0);
+  const payable=DB.payables.filter(p=>p.status!=='оплачено').reduce((s,p)=>s+p.amount,0);
   const activeLeads=deals.filter(d=>!['done'].includes(d.stage)).length;
   const conv=Math.round(won.length/Math.max(1,deals.length)*100);
   const avg=Math.round(won.reduce((s,d)=>s+(d.sum||0),0)/Math.max(1,won.length));
