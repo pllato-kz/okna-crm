@@ -407,6 +407,15 @@ export async function onRequest(context) {
     if (!def) return fail(404, `Неизвестный ресурс: ${resource}`);
     const id = segs[1];
 
+    // удаление сделки: явная чистка детей (позиции, опции, оплаты) — не полагаемся на каскад
+    if (resource === 'deals' && method === 'DELETE' && id) {
+      await env.DB.prepare(`DELETE FROM deal_item_extras WHERE item_id IN (SELECT id FROM deal_items WHERE deal_id = ?)`).bind(id).run();
+      await env.DB.prepare(`DELETE FROM deal_items WHERE deal_id = ?`).bind(id).run();
+      await env.DB.prepare(`DELETE FROM payments WHERE deal_id = ?`).bind(id).run();
+      await env.DB.prepare(`DELETE FROM deals WHERE id = ?`).bind(id).run();
+      return ok({ deleted: true });
+    }
+
     // удаление клиента: блок при наличии сделок (FK) + чистка переписки
     if (resource === 'clients' && method === 'DELETE' && id) {
       const cnt = await env.DB.prepare(`SELECT COUNT(*) AS n FROM deals WHERE client_id = ?`).bind(id).first();
