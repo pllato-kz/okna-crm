@@ -181,6 +181,22 @@ function delClientConfirm(id){
   if(apiOn()) persist(API.fetch('clients/'+id, {method:'DELETE'}));
   closeModal(); renderModule(); toast('Клиент удалён');
 }
+function delDealModal(id){
+  const d=dealById(id); if(!d) return; const cl=clientById(d.clientId);
+  const paid=dealPaid(d);
+  const warn = paid>0 ? `<br><span style="color:#fbbf24">Внимание: по сделке есть оплаты на ${money(paid)} — они тоже будут удалены.</span>` : '';
+  openModal(`<div class="modal-h">${icon('trash')}<h3>Удалить сделку?</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><p style="margin:0;color:var(--muted);line-height:1.55">${cl?escA(cl.name):'—'} · ${stageById(d.stage).name}${d.sum?' · '+money(d.sum):''}.<br>Будут удалены конструкции и оплаты сделки. Действие необратимо.${warn}</p></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="del-deal-confirm" data-id="${id}">${icon('trash','sm')} Удалить</button></div>`);
+}
+function delDealConfirm(id){
+  const d=dealById(id); if(!d) return;
+  DB.deals=DB.deals.filter(x=>x.id!==id);
+  if(state.measureDealId===id) state.measureDealId=null;
+  saveDB();
+  if(apiOn()) persist(API.fetch('deals/'+id, {method:'DELETE'}));
+  closeModal(); render(); toast('Сделка удалена');
+}
 
 /* warehouse — приход (пополнение) */
 function whReceiveModal(id, kind){
@@ -627,6 +643,8 @@ document.addEventListener('click', e=>{
     case 'wa-move-stage': waMoveStage(id, t.dataset.stage); break;
     case 'new-deal': newDealModal(); break;
     case 'create-deal': createDeal(); break;
+    case 'del-deal': delDealModal(id); break;
+    case 'del-deal-confirm': delDealConfirm(id); break;
     case 'open-client': openClient(id); clearSearch(); break;
     case 'new-client': newClientModal(); break;
     case 'create-client': createClient(); break;

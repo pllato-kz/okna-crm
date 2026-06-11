@@ -156,6 +156,7 @@ function openDeal(id){
       ${canMoney?`<div class="panel" style="margin-bottom:16px"><div class="panel-h" style="padding:12px 14px">${icon('money','sm')}<h3 style="font-size:13.5px">Оплаты</h3></div><div class="panel-b" style="padding:12px 14px">${pays}</div></div>`:''}
     </div>
     <div class="modal-f">
+      <button class="btn danger" data-act="del-deal" data-id="${d.id}" style="margin-right:auto">${icon('trash','sm')} Удалить</button>
       <button class="btn green" data-act="wa-deal-chat" data-id="${d.id}">${icon('wa','sm')} Чат WhatsApp</button>
       <button class="btn" data-act="wa-deal" data-id="${d.id}">${icon('send','sm')} Быстрое сообщение</button>
       ${d.stage==='measure'?`<button class="btn soft" data-act="go-measure-deal" data-id="${d.id}">${icon('ruler','sm')} Открыть замер</button>`:''}
