@@ -407,6 +407,15 @@ export async function onRequest(context) {
     if (!def) return fail(404, `Неизвестный ресурс: ${resource}`);
     const id = segs[1];
 
+    // удаление клиента: блок при наличии сделок (FK) + чистка переписки
+    if (resource === 'clients' && method === 'DELETE' && id) {
+      const cnt = await env.DB.prepare(`SELECT COUNT(*) AS n FROM deals WHERE client_id = ?`).bind(id).first();
+      if (cnt && cnt.n > 0) return fail(409, `У клиента есть сделки (${cnt.n}) — удалите их сначала`);
+      await env.DB.prepare(`DELETE FROM wa_messages WHERE client_id = ?`).bind(id).run();
+      await env.DB.prepare(`DELETE FROM clients WHERE id = ?`).bind(id).run();
+      return ok({ deleted: true });
+    }
+
     // установка/смена пароля: POST /api/users/:id/password { password }
     // разрешено директору или самому пользователю
     if (resource === 'users' && id && segs[2] === 'password') {
