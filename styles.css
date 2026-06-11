@@ -265,6 +265,8 @@ input,select,textarea{font-family:inherit}
 .tab:hover:not(.on){color:var(--txt)}
 
 .perm-tbl td .yes{color:#4ade80}.perm-tbl td .no{color:#475569}
+.tbl-scroll{overflow-x:auto}
+.perm-tbl{min-width:560px}
 .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
 .legend span{display:flex;align-items:center;gap:6px}
 
@@ -293,7 +295,8 @@ input,select,textarea{font-family:inherit}
 @media (max-width:920px){.login-card{grid-template-columns:minmax(0,1fr)}.login-side{display:none}}
 @media (max-width:480px){.login-main{padding:30px 22px}}
 @media (max-width:760px){.shell{grid-template-columns:1fr}.sidebar{position:fixed;left:-260px;z-index:50;transition:.2s;box-shadow:var(--shadow-lg)}
-  .sidebar.open{left:0}.content{padding:16px}.topbar{padding:0 14px}.topbar .search{display:none}.menu-toggle{display:grid!important}}
+  .sidebar.open{left:0}.content{padding:16px}.topbar{padding:0 14px}.topbar .search{display:none}.menu-toggle{display:grid!important}
+  .grid-2b{grid-template-columns:1fr}}
 .menu-toggle{display:none}
 
 /* ====== LIGHT THEME ====== */

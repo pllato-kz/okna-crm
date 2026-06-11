@@ -123,6 +123,7 @@ function initMeasureBindings(){
       const c=(d.items||[]).find(x=>x.id===inp.dataset.cid); if(!c) return;
       let v=parseFloat(inp.value)||0; if(inp.dataset.field==='sashes'){v=Math.max(1,Math.min(5,Math.round(v)));} if(inp.dataset.field==='qty'){v=Math.max(1,Math.round(v));}
       c[inp.dataset.field]=v; saveDB(); patchMeasure();
+      if(window.API && API.enabled){ if(API.persist.saveItem(c).catch){ API.persist.saveItem(c).catch(()=>{}); } }
     });
   });
 }
@@ -332,7 +333,7 @@ function renderSettings(){
       <table class="tbl"><tbody>${emps}</tbody></table></div>
   </div>
   <div class="panel section-gap"><div class="panel-h">${icon('shield')}<h3>Права доступа</h3><span class="ph-sub">кто что видит — сборщики и склад не видят финансы</span></div>
-    <table class="tbl perm-tbl"><thead>${permHead}</thead><tbody>${permRows}</tbody></table></div>
+    <div class="tbl-scroll"><table class="tbl perm-tbl"><thead>${permHead}</thead><tbody>${permRows}</tbody></table></div></div>
   <div class="panel section-gap"><div class="panel-h">${icon('refresh')}<h3>Демо-данные</h3></div><div class="panel-b">
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><span class="muted" style="font-size:13px">Сбросить все изменения и вернуть исходные демо-данные.</span>
     <button class="btn danger" data-act="reset">${icon('refresh','sm')} Сбросить демо</button></div></div></div>`;
