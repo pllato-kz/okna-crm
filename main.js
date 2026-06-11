@@ -159,6 +159,28 @@ function createClient(){
   DB.clients.unshift(nc);
   saveDB(); if(apiOn()) persist(API.persist.createClient(nc)); closeModal(); renderModule(); toast('Клиент добавлен');
 }
+function delClientModal(id){
+  const cl=clientById(id); if(!cl) return;
+  const deals=DB.deals.filter(d=>d.clientId===id);
+  if(deals.length){
+    openModal(`<div class="modal-h">${icon('alert')}<h3>Нельзя удалить клиента</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+      <div class="modal-b"><p style="margin:0;color:var(--muted);line-height:1.5">У клиента <b>${escA(cl.name)}</b> есть сделки (${deals.length}). Сначала удалите или закройте их — потом можно будет удалить клиента.</p></div>
+      <div class="modal-f"><button class="btn" data-act="close-modal">Понятно</button></div>`);
+    return;
+  }
+  openModal(`<div class="modal-h">${icon('trash')}<h3>Удалить клиента?</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><p style="margin:0;color:var(--muted);line-height:1.5">${escA(cl.name)} · ${escA(cl.phone)}.<br>Будет удалена и переписка в чате. Действие необратимо.</p></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="del-client-confirm" data-id="${id}">${icon('trash','sm')} Удалить</button></div>`);
+}
+function delClientConfirm(id){
+  const cl=clientById(id); if(!cl) return;
+  if(DB.deals.some(d=>d.clientId===id)){ toast('У клиента есть сделки — удаление невозможно','warn'); return; }
+  DB.clients=DB.clients.filter(c=>c.id!==id);
+  if(Array.isArray(DB.waMessages)) DB.waMessages=DB.waMessages.filter(m=>m.clientId!==id);
+  saveDB();
+  if(apiOn()) persist(API.fetch('clients/'+id, {method:'DELETE'}));
+  closeModal(); renderModule(); toast('Клиент удалён');
+}
 
 /* warehouse — приход (пополнение) */
 function whReceiveModal(id, kind){
@@ -608,6 +630,8 @@ document.addEventListener('click', e=>{
     case 'open-client': openClient(id); clearSearch(); break;
     case 'new-client': newClientModal(); break;
     case 'create-client': createClient(); break;
+    case 'del-client': delClientModal(id); break;
+    case 'del-client-confirm': delClientConfirm(id); break;
     case 'wa-deal': waSendModal(null, id); break;
     case 'wa-client': waSendModal(id, null); break;
     case 'wa-send': waDoSend(t.dataset.id||null, t.dataset.deal||null); break;
