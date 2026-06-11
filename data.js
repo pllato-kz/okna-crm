@@ -220,14 +220,22 @@ function buildSeed(){
     {who:'u_pm', text:'Новый лид из Instagram — Айгуль Нурланова', at:daysAgo(1).toISOString(), kind:'lead'},
   ];
 
-  return { v:1, company, users, materials, components, clients, deals, payables, activity };
+  const movements = [
+    {id:uid('wm'), kind:'mat',  itemId:'m4', name:'Rehau Grazio 70',             unit:'пог.м', dir:'in',  type:'receipt',    qty:200, reason:'Поставка Rehau KZ',                 balanceAfter:355, who:'u_wh', at:daysAgo(6).toISOString()},
+    {id:uid('wm'), kind:'comp', itemId:'c2', name:'Стеклопакет двухкам. 32мм',    unit:'м²',    dir:'in',  type:'receipt',    qty:40,  reason:'Поставка Стеклопакет-Сервис',       balanceAfter:62,  who:'u_wh', at:daysAgo(5).toISOString()},
+    {id:uid('wm'), kind:'mat',  itemId:'m5', name:'Veka Softline 70',             unit:'пог.м', dir:'out', type:'production', qty:48,  reason:'В производство — Бекзат Сулейменов',balanceAfter:120, who:'u_as', dealId:'d11', at:daysAgo(5).toISOString()},
+    {id:uid('wm'), kind:'comp', itemId:'c5', name:'Фурнитура MACO пов.-откидная', unit:'компл', dir:'out', type:'writeoff',   qty:2,   reason:'Брак при сборке',                   balanceAfter:34,  who:'u_as', at:daysAgo(3).toISOString()},
+    {id:uid('wm'), kind:'comp', itemId:'c8', name:'Отлив оцинков. 150мм',         unit:'пог.м', dir:'out', type:'return',     qty:6,   reason:'Возврат поставщику — пересорт',     balanceAfter:18,  who:'u_wh', at:daysAgo(2).toISOString()},
+  ];
+
+  return { v:1, company, users, materials, components, clients, deals, payables, activity, movements };
 }
 
 /* ============ STATE / PERSISTENCE ============ */
 const DB_KEY = 'okna_crm_db_v1';
 let DB;
 function loadDB(){
-  try{ const raw=localStorage.getItem(DB_KEY); if(raw){ const d=JSON.parse(raw); if(d&&d.v===1) return d; } }catch(e){}
+  try{ const raw=localStorage.getItem(DB_KEY); if(raw){ const d=JSON.parse(raw); if(d&&d.v===1){ if(!Array.isArray(d.movements)) d.movements=[]; return d; } } }catch(e){}
   const seed=buildSeed(); localStorage.setItem(DB_KEY, JSON.stringify(seed)); return seed;
 }
 function saveDB(){ try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(e){} }
@@ -351,3 +359,16 @@ function defaultModule(role){
   if(role==='warehouse') return 'warehouse';
   return 'dashboard';
 }
+
+/* ============ ДВИЖЕНИЯ СКЛАДА (приход/расход) ============ */
+/* Типы операций: dir — направление (in/out), color — тег в журнале. */
+const MOVE_TYPES = {
+  receipt:    { label:'Приход',            dir:'in',  color:'green'  },
+  production: { label:'В производство',    dir:'out', color:'violet' },
+  writeoff:   { label:'Списание (брак)',   dir:'out', color:'red'    },
+  return:     { label:'Возврат поставщику',dir:'out', color:'amber'  },
+  adjust:     { label:'Корректировка',     dir:'out', color:'cyan'   },
+};
+function moveType(t){ return MOVE_TYPES[t] || { label:t||'—', dir:'out', color:'' }; }
+/* типы расхода для выбора в модалке списания */
+const WRITEOFF_TYPES = ['production','writeoff','return','adjust'];

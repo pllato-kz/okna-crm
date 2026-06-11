@@ -42,6 +42,7 @@ const TABLES = {
   clients:          { table: 'clients',          pk: 'id', cols: ['id','name','phone','address','type_id'], prefix: 'cl' },
   materials:        { table: 'materials',         pk: 'id', cols: ['id','name','type_id','series_id','rate','stock','min_stock','unit','supplier'], prefix: 'm' },
   components:       { table: 'components',        pk: 'id', cols: ['id','name','stock','min_stock','unit'], prefix: 'c' },
+  warehouse_movements: { table: 'warehouse_movements', pk: 'id', cols: ['id','kind','item_id','name','unit','dir','type','qty','reason','balance_after','deal_id','user_id','at'], prefix: 'wm' },
   deals:            { table: 'deals',             pk: 'id', cols: ['id','client_id','stage_id','manager_id','source_id','prod_stage_id','sum','note','hot','discount','prepay_pct','consumed_profile','consumed_glass','consumed_fittings','stage_since'], prefix: 'd' },
   deal_items:       { table: 'deal_items',        pk: 'id', cols: ['id','deal_id','profile_id','glass_id','opening_id','w','h','sashes','qty','sort'], prefix: 'cn' },
   deal_item_extras: { table: 'deal_item_extras',  pk: null, cols: ['item_id','extra_id'], composite: ['item_id','extra_id'] },
@@ -128,7 +129,7 @@ async function getDealFull(env, id) {
 // Полный снимок для фронта (заменит buildSeed/localStorage на Слое 4)
 async function getBootstrap(env) {
   const company = await env.DB.prepare(`SELECT * FROM company LIMIT 1`).first();
-  const [users, clients, materials, components, payables, activity, dealsRaw] = await Promise.all([
+  const [users, clients, materials, components, payables, activity, dealsRaw, movements] = await Promise.all([
     listRows(env, TABLES.users),
     listRows(env, TABLES.clients),
     listRows(env, TABLES.materials),
@@ -136,6 +137,7 @@ async function getBootstrap(env) {
     listRows(env, TABLES.payables),
     listRows(env, TABLES.activity),
     listRows(env, TABLES.deals),
+    listRows(env, TABLES.warehouse_movements),
   ]);
   // password_hash не отдаём наружу
   for (const u of users) delete u.password_hash;
@@ -150,7 +152,7 @@ async function getBootstrap(env) {
   const paymentsByDeal = {};
   for (const p of allPayments) (paymentsByDeal[p.deal_id] ||= []).push(p);
   const deals = dealsRaw.map(d => ({ ...d, items: itemsByDeal[d.id] || [], payments: paymentsByDeal[d.id] || [] }));
-  return { company, catalogs: await getCatalogs(env), users, clients, materials, components, deals, payables, activity };
+  return { company, catalogs: await getCatalogs(env), users, clients, materials, components, deals, payables, activity, movements };
 }
 
 /* ============ R2-ФАЙЛЫ ============ */

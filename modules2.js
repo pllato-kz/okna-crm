@@ -180,8 +180,13 @@ function printKp(id){
 function renderWarehouse(){
   const showCost=seesMoney();
   const tab=state.whTab;
+  const moves=(DB.movements||[]);
+  const actCell=(itId,knd)=>`<td style="text-align:right;white-space:nowrap"><div class="row-acts" style="display:inline-flex;gap:6px;justify-content:flex-end">
+    <button class="btn sm" data-act="wh-receive" data-id="${itId}" data-kind="${knd}">${icon('plus','sm')} Приход</button>
+    <button class="btn sm danger" data-act="wh-writeoff" data-id="${itId}" data-kind="${knd}">${icon('trash','sm')} Расход</button></div></td>`;
   const tabs=`<div class="tabs"><button class="tab ${tab==='profile'?'on':''}" data-act="wh-tab" data-v="profile">Профиль (${DB.materials.length})</button>
-    <button class="tab ${tab==='comp'?'on':''}" data-act="wh-tab" data-v="comp">Стеклопакеты и фурнитура (${DB.components.length})</button></div>`;
+    <button class="tab ${tab==='comp'?'on':''}" data-act="wh-tab" data-v="comp">Стеклопакеты и фурнитура (${DB.components.length})</button>
+    <button class="tab ${tab==='moves'?'on':''}" data-act="wh-tab" data-v="moves">Движения (${moves.length})</button></div>`;
   let body;
   if(tab==='profile'){
     const rows=DB.materials.map(m=>{const low=m.stock<m.min; const pct=Math.min(100,m.stock/(m.min*2)*100);
@@ -191,26 +196,43 @@ function renderWarehouse(){
         ${showCost?`<td class="num">${money(m.rate)}/м²</td>`:''}
         <td style="min-width:160px"><div style="display:flex;align-items:center;gap:10px"><div class="mini-bar"><i style="width:${pct}%;background:${low?'var(--red)':'var(--green)'}"></i></div><span style="font-weight:700;white-space:nowrap">${m.stock} ${m.unit}</span></div></td>
         <td>${low?`<span class="tag red">${icon('alert','sm')} мало</span>`:'<span class="tag green">в норме</span>'}</td>
-        <td style="text-align:right"><button class="btn sm" data-act="wh-receive" data-id="${m.id}" data-kind="mat">${icon('plus','sm')} Приход</button></td></tr>`;}).join('');
-    body=`<table class="tbl"><thead><tr><th>Профиль</th><th>Тип</th><th>Серия</th>${showCost?'<th class="num">Цена</th>':''}<th>Остаток</th><th>Статус</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
-  } else {
+        ${actCell(m.id,'mat')}</tr>`;}).join('');
+    body=`<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Профиль</th><th>Тип</th><th>Серия</th>${showCost?'<th class="num">Цена</th>':''}<th>Остаток</th><th>Статус</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  } else if(tab==='comp'){
     const rows=DB.components.map(c=>{const low=c.stock<c.min; const pct=Math.min(100,c.stock/(c.min*2)*100);
       return `<tr><td style="font-weight:600">${c.name}</td>
         <td style="min-width:200px"><div style="display:flex;align-items:center;gap:10px"><div class="mini-bar"><i style="width:${pct}%;background:${low?'var(--red)':'var(--green)'}"></i></div><span style="font-weight:700;white-space:nowrap">${c.stock} ${c.unit}</span></div></td>
         <td class="muted">мин. ${c.min}</td>
         <td>${low?`<span class="tag red">${icon('alert','sm')} дозаказать</span>`:'<span class="tag green">в норме</span>'}</td>
-        <td style="text-align:right"><button class="btn sm" data-act="wh-receive" data-id="${c.id}" data-kind="comp">${icon('plus','sm')} Приход</button></td></tr>`;}).join('');
-    body=`<table class="tbl"><thead><tr><th>Наименование</th><th>Остаток</th><th>Минимум</th><th>Статус</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+        ${actCell(c.id,'comp')}</tr>`;}).join('');
+    body=`<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Наименование</th><th>Остаток</th><th>Минимум</th><th>Статус</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  } else {
+    const list=moves.slice().sort((a,b)=>String(b.at||'').localeCompare(String(a.at||''))).slice(0,80);
+    const rows=list.map(m=>{const mt=moveType(m.type); const u=userById(m.who);
+      const qcell=m.dir==='in'
+        ? `<span style="color:#4ade80;font-weight:700;white-space:nowrap">+${m.qty} ${m.unit||''}</span>`
+        : `<span style="color:#f87171;font-weight:700;white-space:nowrap">−${m.qty} ${m.unit||''}</span>`;
+      return `<tr><td class="muted" style="white-space:nowrap">${dateStr(m.at)}</td>
+        <td style="font-weight:600">${m.name||m.itemId}</td>
+        <td><span class="tag ${mt.color}">${mt.dir==='in'?icon('arrow','sm'):icon('trash','sm')} ${mt.label}</span></td>
+        <td class="muted">${m.reason||'—'}</td>
+        <td class="num">${qcell}</td>
+        <td class="muted" style="white-space:nowrap">${u?u.name:'—'}</td></tr>`;}).join('');
+    const inSum=moves.filter(m=>m.dir==='in').length, outSum=moves.filter(m=>m.dir==='out').length;
+    body=`<div style="padding:12px 18px;display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--line)">
+        <span class="tag green">${inSum} прихода</span><span class="tag red">${outSum} расхода</span><span>журнал прихода и расхода материалов и комплектующих</span></div>
+      <div class="tbl-scroll"><table class="tbl"><thead><tr><th>Дата</th><th>Позиция</th><th>Операция</th><th>Причина</th><th class="num">Кол-во</th><th>Сотрудник</th></tr></thead>
+      <tbody>${rows||'<tr><td colspan=6 class="muted" style="text-align:center;padding:30px">Движений пока нет</td></tr>'}</tbody></table></div>`;
   }
   const low=[...DB.materials,...DB.components].filter(x=>x.stock<x.min).length;
   return `
   <div class="cards-row" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-bottom:16px">
     ${kpi({icon:'box',label:'Позиций на складе',value:DB.materials.length+DB.components.length,color:'#2563eb'})}
     ${kpi({icon:'alert',label:'Ниже минимума',value:low,color:'#dc2626',soft:'var(--red-soft)',sub:low?'нужен дозаказ':'всё в норме'})}
-    ${kpi({icon:'layers',label:'Серий профиля',value:'Эконом · Средняя · Премиум',color:'#7c3aed'})}
+    ${kpi({icon:'layers',label:'Движений в журнале',value:moves.length,color:'#7c3aed',sub:'приход + расход'})}
   </div>
   <div style="margin-bottom:14px">${tabs}</div>
-  <div class="panel"><div class="panel-h">${icon('warehouse')}<h3>Остатки на складе</h3><span class="ph-sub">${DB.company.city}</span></div>${body}</div>`;
+  <div class="panel"><div class="panel-h">${icon('warehouse')}<h3>${tab==='moves'?'Журнал движений':'Остатки на складе'}</h3><span class="ph-sub">${DB.company.city}</span></div>${body}</div>`;
 }
 
 /* ============ PRODUCTION ============ */
