@@ -149,13 +149,18 @@ function editDealModal(id){
   const mgrs=DB.users.filter(u=>['director','manager'].includes(u.role)||u.id===d.manager);
   const mgrOpts=mgrs.map(u=>`<option value="${u.id}"${u.id===d.manager?' selected':''}>${u.name} · ${roleRu(u.role)}</option>`).join('');
   const srcOpts=SOURCES.map(s=>`<option${s===d.source?' selected':''}>${s}</option>`).join('');
+  const money$=seesMoney();
+  const moneyFields=money$?`
+      <div class="fld"><label>Сумма заказа, ₸</label><input id="ed-sum" type="number" min="0" value="${d.sum||dealItemsSum(d)}"></div>
+      <div class="fld"><label>Оплачено, ₸</label><input id="ed-paid" type="number" min="0" value="${dealPaid(d)}"></div>`:'';
   openModal(`<div class="modal-h">${icon('funnel')}<h3>Изменить сделку</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="constr-body" style="padding:0">
       <div class="fld"><label>Ответственный</label><select id="ed-mgr">${mgrOpts}</select></div>
       <div class="fld"><label>Источник</label><select id="ed-src">${srcOpts}</select></div>
+      ${moneyFields}
       <div class="fld full"><label style="display:flex;align-items:center;gap:9px;text-transform:none;color:var(--txt);font-size:13px"><input type="checkbox" id="ed-hot" ${d.hot?'checked':''} style="width:auto"> Горящий лид</label></div>
       <div class="fld full"><label>Примечание</label><input id="ed-note" value="${escA(d.note||'')}"></div>
-    </div></div>
+    </div>${money$?'<div class="muted2" style="font-size:11px;margin-top:10px;line-height:1.5;padding:0 2px">«Оплачено» сверяется с оплатами: разница добавится отдельной записью платежа.</div>':''}</div>
     <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="save-deal-edit" data-id="${id}">${icon('check','sm')} Сохранить</button></div>`);
 }
 function saveDealEdit(id){
@@ -164,7 +169,17 @@ function saveDealEdit(id){
   const src=(document.getElementById('ed-src')||{}).value; if(src) d.source=src;
   d.hot=!!((document.getElementById('ed-hot')||{}).checked);
   d.note=((document.getElementById('ed-note')||{}).value||'').trim();
-  saveDB(); if(apiOn()) persist(API.persist.saveDeal(d));
+  let addedPay=null;
+  const sumEl=document.getElementById('ed-sum');
+  if(sumEl){ d.sum=Math.max(0,Math.round(parseFloat(sumEl.value)||0)); }
+  const paidEl=document.getElementById('ed-paid');
+  if(paidEl){
+    const newPaid=Math.max(0,Math.round(parseFloat(paidEl.value)||0));
+    const delta=newPaid-dealPaid(d);
+    if(delta!==0){ addedPay={id:uid('p'), type:'Доплата', amount:delta, date:SEED_NOW.toISOString()}; d.payments=d.payments||[]; d.payments.push(addedPay); }
+  }
+  saveDB();
+  if(apiOn()){ persist(API.persist.saveDeal(d)); if(addedPay) persist(API.persist.createPayment(d.id, addedPay)); }
   closeModal(); render(); toast('Сделка обновлена');
 }
 /* ====== ИМПОРТ КЛИЕНТОВ ИЗ CSV ====== */

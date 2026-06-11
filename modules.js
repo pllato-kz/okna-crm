@@ -146,7 +146,7 @@ function openDeal(id){
     const mat=matById(c.profileId);
     return `<tr><td>${mat?mat.name:'—'} · ${c.w}×${c.h}мм</td><td class="muted">${openById(c.openId)?.name||''}, ${c.sashes} ств.</td><td class="num">${money(constrPrice(c))}</td></tr>`;
   }).join('');
-  const pays=(d.payments||[]).map(p=>`<div class="stat-line"><span>${p.type} · ${dateStr(p.date)}</span><span style="color:#4ade80;font-weight:700">+${money(p.amount)}</span></div>`).join('')||'<div class="muted" style="font-size:13px">Оплат пока нет</div>';
+  const pays=(d.payments||[]).map(p=>`<div class="stat-line"><span>${p.type} · ${dateStr(p.date)}</span><span style="color:${p.amount<0?'#f87171':'#4ade80'};font-weight:700">${p.amount<0?'−':'+'}${money(Math.abs(p.amount))}</span></div>`).join('')||'<div class="muted" style="font-size:13px">Оплат пока нет</div>';
   const tlist=tasksForDeal(d.id);
   const taskRows=tlist.length?tlist.map(t=>{const tc=taskClass(t); const tu=userById(t.assignee);
     return `<div class="stat-line"><span style="display:flex;align-items:center;gap:9px;min-width:0">
