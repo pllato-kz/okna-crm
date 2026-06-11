@@ -499,7 +499,7 @@ function whWriteoffModal(id, kind){
   const it = kind==='mat' ? matById(id) : compById(id);
   if(!it) return;
   const opts = WRITEOFF_TYPES.map(t=>`<option value="${t}">${MOVE_TYPES[t].label}</option>`).join('');
-  openModal(`<div class="modal-h">${icon('trash')}<div><h3>Расход со склада</h3><div class="mh-sub">${it.name} · остаток ${it.stock} ${it.unit}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+  openModal(`<div class="modal-h">${icon('minus')}<div><h3>Расход со склада</h3><div class="mh-sub">${it.name} · остаток ${it.stock} ${it.unit}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="constr-body" style="padding:0">
       <div class="fld"><label>Количество, ${it.unit}</label><input type="number" min="0" step="0.1" max="${it.stock}" id="wo-qty" placeholder="0" autofocus></div>
       <div class="fld"><label>Тип расхода</label><select id="wo-type">${opts}</select></div>
