@@ -106,6 +106,8 @@ const EXTRAS = [
   {id:'demount',  name:'Демонтаж старого',price:3000, per:'шт'},
 ];
 const extraById = id => EXTRAS.find(e=>e.id===id);
+/* источники лидов (для выбора в сделке) */
+const SOURCES = ['Instagram','2GIS','Сайт','Рекомендация','Билборд','Звонок'];
 
 /* ============ SEED BUILDER ============ */
 function buildSeed(){

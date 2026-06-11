@@ -157,6 +157,7 @@ function openDeal(id){
     </div>
     <div class="modal-f">
       <button class="btn danger" data-act="del-deal" data-id="${d.id}" style="margin-right:auto">${icon('trash','sm')} Удалить</button>
+      <button class="btn" data-act="edit-deal" data-id="${d.id}">${icon('edit','sm')} Изменить</button>
       <button class="btn green" data-act="wa-deal-chat" data-id="${d.id}">${icon('wa','sm')} Чат WhatsApp</button>
       <button class="btn" data-act="wa-deal" data-id="${d.id}">${icon('send','sm')} Быстрое сообщение</button>
       ${d.stage==='measure'?`<button class="btn soft" data-act="go-measure-deal" data-id="${d.id}">${icon('ruler','sm')} Открыть замер</button>`:''}
