@@ -317,9 +317,9 @@ function constrPerimeter(c){ return 2*(c.w+c.h)/1000*(c.qty||1); }
 /* ============ РЕДАКТИРУЕМЫЕ КАТАЛОГИ И ПРАЙС (Настройки, директор) ============ */
 /* Метаданные для UI: что и как редактируется. Цена влияет на расчёт КП напрямую. */
 const CATALOGS_EDIT = {
-  glass:   { title:'Стеклопакеты', api:'glass_types', prefix:'g',  priceKey:'rate',  unit:'₸/м²',      arr:()=>GLASS,    usedBy:id=>DB.deals.some(d=>(d.items||[]).some(c=>c.glassId===id)) },
-  opening: { title:'Открывания',   api:'openings',    prefix:'op', priceKey:'rate',  unit:'₸/створку', arr:()=>OPENINGS, usedBy:id=>DB.deals.some(d=>(d.items||[]).some(c=>c.openId===id)) },
-  extra:   { title:'Доп-опции',    api:'extras',      prefix:'ex', priceKey:'price', unit:'₸', hasPer:true, arr:()=>EXTRAS, usedBy:id=>DB.deals.some(d=>(d.items||[]).some(c=>(c.extras||[]).includes(id))) },
+  glass:   { title:'Стеклопакеты', api:'glass_types', prefix:'g',  priceKey:'rate',  unit:'₸/м²',      suffix:'/м²',      arr:()=>GLASS,    usedBy:id=>DB.deals.some(d=>(d.items||[]).some(c=>c.glassId===id)) },
+  opening: { title:'Открывания',   api:'openings',    prefix:'op', priceKey:'rate',  unit:'₸/створку', suffix:'/створку', arr:()=>OPENINGS, usedBy:id=>DB.deals.some(d=>(d.items||[]).some(c=>c.openId===id)) },
+  extra:   { title:'Доп-опции',    api:'extras',      prefix:'ex', priceKey:'price', unit:'₸', suffix:'', hasPer:true, arr:()=>EXTRAS, usedBy:id=>DB.deals.some(d=>(d.items||[]).some(c=>(c.extras||[]).includes(id))) },
 };
 
 /* сколько и чего спишется на данном этапе производства; мутирует склад, флаги в d.consumed */

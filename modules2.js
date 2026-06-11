@@ -366,7 +366,7 @@ function catTable(type){
   const cfg=CATALOGS_EDIT[type]; if(!cfg) return '';
   const perOf=p=>({'шт':'за штуку','м':'за пог.м','периметр':'по периметру'})[p]||p;
   const rows=cfg.arr().map(x=>`<tr><td style="font-weight:600">${x.name}</td>
-    <td class="num">${money(x[cfg.priceKey])} <span class="muted2" style="font-weight:400">${cfg.unit}</span></td>
+    <td class="num" style="white-space:nowrap">${money(x[cfg.priceKey])}<span class="muted2" style="font-weight:400">${cfg.suffix||''}</span></td>
     ${cfg.hasPer?`<td class="muted">${perOf(x.per)}</td>`:''}
     <td class="row-acts" style="text-align:right;white-space:nowrap">
       <button class="btn sm ghost" data-act="cat-edit" data-type="${type}" data-id="${x.id}" title="Изменить">${icon('edit','sm')}</button>
