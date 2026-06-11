@@ -183,7 +183,7 @@ function renderWarehouse(){
   const moves=(DB.movements||[]);
   const actCell=(itId,knd)=>`<td style="text-align:right;white-space:nowrap"><div class="row-acts" style="display:inline-flex;gap:6px;justify-content:flex-end">
     <button class="btn sm" data-act="wh-receive" data-id="${itId}" data-kind="${knd}">${icon('plus','sm')} Приход</button>
-    <button class="btn sm danger" data-act="wh-writeoff" data-id="${itId}" data-kind="${knd}">${icon('trash','sm')} Расход</button>
+    <button class="btn sm danger" data-act="wh-writeoff" data-id="${itId}" data-kind="${knd}">${icon('minus','sm')} Расход</button>
     <button class="btn sm ghost" data-act="wh-edit" data-id="${itId}" data-kind="${knd}" title="Изменить">${icon('edit','sm')}</button>
     ${showCost?`<button class="btn sm ghost" data-act="wh-del" data-id="${itId}" data-kind="${knd}" title="Удалить позицию">${icon('trash','sm')}</button>`:''}</div></td>`;
   const tabs=`<div class="tabs"><button class="tab ${tab==='profile'?'on':''}" data-act="wh-tab" data-v="profile">Профиль (${DB.materials.length})</button>
