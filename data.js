@@ -304,6 +304,14 @@ const openById = id => OPENINGS.find(o=>o.id===id);
 
 /* профиль конструкции в пог.м (периметр × кол-во) */
 function constrPerimeter(c){ return 2*(c.w+c.h)/1000*(c.qty||1); }
+/* ============ РЕДАКТИРУЕМЫЕ КАТАЛОГИ И ПРАЙС (Настройки, директор) ============ */
+/* Метаданные для UI: что и как редактируется. Цена влияет на расчёт КП напрямую. */
+const CATALOGS_EDIT = {
+  glass:   { title:'Стеклопакеты', api:'glass_types', prefix:'g',  priceKey:'rate',  unit:'₸/м²',      arr:()=>GLASS,    usedBy:id=>DB.deals.some(d=>(d.items||[]).some(c=>c.glassId===id)) },
+  opening: { title:'Открывания',   api:'openings',    prefix:'op', priceKey:'rate',  unit:'₸/створку', arr:()=>OPENINGS, usedBy:id=>DB.deals.some(d=>(d.items||[]).some(c=>c.openId===id)) },
+  extra:   { title:'Доп-опции',    api:'extras',      prefix:'ex', priceKey:'price', unit:'₸', hasPer:true, arr:()=>EXTRAS, usedBy:id=>DB.deals.some(d=>(d.items||[]).some(c=>(c.extras||[]).includes(id))) },
+};
+
 /* сколько и чего спишется на данном этапе производства; мутирует склад, флаги в d.consumed */
 const GLASS_COMP = {g1:'c1', g2:'c2', g3:'c3'};
 const FIT_COMP   = {turn:'c4', tilt:'c5'};
