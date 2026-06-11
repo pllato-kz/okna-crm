@@ -272,7 +272,8 @@ input,select,textarea{font-family:inherit}
 .perm-cell.on:hover{border-color:var(--green-soft)}
 .row-acts{text-align:right;white-space:nowrap}
 .row-acts .btn.sm{padding:6px 9px}
-.tbl-scroll{overflow-x:auto}
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl-scroll>.tbl{min-width:600px}
 .perm-tbl{min-width:560px}
 /* WhatsApp-чат */
 .wa-chat{height:min(52vh,440px);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;background:var(--bg2)}
