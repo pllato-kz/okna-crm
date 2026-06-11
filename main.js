@@ -144,6 +144,29 @@ function createDeal(){
   DB.deals.unshift(nd);
   saveDB(); if(apiOn()) persist(API.persist.createDeal(nd)); closeModal(); renderModule(); toast('Лид создан');
 }
+function editDealModal(id){
+  const d=dealById(id); if(!d) return;
+  const mgrs=DB.users.filter(u=>['director','manager'].includes(u.role)||u.id===d.manager);
+  const mgrOpts=mgrs.map(u=>`<option value="${u.id}"${u.id===d.manager?' selected':''}>${u.name} · ${roleRu(u.role)}</option>`).join('');
+  const srcOpts=SOURCES.map(s=>`<option${s===d.source?' selected':''}>${s}</option>`).join('');
+  openModal(`<div class="modal-h">${icon('funnel')}<h3>Изменить сделку</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">
+      <div class="fld"><label>Ответственный</label><select id="ed-mgr">${mgrOpts}</select></div>
+      <div class="fld"><label>Источник</label><select id="ed-src">${srcOpts}</select></div>
+      <div class="fld full"><label style="display:flex;align-items:center;gap:9px;text-transform:none;color:var(--txt);font-size:13px"><input type="checkbox" id="ed-hot" ${d.hot?'checked':''} style="width:auto"> Горящий лид</label></div>
+      <div class="fld full"><label>Примечание</label><input id="ed-note" value="${escA(d.note||'')}"></div>
+    </div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="save-deal-edit" data-id="${id}">${icon('check','sm')} Сохранить</button></div>`);
+}
+function saveDealEdit(id){
+  const d=dealById(id); if(!d) return;
+  const mgr=(document.getElementById('ed-mgr')||{}).value; if(mgr) d.manager=mgr;
+  const src=(document.getElementById('ed-src')||{}).value; if(src) d.source=src;
+  d.hot=!!((document.getElementById('ed-hot')||{}).checked);
+  d.note=((document.getElementById('ed-note')||{}).value||'').trim();
+  saveDB(); if(apiOn()) persist(API.persist.saveDeal(d));
+  closeModal(); render(); toast('Сделка обновлена');
+}
 function newClientModal(){
   openModal(`<div class="modal-h">${icon('clients')}<h3>Новый клиент</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b">
@@ -899,6 +922,8 @@ document.addEventListener('click', e=>{
     case 'del-payable-confirm': delPayableConfirm(id); break;
     case 'del-deal': delDealModal(id); break;
     case 'del-deal-confirm': delDealConfirm(id); break;
+    case 'edit-deal': editDealModal(id); break;
+    case 'save-deal-edit': saveDealEdit(t.dataset.id); break;
     case 'open-client': openClient(id); clearSearch(); break;
     case 'new-client': newClientModal(); break;
     case 'create-client': createClient(); break;
