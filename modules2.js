@@ -245,7 +245,7 @@ function renderWarehouse(){
     ${kpi({icon:'alert',label:'Ниже минимума',value:low,color:'#dc2626',soft:'var(--red-soft)',sub:low?'нужен дозаказ':'всё в норме'})}
     ${kpi({icon:'layers',label:'Движений в журнале',value:moves.length,color:'#7c3aed',sub:'приход + расход'})}
   </div>
-  <div style="margin-bottom:14px">${tabs}</div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">${tabs}<button class="btn sm" style="margin-left:auto" data-act="export" data-what="warehouse">${icon('doc','sm')} Экспорт</button></div>
   <div class="panel"><div class="panel-h">${icon('warehouse')}<h3>${tab==='moves'?'Журнал движений':'Остатки на складе'}</h3><span class="ph-sub">${DB.company.city}</span></div>${body}</div>`;
 }
 
@@ -342,7 +342,7 @@ function renderFinance(){
     ${kpi({icon:'doc',label:'Мы должны (кредиторка)',value:moneyK(totalPay),color:'#dc2626',soft:'var(--red-soft)',sub:DB.payables.length+' поставщиков'})}
     ${kpi({icon:'trend',label:'Сальдо',value:moneyK(totalDebt-totalPay),color:(totalDebt-totalPay)>=0?'#16a34a':'#dc2626'})}
   </div>
-  <div style="margin-bottom:14px">${tabs}</div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">${tabs}<button class="btn sm" style="margin-left:auto" data-act="export" data-what="finance">${icon('doc','sm')} Экспорт</button></div>
   <div class="panel">${body}</div>`;
 }
 
