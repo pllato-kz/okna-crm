@@ -155,6 +155,49 @@ async function getBootstrap(env) {
   return { company, catalogs: await getCatalogs(env), users, clients, materials, components, deals, payables, activity, movements };
 }
 
+/* ============ WHATSAPP ============ */
+// номер → только цифры, 8→7
+function waDigits(s) { let d = String(s || '').replace(/\D/g, ''); if (d.length === 11 && d[0] === '8') d = '7' + d.slice(1); return d; }
+// найти клиента по номеру (сравниваем по цифрам)
+async function waResolveClient(env, chatId) {
+  const target = waDigits(String(chatId).split('@')[0]);
+  if (!target) return null;
+  const rows = (await env.DB.prepare(`SELECT id, phone FROM clients`).all()).results || [];
+  for (const c of rows) if (waDigits(c.phone) === target) return c.id;
+  return null;
+}
+// сохранить сообщение (идемпотентно по id)
+async function waStoreMessage(env, m) {
+  await env.DB.prepare(`INSERT INTO wa_messages (id, chat_id, client_id, direction, text, sender_name, status, ts, at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET status = COALESCE(excluded.status, wa_messages.status)`)
+    .bind(m.id, m.chat_id, m.client_id || null, m.direction, m.text || '', m.sender_name || null, m.status || null,
+          m.ts || null, m.at || new Date().toISOString()).run();
+}
+// разбор уведомления Green API
+async function handleWaWebhook(env, body) {
+  const type = body && body.typeWebhook;
+  if (!type) return;
+  const idMessage = body.idMessage || (body.timestamp ? 'wm_' + body.timestamp + Math.random().toString(36).slice(2, 6) : uid('wm'));
+  const sd = body.senderData || {};
+  const chatId = sd.chatId || (body.instanceData && body.instanceData.wid) || '';
+  const md = body.messageData || {};
+  const text = (md.textMessageData && md.textMessageData.textMessage)
+    || (md.extendedTextMessageData && md.extendedTextMessageData.text)
+    || (md.typeMessage && md.typeMessage !== 'textMessage' ? '[' + md.typeMessage + ']' : '');
+  if (type === 'incomingMessageReceived') {
+    const clientId = await waResolveClient(env, chatId);
+    await waStoreMessage(env, { id: idMessage, chat_id: chatId, client_id: clientId, direction: 'in',
+      text, sender_name: sd.senderName || sd.chatName || '', ts: body.timestamp, at: body.timestamp ? new Date(body.timestamp * 1000).toISOString() : null });
+  } else if (type === 'outgoingMessageReceived' || type === 'outgoingAPIMessageReceived') {
+    const clientId = await waResolveClient(env, chatId);
+    await waStoreMessage(env, { id: idMessage, chat_id: chatId, client_id: clientId, direction: 'out',
+      text, status: 'sent', ts: body.timestamp, at: body.timestamp ? new Date(body.timestamp * 1000).toISOString() : null });
+  } else if (type === 'outgoingMessageStatus' && body.idMessage) {
+    await env.DB.prepare(`UPDATE wa_messages SET status = ? WHERE id = ?`).bind(body.status || 'sent', body.idMessage).run();
+  }
+}
+
 /* ============ R2-ФАЙЛЫ ============ */
 async function putFile(env, request, name) {
   const key = `${uid('f')}${name ? '-' + name.replace(/[^\w.\-]+/g, '_') : ''}`;
@@ -204,6 +247,17 @@ export async function onRequest(context) {
       return ok({ token, user: { id: user.id, name: user.name, email: user.email, role_id: user.role_id, title: user.title } });
     }
 
+    // вебхук WhatsApp (ПУБЛИЧНЫЙ — Green API не присылает наш JWT; защищён секретом)
+    if (segs[0] === 'wa' && segs[1] === 'webhook') {
+      if (method !== 'POST') return ok({ ok: true }); // Green API проверяет URL и GET-ом
+      const cfg = await env.DB.prepare(`SELECT * FROM wa_config WHERE id = 'main'`).first();
+      const key = url.searchParams.get('key') || bearerToken(request);
+      if (!cfg || !cfg.webhook_secret || key !== cfg.webhook_secret) return fail(401, 'bad webhook key');
+      const body = await readBody(request);
+      try { await handleWaWebhook(env, body); } catch (e) { /* не роняем вебхук — Green API иначе зашлёт ретраи */ }
+      return ok({ received: true });
+    }
+
     // ---- GUARD: всё остальное требует валидный JWT ----
     // Исключение: GET /api/files/:key открыт (чтобы файлы можно было встраивать как ресурсы).
     const publicFileGet = (segs[0] === 'files' && method === 'GET');
@@ -248,7 +302,12 @@ export async function onRequest(context) {
       // GET /api/wa/config — НИКОГДА не отдаёт api_token (только факт, что он задан)
       if (segs[1] === 'config' && method === 'GET') {
         const c = await getCfg();
-        return ok({ idInstance: (c && c.id_instance) || '', enabled: !!(c && c.enabled), configured: !!(c && c.id_instance && c.api_token) });
+        const out = { idInstance: (c && c.id_instance) || '', enabled: !!(c && c.enabled), configured: !!(c && c.id_instance && c.api_token) };
+        // URL вебхука показываем только директору (содержит секрет)
+        if (context.auth.role === 'director' && c && c.webhook_secret) {
+          out.webhookUrl = url.origin + '/api/wa/webhook?key=' + c.webhook_secret;
+        }
+        return ok(out);
       }
       // PUT /api/wa/config — только директор. Пустой apiToken = не менять токен.
       if (segs[1] === 'config' && (method === 'PUT' || method === 'POST')) {
@@ -258,10 +317,46 @@ export async function onRequest(context) {
         const idInstance = (b.idInstance != null ? String(b.idInstance).trim() : (cur && cur.id_instance) || '');
         const token = (b.apiToken != null && String(b.apiToken).trim() !== '') ? String(b.apiToken).trim() : ((cur && cur.api_token) || '');
         const enabled = b.enabled ? 1 : 0;
-        await env.DB.prepare(`INSERT INTO wa_config (id, id_instance, api_token, enabled, updated_at) VALUES ('main', ?, ?, ?, datetime('now'))
-          ON CONFLICT(id) DO UPDATE SET id_instance = excluded.id_instance, api_token = excluded.api_token, enabled = excluded.enabled, updated_at = excluded.updated_at`)
-          .bind(idInstance, token, enabled).run();
-        return ok({ idInstance, enabled: !!enabled, configured: !!(idInstance && token) });
+        const secret = (cur && cur.webhook_secret) || (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '') : uid('wh') + uid('s'));
+        await env.DB.prepare(`INSERT INTO wa_config (id, id_instance, api_token, enabled, webhook_secret, updated_at) VALUES ('main', ?, ?, ?, ?, datetime('now'))
+          ON CONFLICT(id) DO UPDATE SET id_instance = excluded.id_instance, api_token = excluded.api_token, enabled = excluded.enabled, webhook_secret = excluded.webhook_secret, updated_at = excluded.updated_at`)
+          .bind(idInstance, token, enabled, secret).run();
+        return ok({ idInstance, enabled: !!enabled, configured: !!(idInstance && token), webhookUrl: url.origin + '/api/wa/webhook?key=' + secret });
+      }
+      // GET /api/wa/messages?clientId=|chatId= — история чата (любой авторизованный)
+      if (segs[1] === 'messages' && method === 'GET') {
+        const clientId = url.searchParams.get('clientId');
+        let chatId = url.searchParams.get('chatId');
+        let rows;
+        if (clientId) {
+          const cl = await env.DB.prepare(`SELECT phone FROM clients WHERE id = ?`).bind(clientId).first();
+          const digits = cl ? waDigits(cl.phone) : '';
+          const cid = digits ? digits + '@c.us' : '';
+          rows = (await env.DB.prepare(`SELECT * FROM wa_messages WHERE client_id = ? OR chat_id = ? ORDER BY COALESCE(ts,0), created_at`).bind(clientId, cid).all()).results || [];
+        } else if (chatId) {
+          rows = (await env.DB.prepare(`SELECT * FROM wa_messages WHERE chat_id = ? ORDER BY COALESCE(ts,0), created_at`).bind(chatId).all()).results || [];
+        } else {
+          rows = (await env.DB.prepare(`SELECT * FROM wa_messages ORDER BY COALESCE(ts,0) DESC, created_at DESC LIMIT 100`).all()).results || [];
+        }
+        return ok({ messages: rows });
+      }
+      // POST /api/wa/setup-webhook — зарегистрировать наш вебхук в Green API (только директор)
+      if (segs[1] === 'setup-webhook' && method === 'POST') {
+        if (context.auth.role !== 'director') return fail(403, 'Только директор');
+        const c = await getCfg();
+        if (!c || !c.id_instance || !c.api_token) return fail(400, 'Сначала задайте инстанс');
+        let secret = c.webhook_secret;
+        if (!secret) { secret = (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '') : uid('wh')); await env.DB.prepare(`UPDATE wa_config SET webhook_secret = ? WHERE id = 'main'`).bind(secret).run(); }
+        const webhookUrl = url.origin + '/api/wa/webhook?key=' + secret;
+        try {
+          const r = await fetch(`https://api.green-api.com/waInstance${c.id_instance}/setSettings/${c.api_token}`, {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ webhookUrl, webhookUrlToken: secret, incomingWebhook: 'yes', outgoingMessageWebhook: 'yes', outgoingAPIMessageWebhook: 'yes', stateWebhook: 'yes' }),
+          });
+          const d = await r.json().catch(() => null);
+          if (!r.ok) return fail(502, 'Green API setSettings: ' + (d && d.message ? d.message : 'ошибка'));
+          return ok({ ok: true, webhookUrl, result: d });
+        } catch (e) { return fail(502, 'Green API недоступен: ' + ((e && e.message) || '')); }
       }
       // GET /api/wa/status — состояние инстанса в Green API
       if (segs[1] === 'status' && method === 'GET') {
@@ -297,7 +392,11 @@ export async function onRequest(context) {
         const txt = await res.text();
         let data = null; try { data = JSON.parse(txt); } catch (_) { data = txt; }
         if (!res.ok) return fail(502, 'Green API: ' + (data && data.message ? data.message : (typeof data === 'string' ? data : JSON.stringify(data))));
-        return ok({ sent: true, chatId, idMessage: data && data.idMessage });
+        // сохраняем исходящее в историю чата
+        const idMessage = (data && data.idMessage) || uid('wm');
+        const clientId = b.clientId || await waResolveClient(env, chatId);
+        try { await waStoreMessage(env, { id: idMessage, chat_id: chatId, client_id: clientId, direction: 'out', text: message, status: 'sent', ts: Math.floor(Date.now() / 1000), at: new Date().toISOString() }); } catch (e) {}
+        return ok({ sent: true, chatId, idMessage });
       }
       return fail(404, 'Неизвестный метод wa');
     }

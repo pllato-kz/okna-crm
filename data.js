@@ -58,6 +58,7 @@ function colorFor(s){ const p=['#2563eb','#7c3aed','#0891b2','#db2777','#d97706'
 function daysAgo(n){ const d=new Date(SEED_NOW); d.setDate(d.getDate()-n); return d; }
 function dateStr(d){ if(typeof d==='string') d=new Date(d); return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'short'}); }
 function dateFull(d){ if(typeof d==='string') d=new Date(d); return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function chatTime(s){ if(!s) return ''; const d=new Date(s); return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}); }
 function uid(p){ return (p||'id')+'_'+Math.random().toString(36).slice(2,8); }
 /* экранирование для подстановки в value="" / разметку (формы настроек) */
 function escA(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -228,14 +229,21 @@ function buildSeed(){
     {id:uid('wm'), kind:'comp', itemId:'c8', name:'Отлив оцинков. 150мм',         unit:'пог.м', dir:'out', type:'return',     qty:6,   reason:'Возврат поставщику — пересорт',     balanceAfter:18,  who:'u_wh', at:daysAgo(2).toISOString()},
   ];
 
-  return { v:1, company, users, materials, components, clients, deals, payables, activity, movements };
+  const waMessages = [
+    {id:'wamsg_d1', clientId:'cl1', dir:'in',  text:'Здравствуйте! Сколько будет стоить остеклить балкон 3 метра?', status:null,        at:'2026-05-29T09:30:00.000Z'},
+    {id:'wamsg_d2', clientId:'cl1', dir:'out', text:'Айгуль, здравствуйте! Это Тёплый Контур. Ориентировочно от 180 000 ₸, точнее посчитаем на замере. Когда удобно?', status:'read',     at:'2026-05-29T09:40:00.000Z'},
+    {id:'wamsg_d3', clientId:'cl1', dir:'in',  text:'Давайте завтра после обеда', status:null,                                          at:'2026-05-29T09:50:00.000Z'},
+    {id:'wamsg_d4', clientId:'cl1', dir:'out', text:'Отлично, записал замерщика на завтра 14:00. Пришлю КП сразу после замера.', status:'delivered', at:'2026-05-29T09:55:00.000Z'},
+  ];
+
+  return { v:1, company, users, materials, components, clients, deals, payables, activity, movements, waMessages };
 }
 
 /* ============ STATE / PERSISTENCE ============ */
 const DB_KEY = 'okna_crm_db_v1';
 let DB;
 function loadDB(){
-  try{ const raw=localStorage.getItem(DB_KEY); if(raw){ const d=JSON.parse(raw); if(d&&d.v===1){ if(!Array.isArray(d.movements)) d.movements=[]; return d; } } }catch(e){}
+  try{ const raw=localStorage.getItem(DB_KEY); if(raw){ const d=JSON.parse(raw); if(d&&d.v===1){ if(!Array.isArray(d.movements)) d.movements=[]; if(!Array.isArray(d.waMessages)) d.waMessages=[]; return d; } } }catch(e){}
   const seed=buildSeed(); localStorage.setItem(DB_KEY, JSON.stringify(seed)); return seed;
 }
 function saveDB(){ try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(e){} }

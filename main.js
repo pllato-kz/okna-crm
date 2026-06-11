@@ -372,7 +372,64 @@ function waDoSend(clientId, dealId){
     toast('Не отправлено: '+((e&&e.message)||''),'warn');
   });
 }
+/* ---- двусторонний чат ---- */
+function waChatModal(clientId){
+  const cl=clientById(clientId); if(!cl){ toast('Клиент не найден','warn'); return; }
+  const canSend = !apiOn() || (waConfig && waConfig.enabled && waConfig.configured);
+  const hint = (apiOn() && !canSend) ? `<div class="muted2" style="text-align:center;font-size:11px;padding:6px 14px;color:#fbbf24">WhatsApp не подключён — отправка недоступна (Настройки → WhatsApp)</div>` : '';
+  openModal(`<div class="modal-h">${icon('wa')}<div><h3>WhatsApp · ${cl.name}</h3><div class="mh-sub">${cl.phone}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b" style="padding:0;display:flex;flex-direction:column">
+      <div id="wa-chat-msgs" class="wa-chat" data-cid="${clientId}"><div class="muted2" style="text-align:center;padding:24px">Загрузка…</div></div>
+      ${hint}
+    </div>
+    <div class="modal-f" style="gap:8px">
+      <input id="wa-chat-input" placeholder="Сообщение…" autocomplete="off" style="flex:1;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--txt);font-size:13.5px" ${canSend?'':'disabled'}>
+      <button class="btn green" data-act="wa-chat-send" data-id="${clientId}" ${canSend?'':'disabled'}>${icon('send','sm')}</button>
+    </div>`, true);
+  waLoadChat();
+  const inp=document.getElementById('wa-chat-input');
+  if(inp) inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); waChatSend(clientId); } });
+  if(window.__waPoll){ clearInterval(window.__waPoll); window.__waPoll=null; }
+  if(apiOn()) window.__waPoll=setInterval(()=>{ if(!document.getElementById('wa-chat-msgs')){ clearInterval(window.__waPoll); window.__waPoll=null; return; } waLoadChat(true); }, 5000);
+}
+function waLoadChat(quiet){
+  const box=document.getElementById('wa-chat-msgs'); if(!box) return;
+  const cid=box.dataset.cid;
+  const paint=(list)=>{
+    const last=list[list.length-1];
+    const sig=list.length+':'+((last&&(last.id||last.at))||'')+':'+((last&&last.status)||'');
+    if(box.dataset.sig===sig) return; box.dataset.sig=sig;
+    if(!list.length){ box.innerHTML=`<div class="muted2" style="text-align:center;padding:24px;line-height:1.5">Переписки пока нет.<br>Напишите первым — сообщение уйдёт клиенту в WhatsApp.</div>`; return; }
+    box.innerHTML=list.map(m=>{ const dir=m.direction||m.dir;
+      return `<div class="wa-bub ${dir==='out'?'out':'in'}"><div class="wa-tx">${escA(m.text||'')}</div><div class="wa-mt">${chatTime(m.at)}${dir==='out'&&m.status?' · '+m.status:''}</div></div>`; }).join('');
+    box.scrollTop=box.scrollHeight;
+  };
+  if(apiOn()){ API.wa.messages({clientId:cid}).then(r=>paint(r.messages||[])).catch(()=>{ if(!quiet && !box.dataset.sig) box.innerHTML='<div class="muted2" style="text-align:center;padding:20px">Не удалось загрузить историю</div>'; }); }
+  else { paint((DB.waMessages||[]).filter(m=>m.clientId===cid)); }
+}
+function waChatSend(clientId){
+  const cl=clientById(clientId); const inp=document.getElementById('wa-chat-input');
+  const msg=((inp&&inp.value)||'').trim(); if(!msg) return;
+  if(!apiOn()){
+    DB.waMessages=DB.waMessages||[];
+    DB.waMessages.push({id:uid('wm'),clientId,dir:'out',text:msg,status:'sent',at:new Date().toISOString()});
+    saveDB(); inp.value=''; const box=document.getElementById('wa-chat-msgs'); if(box) box.dataset.sig=''; waLoadChat();
+    return;
+  }
+  if(!(waConfig && waConfig.enabled && waConfig.configured)){ toast('WhatsApp не подключён — настройте в Настройках','warn'); return; }
+  if(!cl.phone){ toast('У клиента нет номера','warn'); return; }
+  inp.disabled=true;
+  API.wa.send(cl.phone, msg, {clientId}).then(()=>{ inp.value=''; inp.disabled=false; const box=document.getElementById('wa-chat-msgs'); if(box) box.dataset.sig=''; waLoadChat(); inp.focus();
+  }).catch(e=>{ inp.disabled=false; toast('Не отправлено: '+((e&&e.message)||''),'warn'); });
+}
+
 /* настройки интеграции */
+function waSetupWebhook(){
+  const el=document.getElementById('wa-status'); if(el){ el.textContent='Регистрируем вебхук…'; el.style.color='var(--muted)'; }
+  if(!apiOn()){ if(el) el.textContent='доступно только в серверном режиме'; return; }
+  API.wa.setupWebhook().then(()=>{ if(el){ el.textContent='✓ приём входящих включён'; el.style.color='#4ade80'; } toast('Вебхук зарегистрирован в Green API'); })
+    .catch(e=>{ if(el){ el.textContent='ошибка: '+((e&&e.message)||''); el.style.color='#f87171'; } });
+}
 function waSaveConfig(){
   if(!isDirector()){ return; }
   const idInstance=((document.getElementById('wa-id')||{}).value||'').trim();
@@ -486,8 +543,11 @@ document.addEventListener('click', e=>{
     case 'wa-deal': waSendModal(null, id); break;
     case 'wa-client': waSendModal(id, null); break;
     case 'wa-send': waDoSend(t.dataset.id||null, t.dataset.deal||null); break;
+    case 'wa-chat': waChatModal(id); break;
+    case 'wa-chat-send': waChatSend(id); break;
     case 'wa-save-config': waSaveConfig(); break;
     case 'wa-check': waCheck(); break;
+    case 'wa-setup-webhook': waSetupWebhook(); break;
     case 'add-payment': addPaymentModal(id); break;
     case 'confirm-payment': confirmPayment(id); break;
     case 'm-pick': state.measureDealId=id; renderModule(); break;

@@ -316,10 +316,29 @@ CREATE INDEX idx_activity_user ON activity(user_id);
 -- Настройки WhatsApp-интеграции через Green API. Одна строка (id='main').
 -- api_token — секрет: хранится только на сервере, наружу (в bootstrap) НЕ отдаётся.
 CREATE TABLE wa_config (
-  id           TEXT PRIMARY KEY DEFAULT 'main',
-  id_instance  TEXT,                          -- idInstance Green API
-  api_token    TEXT,                          -- apiTokenInstance (секрет)
-  enabled      INTEGER NOT NULL DEFAULT 0,     -- 0/1 — включена ли отправка
-  updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+  id             TEXT PRIMARY KEY DEFAULT 'main',
+  id_instance    TEXT,                          -- idInstance Green API
+  api_token      TEXT,                          -- apiTokenInstance (секрет)
+  enabled        INTEGER NOT NULL DEFAULT 0,     -- 0/1 — включена ли отправка
+  webhook_secret TEXT,                           -- секрет для валидации входящего вебхука
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
 );
 INSERT INTO wa_config (id, enabled) VALUES ('main', 0);
+
+-- Сообщения WhatsApp (двусторонний чат). Входящие приходят на вебхук,
+-- исходящие пишутся при отправке. id = idMessage из Green API (для дедупликации).
+CREATE TABLE wa_messages (
+  id           TEXT PRIMARY KEY,               -- idMessage из Green API
+  chat_id      TEXT NOT NULL,                  -- '77051234567@c.us'
+  client_id    TEXT REFERENCES clients(id),    -- сопоставленный клиент (если найден)
+  direction    TEXT NOT NULL,                  -- 'in' | 'out'
+  text         TEXT,
+  sender_name  TEXT,
+  status       TEXT,                           -- sent | delivered | read (для исходящих)
+  ts           INTEGER,                         -- unix-время Green API
+  at           TEXT,                            -- ISO
+  created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX idx_wa_msg_chat   ON wa_messages(chat_id);
+CREATE INDEX idx_wa_msg_client ON wa_messages(client_id);
+CREATE INDEX idx_wa_msg_ts     ON wa_messages(ts);
