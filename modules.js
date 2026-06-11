@@ -208,7 +208,7 @@ function renderClients(){
   }).join('');
   return `<div class="panel">
     <div class="panel-h">${icon('clients')}<h3>Клиенты</h3><span class="ph-sub">${DB.clients.length} записей</span>
-      <div style="margin-left:auto;display:flex;gap:8px"><button class="btn sm" data-act="export" data-what="clients">${icon('doc','sm')} Экспорт</button><button class="btn primary sm" data-act="new-client">${icon('plus','sm')} Добавить</button></div></div>
+      <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="import-clients">${icon('arrow','sm')} Импорт</button><button class="btn sm" data-act="export" data-what="clients">${icon('doc','sm')} Экспорт</button><button class="btn primary sm" data-act="new-client">${icon('plus','sm')} Добавить</button></div></div>
     <table class="tbl">
       <thead><tr><th>Клиент</th><th>Телефон</th><th>Адрес</th><th class="num">Сделок</th><th class="num">Сумма</th><th class="num">Долг</th></tr></thead>
       <tbody>${rows}</tbody>

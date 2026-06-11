@@ -167,6 +167,83 @@ function saveDealEdit(id){
   saveDB(); if(apiOn()) persist(API.persist.saveDeal(d));
   closeModal(); render(); toast('Сделка обновлена');
 }
+/* ====== ИМПОРТ КЛИЕНТОВ ИЗ CSV ====== */
+let __impRows=[];
+function parseCSV(text){
+  text=String(text).replace(/^﻿/,'');
+  const firstLine=text.split(/\r?\n/)[0]||'';
+  const delim=firstLine.split(';').length>firstLine.split(',').length?';':',';
+  const rows=[]; let row=[], cur='', q=false;
+  for(let i=0;i<text.length;i++){ const ch=text[i];
+    if(q){ if(ch==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
+    else if(ch==='"') q=true;
+    else if(ch===delim){ row.push(cur); cur=''; }
+    else if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; }
+    else if(ch==='\r'){}
+    else cur+=ch;
+  }
+  if(cur!==''||row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(r=>r.some(c=>String(c).trim()!==''));
+}
+function mapClientRows(rows){
+  if(!rows.length) return [];
+  const head=rows[0].map(h=>String(h).toLowerCase().trim());
+  const find=(...keys)=>head.findIndex(h=>keys.some(k=>h.includes(k)));
+  const iName=find('имя','наимен','клиент','организ','назв'), iPhone=find('телефон','тел','phone'), iAddr=find('адрес','address'), iType=find('тип','type');
+  let dataRows, idx;
+  if(iName>=0||iPhone>=0){ dataRows=rows.slice(1); idx={name:iName>=0?iName:0, phone:iPhone, addr:iAddr, type:iType}; }
+  else { dataRows=rows; idx={name:0, phone:1, addr:2, type:3}; }
+  return dataRows.map(r=>{
+    const g=i=>(i>=0&&i<r.length)?String(r[i]).trim():'';
+    const name=g(idx.name); if(!name) return null;
+    const typeRaw=g(idx.type).toLowerCase();
+    const type = /физ/.test(typeRaw) ? 'Физ. лицо'
+      : (/юр|тоо|ип|оо/.test(typeRaw) || /ТОО|ИП|ОО|Школа/.test(name)) ? 'Юр. лицо' : 'Физ. лицо';
+    return { name, phone:g(idx.phone)||'—', address:g(idx.addr)||DB.company.city, type };
+  }).filter(Boolean);
+}
+function importClientsModal(){
+  __impRows=[];
+  openModal(`<div class="modal-h">${icon('clients')}<h3>Импорт клиентов</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b">
+      <div class="muted2" style="font-size:12px;line-height:1.5;margin-bottom:12px">Загрузите CSV. Колонки определяются по заголовкам: <b>Имя</b>, <b>Телефон</b>, <b>Адрес</b>, <b>Тип</b> (либо в таком порядке без заголовков). Формат — как в кнопке «Экспорт». Дубли по телефону пропускаются.</div>
+      <input type="file" id="imp-file" accept=".csv,text/csv,text/plain" style="margin-bottom:12px;width:100%">
+      <div id="imp-preview" class="muted2" style="font-size:12px">Файл не выбран</div>
+    </div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" id="imp-run" data-act="import-clients-run" disabled>${icon('check','sm')} Импортировать</button></div>`);
+  const f=document.getElementById('imp-file');
+  if(f) f.addEventListener('change', e=>{
+    const file=e.target.files&&e.target.files[0]; if(!file) return;
+    const rd=new FileReader();
+    rd.onload=()=>{ try{ __impRows=mapClientRows(parseCSV(String(rd.result))); }catch(err){ __impRows=[]; } renderImpPreview(); };
+    rd.onerror=()=>{ __impRows=[]; renderImpPreview(); };
+    rd.readAsText(file,'utf-8');
+  });
+}
+function renderImpPreview(){
+  const box=document.getElementById('imp-preview'); const btn=document.getElementById('imp-run'); if(!box) return;
+  if(!__impRows.length){ box.innerHTML='Не найдено строк для импорта — проверьте файл.'; if(btn) btn.disabled=true; return; }
+  const rows=__impRows.slice(0,5).map(c=>`<tr><td>${escA(c.name)}</td><td>${escA(c.phone)}</td><td class="muted">${escA(c.address)}</td><td>${escA(c.type)}</td></tr>`).join('');
+  box.innerHTML=`<div style="margin-bottom:8px">Найдено записей: <b>${__impRows.length}</b>${__impRows.length>5?' (показаны первые 5)':''}</div>
+    <div class="tbl-scroll"><table class="tbl"><thead><tr><th>Имя</th><th>Телефон</th><th>Адрес</th><th>Тип</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  if(btn) btn.disabled=false;
+}
+function importClientsRun(){
+  if(!__impRows.length) return;
+  let added=0, skipped=0;
+  const norm=p=>String(p||'').replace(/\D/g,'');
+  __impRows.forEach(c=>{
+    const np=norm(c.phone);
+    const dupe = np && DB.clients.some(x=>norm(x.phone)===np);
+    if(dupe){ skipped++; return; }
+    const nc={id:uid('cl'), name:c.name, phone:c.phone, address:c.address, type:c.type};
+    DB.clients.push(nc); added++;
+    if(apiOn()) persist(API.persist.createClient(nc));
+  });
+  saveDB(); closeModal(); renderModule();
+  toast(`Импортировано: ${added}${skipped?` · пропущено дублей: ${skipped}`:''}`);
+}
+
 /* ====== ЗАДАЧИ / НАПОМИНАНИЯ ПО СДЕЛКАМ ====== */
 function tasksForDeal(id){ return (DB.tasks||[]).filter(t=>t.dealId===id).sort((a,b)=>(a.done-b.done)||String(a.due||'').localeCompare(String(b.due||''))); }
 function taskDayDiff(due){ if(!due) return 0; const d=new Date(due); const a=new Date(d.getFullYear(),d.getMonth(),d.getDate()); const n=new Date(SEED_NOW.getFullYear(),SEED_NOW.getMonth(),SEED_NOW.getDate()); return Math.round((a-n)/864e5); }
@@ -971,6 +1048,8 @@ document.addEventListener('click', e=>{
     case 'del-client-confirm': delClientConfirm(id); break;
     case 'edit-client': editClientModal(id); break;
     case 'save-client': saveClient(t.dataset.id); break;
+    case 'import-clients': importClientsModal(); break;
+    case 'import-clients-run': importClientsRun(); break;
     case 'wa-deal': waSendModal(null, id); break;
     case 'wa-client': waSendModal(id, null); break;
     case 'wa-send': waDoSend(t.dataset.id||null, t.dataset.deal||null); break;
