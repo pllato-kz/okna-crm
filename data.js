@@ -222,11 +222,11 @@ function buildSeed(){
   ];
 
   const movements = [
-    {id:uid('wm'), kind:'mat',  itemId:'m4', name:'Rehau Grazio 70',             unit:'пог.м', dir:'in',  type:'receipt',    qty:200, reason:'Поставка Rehau KZ',                 balanceAfter:355, who:'u_wh', at:daysAgo(6).toISOString()},
-    {id:uid('wm'), kind:'comp', itemId:'c2', name:'Стеклопакет двухкам. 32мм',    unit:'м²',    dir:'in',  type:'receipt',    qty:40,  reason:'Поставка Стеклопакет-Сервис',       balanceAfter:62,  who:'u_wh', at:daysAgo(5).toISOString()},
-    {id:uid('wm'), kind:'mat',  itemId:'m5', name:'Veka Softline 70',             unit:'пог.м', dir:'out', type:'production', qty:48,  reason:'В производство — Бекзат Сулейменов',balanceAfter:120, who:'u_as', dealId:'d11', at:daysAgo(5).toISOString()},
+    {id:uid('wm'), kind:'mat',  itemId:'m4', name:'Rehau Grazio 70',             unit:'пог.м', dir:'in',  type:'receipt',    qty:200, reason:'Поставка Rehau KZ',                 balanceAfter:355, who:'u_wh', at:daysAgo(40).toISOString()},
+    {id:uid('wm'), kind:'comp', itemId:'c2', name:'Стеклопакет двухкам. 32мм',    unit:'м²',    dir:'in',  type:'receipt',    qty:40,  reason:'Поставка Стеклопакет-Сервис',       balanceAfter:62,  who:'u_wh', at:daysAgo(18).toISOString()},
+    {id:uid('wm'), kind:'mat',  itemId:'m5', name:'Veka Softline 70',             unit:'пог.м', dir:'out', type:'production', qty:48,  reason:'В производство — Бекзат Сулейменов',balanceAfter:120, who:'u_as', dealId:'d11', at:daysAgo(6).toISOString()},
     {id:uid('wm'), kind:'comp', itemId:'c5', name:'Фурнитура MACO пов.-откидная', unit:'компл', dir:'out', type:'writeoff',   qty:2,   reason:'Брак при сборке',                   balanceAfter:34,  who:'u_as', at:daysAgo(3).toISOString()},
-    {id:uid('wm'), kind:'comp', itemId:'c8', name:'Отлив оцинков. 150мм',         unit:'пог.м', dir:'out', type:'return',     qty:6,   reason:'Возврат поставщику — пересорт',     balanceAfter:18,  who:'u_wh', at:daysAgo(2).toISOString()},
+    {id:uid('wm'), kind:'comp', itemId:'c8', name:'Отлив оцинков. 150мм',         unit:'пог.м', dir:'out', type:'return',     qty:6,   reason:'Возврат поставщику — пересорт',     balanceAfter:18,  who:'u_wh', at:daysAgo(1).toISOString()},
   ];
 
   const waMessages = [
