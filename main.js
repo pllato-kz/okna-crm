@@ -386,6 +386,61 @@ function waChatModal(clientId){
       <input id="wa-chat-input" placeholder="Сообщение…" autocomplete="off" style="flex:1;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--txt);font-size:13.5px" ${canSend?'':'disabled'}>
       <button class="btn green" data-act="wa-chat-send" data-id="${clientId}" ${canSend?'':'disabled'}>${icon('send','sm')}</button>
     </div>`, true);
+  waBindChat(clientId);
+}
+/* совмещённый вид: слева сделка, справа чат (из Воронки) */
+function waDealChatModal(dealId){
+  const d=dealById(dealId); if(!d){ toast('Сделка не найдена','warn'); return; }
+  const cl=clientById(d.clientId); if(!cl){ toast('Клиент не найден','warn'); return; }
+  const canSend = !apiOn() || (waConfig && waConfig.enabled && waConfig.configured);
+  const st=stageById(d.stage); const sum=d.sum||dealItemsSum(d); const paid=dealPaid(d); const debt=Math.max(0,sum-paid);
+  const money$=seesMoney();
+  const items=(d.items||[]).map(c=>{ const mt=matById(c.profileId);
+    return `<div class="stat-line"><span>${mt?mt.type:''} ${c.w}×${c.h}${(c.qty||1)>1?' ·'+c.qty+'шт':''}</span><span class="muted">${openById(c.openId)?.name||''}</span></div>`; }).join('')
+    || '<div class="muted2" style="font-size:12px">Конструкции не добавлены</div>';
+  const moneyBlock = money$ ? `
+      <div class="stat-line"><span>Сумма заказа</span><span style="font-weight:700">${money(sum)}</span></div>
+      <div class="stat-line"><span>Оплачено</span><span style="color:#4ade80;font-weight:700">${money(paid)}</span></div>
+      <div class="stat-line"><span>Остаток</span><span style="color:${debt>0?'#fbbf24':'#4ade80'};font-weight:700">${money(debt)}</span></div>` : '';
+  const info = `
+    <div class="wa-deal-info">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <span class="av" style="width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:${colorFor(cl.id)};color:#fff;font-weight:700">${initials(cl.name)}</span>
+        <div><div style="font-weight:700">${cl.name} ${d.hot?icon('flame','sm'):''}</div><div class="muted2" style="font-size:11.5px">${cl.phone}</div></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+        <span class="tag" style="border-color:${st.color}55;color:${st.color}"><span class="dot-i" style="background:${st.color}"></span>${st.name}</span>
+        <span class="tag">${icon('layers','sm')} ${d.source}</span>
+      </div>
+      <div class="stat-line"><span>${icon('pin','sm')} Адрес</span><span class="muted" style="text-align:right;max-width:60%">${cl.address}</span></div>
+      ${moneyBlock}
+      <div class="muted2" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 4px">Конструкции (${(d.items||[]).length})</div>
+      ${items}
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
+        <button class="btn sm" data-act="open-deal" data-id="${d.id}">${icon('funnel','sm')} Открыть сделку целиком</button>
+        ${d.stage==='measure'?`<button class="btn sm" data-act="go-measure-deal" data-id="${d.id}">${icon('ruler','sm')} Открыть замер</button>`:''}
+        ${money$&&debt>0?`<button class="btn sm green" data-act="add-payment" data-id="${d.id}">${icon('money','sm')} Принять оплату</button>`:''}
+      </div>
+    </div>`;
+  const hint = (apiOn() && !canSend) ? `<div class="muted2" style="text-align:center;font-size:11px;padding:6px 14px;color:#fbbf24">WhatsApp не подключён — отправка недоступна (Настройки → WhatsApp)</div>` : '';
+  openModal(`<div class="modal-h">${icon('wa')}<div><h3>Сделка и чат · ${cl.name}</h3><div class="mh-sub">${cl.phone} · ${st.name}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b" style="padding:0">
+      <div class="wa-split">
+        ${info}
+        <div class="wa-chat-pane">
+          <div id="wa-chat-msgs" class="wa-chat" data-cid="${cl.id}"><div class="muted2" style="text-align:center;padding:24px">Загрузка…</div></div>
+          ${hint}
+          <div class="wa-compose">
+            <input id="wa-chat-input" placeholder="Сообщение…" autocomplete="off" style="flex:1;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--txt);font-size:13.5px" ${canSend?'':'disabled'}>
+            <button class="btn green" data-act="wa-chat-send" data-id="${cl.id}" ${canSend?'':'disabled'}>${icon('send','sm')}</button>
+          </div>
+        </div>
+      </div>
+    </div>`, true);
+  waBindChat(cl.id);
+}
+/* подключение загрузки/поллинга/Enter для открытого чата */
+function waBindChat(clientId){
   waLoadChat();
   const inp=document.getElementById('wa-chat-input');
   if(inp) inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); waChatSend(clientId); } });
@@ -544,6 +599,7 @@ document.addEventListener('click', e=>{
     case 'wa-client': waSendModal(id, null); break;
     case 'wa-send': waDoSend(t.dataset.id||null, t.dataset.deal||null); break;
     case 'wa-chat': waChatModal(id); break;
+    case 'wa-deal-chat': waDealChatModal(id); break;
     case 'wa-chat-send': waChatSend(id); break;
     case 'wa-save-config': waSaveConfig(); break;
     case 'wa-check': waCheck(); break;
