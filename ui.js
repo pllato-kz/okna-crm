@@ -2,9 +2,8 @@
 /* ============ ROOT RENDER ============ */
 function render(){
   const app=document.getElementById('app');
-  const g=gateStatus();
-  if(g.mode==='locked' || g.mode==='expired'){ app.innerHTML=renderGate(g); return; }
-  if(!state.user){ app.innerHTML=renderLogin(g); return; }
+  // Демо-гейт отключён: доступ контролирует вход (/api/login). gateStatus/renderGate оставлены для совместимости.
+  if(!state.user){ app.innerHTML=renderLogin(); return; }
   app.innerHTML=renderShell();
   renderModule();
 }
