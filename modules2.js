@@ -310,12 +310,12 @@ function renderFinance(){
         <td class="num" style="color:#fbbf24;font-weight:700">${money(debt)}</td>
         <td>${overdue?'<span class="tag red">требует оплаты</span>':'<span class="tag amber">в графике</span>'}</td>
         <td><button class="btn green sm" data-act="add-payment" data-id="${d.id}">${icon('money','sm')} Оплата</button></td></tr>`;}).join('');
-    body=`<table class="tbl"><thead><tr><th>Клиент</th><th>Стадия</th><th class="num">Заказ</th><th class="num">Оплачено</th><th class="num">Долг</th><th>Статус</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan=7 class="muted" style="text-align:center;padding:30px">Дебиторки нет</td></tr>'}</tbody></table>`;
+    body=`<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Клиент</th><th>Стадия</th><th class="num">Заказ</th><th class="num">Оплачено</th><th class="num">Долг</th><th>Статус</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan=7 class="muted" style="text-align:center;padding:30px">Дебиторки нет</td></tr>'}</tbody></table></div>`;
   } else if(tab==='pay'){
     const rows=DB.payables.map(p=>`<tr><td style="font-weight:600">${p.supplier}</td><td class="muted">${p.forWhat}</td>
       <td class="num" style="font-weight:700">${money(p.amount)}</td><td class="muted">${dateFull(p.due)}</td>
       <td>${p.status==='просрочено'?'<span class="tag red">просрочено</span>':'<span class="tag amber">ожидает</span>'}</td></tr>`).join('');
-    body=`<table class="tbl"><thead><tr><th>Поставщик</th><th>За что</th><th class="num">Сумма</th><th>Срок</th><th>Статус</th></tr></thead><tbody>${rows}</tbody></table>`;
+    body=`<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Поставщик</th><th>За что</th><th class="num">Сумма</th><th>Срок</th><th>Статус</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   } else {
     const revenue=DB.deals.reduce((s,d)=>s+dealPaid(d),0);
     const orders=DB.deals.filter(d=>d.sum>0).reduce((s,d)=>s+d.sum,0);
