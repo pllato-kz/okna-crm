@@ -15,7 +15,7 @@ function renderGate(g){
   return `<div class="gate-wrap"><button class="theme-fab" data-act="theme" title="Сменить тему">${icon(state.theme==='light'?'moon':'sun')}</button>
     <div class="gate-card">
       <div class="gate-icon">${icon(expired?'clock':'lock','lg')}</div>
-      <div class="brand-name" style="font-size:15px;letter-spacing:.04em">ОКНА CRM · демо</div>
+      <div class="brand-name" style="font-size:15px;letter-spacing:.04em">Ocean Glass · демо</div>
       <h1>${expired?'Срок доступа к демо истёк':'Доступ к демо по ссылке'}</h1>
       <p>${expired
         ? `Эта демо-ссылка действовала до <b>${fmtExpiry(g.exp)}</b> и больше не активна. Запросите новую ссылку у менеджера Pllato — мы откроем доступ ещё раз.`
@@ -73,7 +73,7 @@ function renderLogin(g){
     <div class="login-side">
       <div class="brand">
         <div class="brand-logo">${icon('grid','lg')}</div>
-        <div><div class="brand-name">ОКНА CRM</div><div class="brand-sub">для оконного производства</div></div>
+        <div><div class="brand-name">Ocean Glass</div><div class="brand-sub">окна · стекло · фасады</div></div>
       </div>
       <h1>CRM, <span class="grad">собранная под оконный бизнес</span></h1>
       <p>Воронка продаж, выезд на замер с расчётом конструкций прямо на объекте, мгновенное КП клиенту в WhatsApp, склад профиля и стеклопакетов, финансы и дебиторка — в одном окне.</p>
@@ -141,7 +141,7 @@ function renderShell(){
       <div class="side-top">
         <div class="brand">
           <div class="brand-logo">${icon('grid','lg')}</div>
-          <div><div class="brand-name">ОКНА CRM</div><div class="brand-sub">v1.0 demo</div></div>
+          <div><div class="brand-name">Ocean Glass</div><div class="brand-sub">CRM · Ош</div></div>
         </div>
         <div class="company-pill">
           <div class="cn">${DB.company.name}</div>
