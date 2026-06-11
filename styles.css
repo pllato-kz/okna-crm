@@ -265,6 +265,11 @@ input,select,textarea{font-family:inherit}
 .tab:hover:not(.on){color:var(--txt)}
 
 .perm-tbl td .yes{color:#4ade80}.perm-tbl td .no{color:#475569}
+.perm-cell{background:none;border:1px solid transparent;cursor:pointer;padding:5px 9px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;min-width:36px;transition:background .12s,border-color .12s}
+.perm-cell:hover{background:var(--bg2);border-color:var(--line)}
+.perm-cell.on:hover{border-color:var(--green-soft)}
+.row-acts{text-align:right;white-space:nowrap}
+.row-acts .btn.sm{padding:6px 9px}
 .tbl-scroll{overflow-x:auto}
 .perm-tbl{min-width:560px}
 .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted)}

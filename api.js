@@ -59,6 +59,7 @@ function apiMapBootstrap(boot){
   const payStatuses = apiIndexBy(cat.payable_statuses);
 
   const company = boot.company ? {
+    id: boot.company.id,
     name: boot.company.name, legal: boot.company.legal, city: boot.company.city,
     phone: boot.company.phone, workshop: boot.company.workshop, revenueYear: boot.company.revenue_year,
   } : {};
@@ -157,6 +158,23 @@ const apiPersist = {
   saveMaterial:  (m) => apiFetch('materials/' + m.id, { method: 'PUT', body: { stock: m.stock, rate: m.rate, supplier: m.supplier } }),
   saveComponent: (c) => apiFetch('components/' + c.id, { method: 'PUT', body: { stock: c.stock } }),
   createActivity:(a) => apiFetch('activity', { method: 'POST', body: { user_id: a.who, text: a.text, kind_id: a.kind, at: a.at } }),
+
+  /* ---- настройки (только директор; бэкенд гейтит роль) ---- */
+  saveCompany: (c) => apiFetch('company/' + c.id, { method: 'PUT', body: {
+    name: c.name, legal: c.legal, city: c.city, phone: c.phone, workshop: c.workshop, revenue_year: c.revenueYear,
+  }}),
+  createUser: (u) => apiFetch('users', { method: 'POST', body: {
+    id: u.id, name: u.name, email: u.email, role_id: u.role, title: u.title,
+    is_primary: u.primary ? 1 : 0, is_active: 1,
+  }}),
+  saveUser: (u) => apiFetch('users/' + u.id, { method: 'PUT', body: {
+    name: u.name, email: u.email, role_id: u.role, title: u.title, is_primary: u.primary ? 1 : 0,
+  }}),
+  deleteUser: (id) => apiFetch('users/' + id, { method: 'DELETE' }),
+  setUserPassword: (id, password) => apiFetch('users/' + id + '/password', { method: 'POST', body: { password } }),
+  setModuleRole: (moduleId, roleId, on) => on
+    ? apiFetch('module_roles', { method: 'POST', body: { module_id: moduleId, role_id: roleId } })
+    : apiFetch('module_roles?module_id=' + encodeURIComponent(moduleId) + '&role_id=' + encodeURIComponent(roleId), { method: 'DELETE' }),
 };
 
 const API = {
