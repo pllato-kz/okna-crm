@@ -424,7 +424,7 @@ function renderSettings(){
       <div class="stat-line"><span>Название</span><span style="font-weight:600">${DB.company.legal}</span></div>
       <div class="stat-line"><span>Город</span><span>${DB.company.city}</span></div>
       <div class="stat-line"><span>Телефон</span><span>${DB.company.phone}</span></div>
-      <div class="stat-line"><span>Производство</span><span>${DB.company.workshop}</span></div>
+      <div class="stat-line"><span>Производство</span><span style="text-align:right">${DB.company.workshop}</span></div>
       <div class="stat-line"><span>Оборот</span><span>${DB.company.revenueYear}</span></div>
     </div></div>
     <div class="panel"><div class="panel-h">${icon('clients')}<h3>Сотрудники</h3><span class="ph-sub">${DB.users.length}</span>${usAdd}</div>
