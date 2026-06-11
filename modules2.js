@@ -384,7 +384,10 @@ function renderSettings(){
         <button class="btn" data-act="wa-check">${icon('refresh','sm')} Проверить подключение</button>
         <span id="wa-status" class="muted2" style="font-size:12px"></span>
       </div>
-      <div class="muted2" style="font-size:11.5px;margin-top:10px;line-height:1.5">Данные инстанса — в личном кабинете Green API (idInstance и apiTokenInstance). Токен хранится на сервере и в браузер не передаётся. Когда инстанс готов и переключатель включён — кнопки «Написать в WhatsApp» отправляют сообщения реально.</div>
+      ${wa.webhookUrl?`<div class="fld full" style="margin-top:14px"><label>URL вебхука (для приёма входящих)</label>
+        <input readonly value="${escA(wa.webhookUrl)}" style="font-size:11.5px">
+        <div style="margin-top:8px"><button class="btn sm" data-act="wa-setup-webhook">${icon('arrow','sm')} Подключить приём (зарегистрировать в Green API)</button></div></div>`:''}
+      <div class="muted2" style="font-size:11.5px;margin-top:10px;line-height:1.5">Данные инстанса — в личном кабинете Green API (idInstance и apiTokenInstance). Токен хранится на сервере и в браузер не передаётся. Когда инстанс включён — кнопки WhatsApp шлют реально, а входящие приходят в «Чат WhatsApp» карточки клиента (двусторонний чат).</div>
     </div></div>` : '';
   return `
   <div class="grid-2b">

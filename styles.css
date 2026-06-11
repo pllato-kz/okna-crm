@@ -272,6 +272,12 @@ input,select,textarea{font-family:inherit}
 .row-acts .btn.sm{padding:6px 9px}
 .tbl-scroll{overflow-x:auto}
 .perm-tbl{min-width:560px}
+/* WhatsApp-чат */
+.wa-chat{height:min(52vh,440px);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;background:var(--bg2)}
+.wa-bub{max-width:80%;padding:8px 11px;border-radius:13px;font-size:13px;line-height:1.45;box-shadow:0 1px 2px #0003;word-break:break-word}
+.wa-bub.in{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:4px}
+.wa-bub.out{align-self:flex-end;background:linear-gradient(135deg,#15803d,#16a34a);color:#fff;border-bottom-right-radius:4px}
+.wa-bub .wa-mt{font-size:10px;opacity:.7;margin-top:3px;text-align:right}
 .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
 .legend span{display:flex;align-items:center;gap:6px}
 

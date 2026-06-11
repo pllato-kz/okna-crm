@@ -195,6 +195,8 @@ const apiWa = {
   }}),
   status: () => apiFetch('wa/status'),
   send: (phone, message, extra) => apiFetch('wa/send', { method: 'POST', body: Object.assign({ phone, message }, extra || {}) }),
+  messages: (q) => apiFetch('wa/messages' + (q && q.clientId ? '?clientId=' + encodeURIComponent(q.clientId) : (q && q.chatId ? '?chatId=' + encodeURIComponent(q.chatId) : ''))),
+  setupWebhook: () => apiFetch('wa/setup-webhook', { method: 'POST' }),
 };
 
 const API = {
