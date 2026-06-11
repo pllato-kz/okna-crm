@@ -348,6 +348,26 @@ function consumeForStage(d, stage){
   }
   return used;
 }
+/* Нехватка материалов для завершения производства заказа (учитывая уже списанное).
+   Возвращает [{name, need, have, lack, unit}] по позициям, которых не хватает на складе. */
+function materialShortage(d){
+  const items=d.items||[]; const cons=d.consumed||{}; const need={};
+  const add=(id,q)=>{ if(!id||q<=0) return; need[id]=(need[id]||0)+q; };
+  if(!cons.profile) items.forEach(c=>add(c.profileId, Math.round(constrPerimeter(c))));
+  if(!cons.glass)   items.forEach(c=>add(GLASS_COMP[c.glassId], Math.round(constrArea(c)*(c.qty||1)*10)/10));
+  if(!cons.fittings) items.forEach(c=>{
+    add(FIT_COMP[c.openId], (c.sashes||1)*(c.qty||1));
+    (c.extras||[]).forEach(ex=>{
+      if(ex==='mosquito') add('c6', c.qty||1);
+      if(ex==='sill')     add('c7', Math.round(c.w/1000*(c.qty||1)*10)/10);
+      if(ex==='ebb')      add('c8', Math.round(c.w/1000*(c.qty||1)*10)/10);
+    });
+  });
+  const short=[];
+  Object.keys(need).forEach(id=>{ const it=matById(id)||compById(id); if(!it) return;
+    if((it.stock||0) < need[id]) short.push({name:it.name, need:need[id], have:it.stock||0, lack:Math.round((need[id]-(it.stock||0))*10)/10, unit:it.unit}); });
+  return short;
+}
 
 /* ============ PRICING ============ */
 function constrArea(c){ return (c.w*c.h)/1e6; }
