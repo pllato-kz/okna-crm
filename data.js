@@ -245,7 +245,7 @@ DB = loadDB();
 const THEME_KEY = 'okna_crm_theme';
 function loadTheme(){ try{ return localStorage.getItem(THEME_KEY) || 'light'; }catch(e){ return 'light'; } }
 function applyTheme(t){ document.documentElement.setAttribute('data-theme', t); }
-const state = { user:null, module:null, measureDealId:null, financeTab:'recv', whTab:'profile', sideOpen:false, theme:loadTheme() };
+const state = { user:null, module:null, measureDealId:null, financeTab:'recv', whTab:'profile', whMoveType:'all', whMovePeriod:'all', sideOpen:false, theme:loadTheme() };
 applyTheme(state.theme);
 
 /* ============ ДОСТУП ПО ССЫЛКЕ (демо-гейт) ============ */
