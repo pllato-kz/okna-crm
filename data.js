@@ -44,6 +44,8 @@ const ICON = {
   flame:'<path d="M12 3s4 4 4 8a4 4 0 0 1-8 0c0-1 .5-2 1-2.5C9 11 12 9 12 3z"/>',
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/>',
 };
 function icon(name, cls){ return `<svg class="svg-i ${cls||''}" viewBox="0 0 24 24">${ICON[name]||''}</svg>`; }
 
@@ -57,6 +59,8 @@ function daysAgo(n){ const d=new Date(SEED_NOW); d.setDate(d.getDate()-n); retur
 function dateStr(d){ if(typeof d==='string') d=new Date(d); return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'short'}); }
 function dateFull(d){ if(typeof d==='string') d=new Date(d); return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'}); }
 function uid(p){ return (p||'id')+'_'+Math.random().toString(36).slice(2,8); }
+/* экранирование для подстановки в value="" / разметку (формы настроек) */
+function escA(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 const SEED_NOW = new Date('2026-05-29T11:00:00');
 
 /* ============ STATIC CATALOG ============ */

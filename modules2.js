@@ -312,27 +312,39 @@ function renderFinance(){
 
 /* ============ SETTINGS ============ */
 function renderSettings(){
-  const emps=DB.users.map(u=>`<tr><td><div class="cell-name">${avatarXs(u.name,u.id)}<span style="font-weight:600">${u.name}</span></div></td>
-    <td><span class="tag blue">${roleRu(u.role)}</span></td><td class="muted">${u.title}</td></tr>`).join('');
+  const dir = state.user && state.user.role==='director'; // редактирование — только директор
+  const emps=DB.users.map(u=>{
+    const self = state.user && state.user.id===u.id;
+    const acts = dir ? `<td class="row-acts">
+      <button class="btn sm ghost" data-act="edit-user" data-id="${u.id}" title="Изменить">${icon('edit','sm')}</button>
+      ${self?'':`<button class="btn sm ghost" data-act="del-user" data-id="${u.id}" title="Удалить">${icon('trash','sm')}</button>`}</td>` : '';
+    return `<tr><td><div class="cell-name">${avatarXs(u.name,u.id)}<span style="font-weight:600">${u.name}</span></div></td>
+      <td><span class="tag blue">${roleRu(u.role)}</span></td><td class="muted">${u.title}</td>${acts}</tr>`;
+  }).join('');
   const mods=Object.keys(MODULE_META);
   const roles=['director','manager','surveyor','production','warehouse'];
   const permHead=`<tr><th>Модуль</th>${roles.map(r=>`<th style="text-align:center">${roleRu(r)}</th>`).join('')}</tr>`;
   const permRows=mods.map(mod=>`<tr><td>${icon(MODULE_META[mod].icon,'sm')} ${MODULE_META[mod].name}</td>${roles.map(r=>{
-    const ok=MODULE_ROLES[mod].includes(r);
-    return `<td style="text-align:center">${ok?`<span class="yes">${icon('check','sm')}</span>`:'<span class="no">—</span>'}</td>`;}).join('')}</tr>`).join('');
+    const ok=(MODULE_ROLES[mod]||[]).includes(r);
+    const inner = ok?`<span class="yes">${icon('check','sm')}</span>`:'<span class="no">—</span>';
+    return dir
+      ? `<td style="text-align:center"><button class="perm-cell${ok?' on':''}" data-act="perm-toggle" data-mod="${mod}" data-role="${r}" title="${ok?'Доступ открыт — нажмите, чтобы закрыть':'Доступ закрыт — нажмите, чтобы открыть'}">${inner}</button></td>`
+      : `<td style="text-align:center">${inner}</td>`;}).join('')}</tr>`).join('');
+  const coEdit = dir ? `<button class="btn sm ghost" style="margin-left:auto" data-act="edit-company">${icon('edit','sm')} Изменить</button>` : '';
+  const usAdd  = dir ? `<button class="btn sm" style="margin-left:auto" data-act="add-user">${icon('plus','sm')} Добавить</button>` : '';
   return `
   <div class="grid-2b">
-    <div class="panel"><div class="panel-h">${icon('settings')}<h3>Компания</h3></div><div class="panel-b">
+    <div class="panel"><div class="panel-h">${icon('settings')}<h3>Компания</h3>${coEdit}</div><div class="panel-b">
       <div class="stat-line"><span>Название</span><span style="font-weight:600">${DB.company.legal}</span></div>
       <div class="stat-line"><span>Город</span><span>${DB.company.city}</span></div>
       <div class="stat-line"><span>Телефон</span><span>${DB.company.phone}</span></div>
       <div class="stat-line"><span>Производство</span><span>${DB.company.workshop}</span></div>
       <div class="stat-line"><span>Оборот</span><span>${DB.company.revenueYear}</span></div>
     </div></div>
-    <div class="panel"><div class="panel-h">${icon('clients')}<h3>Сотрудники</h3><span class="ph-sub">${DB.users.length}</span></div>
+    <div class="panel"><div class="panel-h">${icon('clients')}<h3>Сотрудники</h3><span class="ph-sub">${DB.users.length}</span>${usAdd}</div>
       <table class="tbl"><tbody>${emps}</tbody></table></div>
   </div>
-  <div class="panel section-gap"><div class="panel-h">${icon('shield')}<h3>Права доступа</h3><span class="ph-sub">кто что видит — сборщики и склад не видят финансы</span></div>
+  <div class="panel section-gap"><div class="panel-h">${icon('shield')}<h3>Права доступа</h3><span class="ph-sub">${dir?'нажмите на ячейку, чтобы открыть/закрыть доступ роли к модулю':'кто что видит — сборщики и склад не видят финансы'}</span></div>
     <div class="tbl-scroll"><table class="tbl perm-tbl"><thead>${permHead}</thead><tbody>${permRows}</tbody></table></div></div>
   <div class="panel section-gap"><div class="panel-h">${icon('refresh')}<h3>Демо-данные</h3></div><div class="panel-b">
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><span class="muted" style="font-size:13px">Сбросить все изменения и вернуть исходные демо-данные.</span>

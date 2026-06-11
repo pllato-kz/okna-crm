@@ -8,8 +8,22 @@ function logout(){ try{ if(window.API){ API.logout(); API.enabled=false; } }catc
 async function bootFromApi(){
   const mapped = await API.loadBootstrap();
   DB = mapped.DB;            // данные с сервера в формате фронта
+  applyServerCatalogs(mapped.catalogs); // справочники и права с сервера → живые глобали
   API.enabled = true;        // включаем запись на сервер
   return mapped;
+}
+/* Заменяет содержимое глобальных справочников-констант данными с сервера
+   (мутируем на месте — это const-объекты/массивы). Так правки прав/каталогов
+   в БД отражаются на фронте и переживают перезагрузку. Пустые наборы игнорим. */
+function applyServerCatalogs(cat){
+  if(!cat) return;
+  const fillArr = (arr, src) => { if(Array.isArray(src) && src.length){ arr.length=0; src.forEach(x=>arr.push(x)); } };
+  fillArr(STAGES, cat.STAGES); fillArr(PROD_STAGES, cat.PROD_STAGES);
+  fillArr(GLASS, cat.GLASS); fillArr(OPENINGS, cat.OPENINGS); fillArr(EXTRAS, cat.EXTRAS);
+  if(cat.MODULE_ROLES && Object.keys(cat.MODULE_ROLES).length){
+    Object.keys(MODULE_ROLES).forEach(k=>{ delete MODULE_ROLES[k]; });
+    Object.keys(cat.MODULE_ROLES).forEach(k=>{ MODULE_ROLES[k]=cat.MODULE_ROLES[k].slice(); });
+  }
 }
 /* persist: запускает запись на сервер только в API-режиме; ошибку показывает тостом */
 function apiOn(){ return !!(window.API && API.enabled); }
@@ -160,6 +174,104 @@ function mSet(cid,field,val){ const d=currentMeasureDeal(); const c=d.items.find
   if(apiOn()){ if(field==='extras') persist(API.persist.setItemExtra(cid, val, c.extras.includes(val))); else persist(API.persist.saveItem(c)); }
   renderModule(); }
 
+/* ============ НАСТРОЙКИ: компания / сотрудники / права (только директор) ============ */
+function isDirector(){ return !!(state.user && state.user.role==='director'); }
+
+function editCompanyModal(){
+  if(!isDirector()) return;
+  const c=DB.company||{};
+  openModal(`<div class="modal-h">${icon('settings')}<h3>Данные компании</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">
+      <div class="fld full"><label>Название</label><input id="co-name" value="${escA(c.name)}"></div>
+      <div class="fld full"><label>Юридическое лицо</label><input id="co-legal" value="${escA(c.legal)}"></div>
+      <div class="fld"><label>Город</label><input id="co-city" value="${escA(c.city)}"></div>
+      <div class="fld"><label>Телефон</label><input id="co-phone" value="${escA(c.phone)}"></div>
+      <div class="fld full"><label>Производство</label><input id="co-workshop" value="${escA(c.workshop)}"></div>
+      <div class="fld full"><label>Оборот за год</label><input id="co-rev" value="${escA(c.revenueYear)}"></div>
+    </div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="save-company">${icon('check','sm')} Сохранить</button></div>`);
+}
+function saveCompany(){
+  if(!isDirector()) return;
+  const v=i=>{ const el=document.getElementById(i); return el?el.value.trim():''; };
+  const name=v('co-name'); if(!name){ toast('Укажите название','warn'); return; }
+  const c=DB.company;
+  c.name=name; c.legal=v('co-legal'); c.city=v('co-city'); c.phone=v('co-phone');
+  c.workshop=v('co-workshop'); c.revenueYear=v('co-rev');
+  saveDB(); if(apiOn()) persist(API.persist.saveCompany(c));
+  closeModal(); render(); toast('Данные компании сохранены');
+}
+
+const ROLE_OPTS=['director','manager','surveyor','production','warehouse'];
+function userModal(id){
+  if(!isDirector()) return;
+  const u = id ? userById(id) : null;
+  const roleOf = u?u.role:'manager';
+  const opts = ROLE_OPTS.map(r=>`<option value="${r}"${r===roleOf?' selected':''}>${roleRu(r)}</option>`).join('');
+  const apiMode = apiOn();
+  const pwHint = u ? '(пусто — без изменений)' : (apiMode ? '(мин. 6 символов)' : '(в демо не требуется)');
+  openModal(`<div class="modal-h">${icon('user')}<h3>${u?'Сотрудник':'Новый сотрудник'}</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">
+      <div class="fld full"><label>Имя</label><input id="us-name" value="${u?escA(u.name):''}"></div>
+      <div class="fld"><label>Должность</label><input id="us-title" value="${u?escA(u.title):''}" placeholder="напр. Менеджер по продажам"></div>
+      <div class="fld"><label>Роль (права доступа)</label><select id="us-role">${opts}</select></div>
+      <div class="fld full"><label>Email (логин)</label><input id="us-email" value="${u?escA(u.email||''):''}" placeholder="name@okna.kz"></div>
+      <div class="fld full"><label>Пароль ${pwHint}</label><input id="us-pass" type="text" placeholder="${u?'••••••':'okna2026'}"></div>
+    </div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="save-user"${u?` data-id="${u.id}"`:''}>${icon('check','sm')} ${u?'Сохранить':'Добавить'}</button></div>`);
+}
+function saveUser(id){
+  if(!isDirector()) return;
+  const v=i=>{ const el=document.getElementById(i); return el?el.value.trim():''; };
+  const name=v('us-name'); if(!name){ toast('Укажите имя','warn'); return; }
+  const role=v('us-role')||'manager'; const title=v('us-title')||roleRu(role);
+  const email=v('us-email'); const passEl=document.getElementById('us-pass'); const pass=passEl?passEl.value:'';
+  const apiMode=apiOn();
+  if(apiMode && !email){ toast('Укажите email для входа','warn'); return; }
+  if(pass && pass.length<6){ toast('Пароль минимум 6 символов','warn'); return; }
+  if(id){
+    const u=userById(id); if(!u) return;
+    u.name=name; u.title=title; u.role=role; u.email=email;
+    saveDB();
+    if(apiMode){ persist(API.persist.saveUser(u)); if(pass) persist(API.persist.setUserPassword(u.id, pass)); }
+    if(state.user && state.user.id===u.id){ state.user.name=u.name; state.user.title=u.title; state.user.role=u.role; }
+    closeModal(); render(); toast('Сотрудник обновлён');
+  } else {
+    if(apiMode && !pass){ toast('Задайте пароль (мин. 6 символов)','warn'); return; }
+    const nu={ id:uid('u'), name, role, title, email, primary:false };
+    DB.users.push(nu);
+    saveDB();
+    if(apiMode) persist(API.persist.createUser(nu).then(()=>{ if(pass) return API.persist.setUserPassword(nu.id, pass); }));
+    closeModal(); render(); toast('Сотрудник добавлен');
+  }
+}
+function delUserModal(id){
+  if(!isDirector()) return;
+  const u=userById(id); if(!u) return;
+  if(state.user && state.user.id===id){ toast('Нельзя удалить себя','warn'); return; }
+  openModal(`<div class="modal-h">${icon('trash')}<h3>Удалить сотрудника?</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><p style="margin:0;color:var(--muted);line-height:1.5">${escA(u.name)} · ${escA(u.title)}.<br>Действие необратимо.</p></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="del-user-confirm" data-id="${id}">${icon('trash','sm')} Удалить</button></div>`);
+}
+function delUserConfirm(id){
+  if(!isDirector()) return;
+  const u=userById(id); if(!u) return;
+  if(state.user && state.user.id===id){ toast('Нельзя удалить себя','warn'); return; }
+  DB.users=DB.users.filter(x=>x.id!==id);
+  saveDB(); if(apiOn()) persist(API.persist.deleteUser(id));
+  closeModal(); render(); toast('Сотрудник удалён');
+}
+function togglePerm(mod, role){
+  if(!isDirector()) return;
+  if(mod==='settings' && role==='director'){ toast('Директор всегда имеет доступ к настройкам','warn'); return; }
+  MODULE_ROLES[mod]=MODULE_ROLES[mod]||[];
+  const i=MODULE_ROLES[mod].indexOf(role);
+  const on = i<0;
+  if(on) MODULE_ROLES[mod].push(role); else MODULE_ROLES[mod].splice(i,1);
+  if(apiOn()) persist(API.persist.setModuleRole(mod, role, on));
+  renderModule();
+}
+
 /* ============ ССЫЛКА ДЛЯ КЛИЕНТА ============ */
 function sharePick(t){
   document.querySelectorAll('.share-opt').forEach(b=>b.classList.remove('on'));
@@ -229,6 +341,14 @@ document.addEventListener('click', e=>{
       else { resetDB(); state.measureDealId=null; render(); toast('Демо-данные сброшены'); }
       break;
     case 'notif': notifModal(); break;
+    case 'edit-company': editCompanyModal(); break;
+    case 'save-company': saveCompany(); break;
+    case 'add-user': userModal(null); break;
+    case 'edit-user': userModal(id); break;
+    case 'save-user': saveUser(t.dataset.id||null); break;
+    case 'del-user': delUserModal(id); break;
+    case 'del-user-confirm': delUserConfirm(id); break;
+    case 'perm-toggle': togglePerm(t.dataset.mod, t.dataset.role); break;
     case 'theme': state.theme = state.theme==='light' ? 'dark' : 'light'; try{ localStorage.setItem(THEME_KEY, state.theme); }catch(e){} applyTheme(state.theme); render(); break;
     case 'noop': break;
     case 'go-finance': state.module='finance'; state.financeTab='recv'; render(); break;
