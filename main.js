@@ -118,7 +118,7 @@ function applyPrepay(id){
 function addPaymentModal(id){
   const d=dealById(id); const debt=dealDebt(d); const cl=clientById(d.clientId);
   openModal(`<div class="modal-h">${icon('money')}<div><h3>Принять оплату</h3><div class="mh-sub">${cl.name} · остаток ${money(debt)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
-    <div class="modal-b"><div class="fld full"><label>Сумма оплаты, ₸</label><input id="pay-amt" type="number" value="${debt}" style="background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:11px;color:var(--txt);font-size:16px;font-weight:700"></div>
+    <div class="modal-b"><div class="fld full"><label>Сумма оплаты, сом</label><input id="pay-amt" type="number" value="${debt}" style="background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:11px;color:var(--txt);font-size:16px;font-weight:700"></div>
     <div class="muted2" style="font-size:12px;margin-top:8px">Платёж зачислится по сделке и обновит дебиторку.</div></div>
     <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn green" data-act="confirm-payment" data-id="${id}">${icon('check','sm')} Зачислить</button></div>`);
 }
@@ -170,8 +170,8 @@ function editDealModal(id){
   const srcOpts=SOURCES.map(s=>`<option${s===d.source?' selected':''}>${s}</option>`).join('');
   const money$=seesMoney();
   const moneyFields=money$?`
-      <div class="fld"><label>Сумма заказа, ₸</label><input id="ed-sum" type="number" min="0" value="${d.sum||dealItemsSum(d)}"></div>
-      <div class="fld"><label>Оплачено, ₸</label><input id="ed-paid" type="number" min="0" value="${dealPaid(d)}"></div>`:'';
+      <div class="fld"><label>Сумма заказа, сом</label><input id="ed-sum" type="number" min="0" value="${d.sum||dealItemsSum(d)}"></div>
+      <div class="fld"><label>Оплачено, сом</label><input id="ed-paid" type="number" min="0" value="${dealPaid(d)}"></div>`:'';
   openModal(`<div class="modal-h">${icon('funnel')}<h3>Изменить сделку</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="constr-body" style="padding:0">
       <div class="fld"><label>Ответственный</label><select id="ed-mgr">${mgrOpts}</select></div>
@@ -398,7 +398,7 @@ function payableModal(id){
     <div class="modal-b"><div class="constr-body" style="padding:0">
       <div class="fld full"><label>Поставщик</label><input id="pay-sup" value="${p?escA(p.supplier):''}" placeholder="напр. Rehau KZ"></div>
       <div class="fld full"><label>За что</label><input id="pay-for" value="${p?escA(p.forWhat||''):''}" placeholder="напр. Профиль, партия"></div>
-      <div class="fld"><label>Сумма, ₸</label><input id="pay-amt" type="number" min="0" value="${p?p.amount:''}"></div>
+      <div class="fld"><label>Сумма, сом</label><input id="pay-amt" type="number" min="0" value="${p?p.amount:''}"></div>
       <div class="fld"><label>Срок оплаты</label><input id="pay-due" type="date" value="${p&&p.due?String(p.due).slice(0,10):''}"></div>
       <div class="fld"><label>Статус</label><select id="pay-status">${opts}</select></div>
     </div></div>
@@ -487,7 +487,7 @@ function catDelConfirm(type,id){
 function whReceiveModal(id, kind){
   const it = kind==='mat' ? matById(id) : compById(id);
   if(!it) return;
-  const costRow = (kind==='mat' && seesMoney()) ? `<div class="fld"><label>Цена прихода, ₸/${it.unit}</label><input type="number" id="wr-rate" value="${it.rate||0}"></div>` : '';
+  const costRow = (kind==='mat' && seesMoney()) ? `<div class="fld"><label>Цена прихода, сом/${it.unit}</label><input type="number" id="wr-rate" value="${it.rate||0}"></div>` : '';
   const supRow = it.supplier ? `<div class="fld full"><label>Поставщик</label><input id="wr-sup" value="${it.supplier}"></div>` : '';
   openModal(`<div class="modal-h">${icon('box')}<div><h3>Приход на склад</h3><div class="mh-sub">${it.name} · сейчас ${it.stock} ${it.unit}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="constr-body" style="padding:0">
@@ -555,7 +555,7 @@ function whItemModal(kind, id){
   const matFields=isMat?`
       <div class="fld"><label>Тип</label><select id="wi-type">${typeOpts}</select></div>
       <div class="fld"><label>Серия</label><select id="wi-series">${serOpts}</select></div>
-      ${money$?`<div class="fld"><label>Цена, ₸/м²</label><input id="wi-rate" type="number" min="0" value="${it?it.rate:''}"></div>`:''}
+      ${money$?`<div class="fld"><label>Цена, сом/м²</label><input id="wi-rate" type="number" min="0" value="${it?it.rate:''}"></div>`:''}
       <div class="fld full"><label>Поставщик</label><input id="wi-sup" value="${it?escA(it.supplier||''):''}"></div>`:'';
   openModal(`<div class="modal-h">${icon('box')}<h3>${title}</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="constr-body" style="padding:0">

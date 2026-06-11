@@ -52,8 +52,8 @@ function icon(name, cls){ return `<svg class="svg-i ${cls||''}" viewBox="0 0 24 
 
 /* ============ HELPERS ============ */
 const fmtNum = new Intl.NumberFormat('ru-RU');
-function money(n){ return fmtNum.format(Math.round(n||0)) + ' ₸'; }
-function moneyK(n){ n=n||0; if(Math.abs(n)>=1e6) return (n/1e6).toFixed(n%1e6===0?0:1).replace('.',',')+' млн ₸'; if(Math.abs(n)>=1e3) return Math.round(n/1e3)+' тыс ₸'; return fmtNum.format(Math.round(n))+' ₸'; }
+function money(n){ return fmtNum.format(Math.round(n||0)) + ' сом'; }
+function moneyK(n){ n=n||0; if(Math.abs(n)>=1e6) return (n/1e6).toFixed(n%1e6===0?0:1).replace('.',',')+' млн сом'; if(Math.abs(n)>=1e3) return Math.round(n/1e3)+' тыс сом'; return fmtNum.format(Math.round(n))+' сом'; }
 function initials(name){ return name.split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join(''); }
 function colorFor(s){ const p=['#2563eb','#7c3aed','#0891b2','#db2777','#d97706','#16a34a','#dc2626','#0d9488','#9333ea','#ca8a04']; let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return p[h%p.length]; }
 function daysAgo(n){ const d=new Date(SEED_NOW); d.setDate(d.getDate()-n); return d; }
@@ -217,7 +217,7 @@ function buildSeed(){
   ];
 
   const activity = [
-    {who:'u_pm', text:'Принял предоплату 110 000 ₸ по сделке «Жанна Калиева»', at:daysAgo(1).toISOString(), kind:'money'},
+    {who:'u_pm', text:'Принял предоплату 110 000 сом по сделке «Жанна Калиева»', at:daysAgo(1).toISOString(), kind:'money'},
     {who:'u_ps', text:'Завершил замер по адресу ул. Тарана 58', at:daysAgo(1).toISOString(), kind:'measure'},
     {who:'u_isk',text:'Сделка ТОО «СтройДом» переведена в «Аванс»', at:daysAgo(3).toISOString(), kind:'funnel'},
     {who:'u_as', text:'Заказ «Канат Жумабеков» переведён в «Сборка»', at:daysAgo(2).toISOString(), kind:'prod'},
@@ -234,7 +234,7 @@ function buildSeed(){
 
   const waMessages = [
     {id:'wamsg_d1', clientId:'cl1', dir:'in',  text:'Здравствуйте! Сколько будет стоить остеклить балкон 3 метра?', status:null,        at:'2026-05-29T09:30:00.000Z'},
-    {id:'wamsg_d2', clientId:'cl1', dir:'out', text:'Айгуль, здравствуйте! Это Тёплый Контур. Ориентировочно от 180 000 ₸, точнее посчитаем на замере. Когда удобно?', status:'read',     at:'2026-05-29T09:40:00.000Z'},
+    {id:'wamsg_d2', clientId:'cl1', dir:'out', text:'Айгуль, здравствуйте! Это Тёплый Контур. Ориентировочно от 180 000 сом, точнее посчитаем на замере. Когда удобно?', status:'read',     at:'2026-05-29T09:40:00.000Z'},
     {id:'wamsg_d3', clientId:'cl1', dir:'in',  text:'Давайте завтра после обеда', status:null,                                          at:'2026-05-29T09:50:00.000Z'},
     {id:'wamsg_d4', clientId:'cl1', dir:'out', text:'Отлично, записал замерщика на завтра 14:00. Пришлю КП сразу после замера.', status:'delivered', at:'2026-05-29T09:55:00.000Z'},
     {id:'wamsg_e1', clientId:'cl4', dir:'in',  text:'Добрый день! По объекту — когда планируете монтаж?', status:null,      at:'2026-05-28T11:10:00.000Z'},
@@ -318,9 +318,9 @@ function constrPerimeter(c){ return 2*(c.w+c.h)/1000*(c.qty||1); }
 /* ============ РЕДАКТИРУЕМЫЕ КАТАЛОГИ И ПРАЙС (Настройки, директор) ============ */
 /* Метаданные для UI: что и как редактируется. Цена влияет на расчёт КП напрямую. */
 const CATALOGS_EDIT = {
-  glass:   { title:'Стеклопакеты', api:'glass_types', prefix:'g',  priceKey:'rate',  unit:'₸/м²',      suffix:'/м²',      arr:()=>GLASS,    usedBy:id=>DB.deals.some(d=>(d.items||[]).some(c=>c.glassId===id)) },
-  opening: { title:'Открывания',   api:'openings',    prefix:'op', priceKey:'rate',  unit:'₸/створку', suffix:'/створку', arr:()=>OPENINGS, usedBy:id=>DB.deals.some(d=>(d.items||[]).some(c=>c.openId===id)) },
-  extra:   { title:'Доп-опции',    api:'extras',      prefix:'ex', priceKey:'price', unit:'₸', suffix:'', hasPer:true, arr:()=>EXTRAS, usedBy:id=>DB.deals.some(d=>(d.items||[]).some(c=>(c.extras||[]).includes(id))) },
+  glass:   { title:'Стеклопакеты', api:'glass_types', prefix:'g',  priceKey:'rate',  unit:'сом/м²',      suffix:'/м²',      arr:()=>GLASS,    usedBy:id=>DB.deals.some(d=>(d.items||[]).some(c=>c.glassId===id)) },
+  opening: { title:'Открывания',   api:'openings',    prefix:'op', priceKey:'rate',  unit:'сом/створку', suffix:'/створку', arr:()=>OPENINGS, usedBy:id=>DB.deals.some(d=>(d.items||[]).some(c=>c.openId===id)) },
+  extra:   { title:'Доп-опции',    api:'extras',      prefix:'ex', priceKey:'price', unit:'сом', suffix:'', hasPer:true, arr:()=>EXTRAS, usedBy:id=>DB.deals.some(d=>(d.items||[]).some(c=>(c.extras||[]).includes(id))) },
 };
 
 /* сколько и чего спишется на данном этапе производства; мутирует склад, флаги в d.consumed */
