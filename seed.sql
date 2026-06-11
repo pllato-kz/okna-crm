@@ -222,3 +222,10 @@ INSERT INTO wa_messages(id,chat_id,client_id,direction,text,sender_name,status,t
 INSERT INTO wa_messages(id,chat_id,client_id,direction,text,sender_name,status,ts,at) VALUES ('wamsg_e1','77142391170@c.us','cl4','in','Добрый день! По объекту — когда планируете монтаж?','СтройДом',NULL,1748430600,'2026-05-28T11:10:00.000Z');
 INSERT INTO wa_messages(id,chat_id,client_id,direction,text,sender_name,status,ts,at) VALUES ('wamsg_e2','77142391170@c.us','cl4','out','Здравствуйте! Аванс получили, профиль уже в цеху. Монтаж ориентировочно через 10 дней — подтвердим точную дату.','Менеджер','read',1748431200,'2026-05-28T11:20:00.000Z');
 INSERT INTO wa_messages(id,chat_id,client_id,direction,text,sender_name,status,ts,at) VALUES ('wamsg_e3','77142391170@c.us','cl4','in','Отлично, ждём!','СтройДом',NULL,1748431500,'2026-05-28T11:25:00.000Z');
+
+-- Задачи / напоминания по сделкам
+INSERT INTO tasks(id,deal_id,title,due,assignee_id,done) VALUES ('t_seed1','d1','Перезвонить по остеклению балкона','2026-05-28T11:00:00.000Z','u_pm',0);
+INSERT INTO tasks(id,deal_id,title,due,assignee_id,done) VALUES ('t_seed2','d4','Выехать на замер, 10:00','2026-05-29T11:00:00.000Z','u_ps',0);
+INSERT INTO tasks(id,deal_id,title,due,assignee_id,done) VALUES ('t_seed3','d6','Отправить КП клиенту','2026-05-31T11:00:00.000Z','u_isk',0);
+INSERT INTO tasks(id,deal_id,title,due,assignee_id,done) VALUES ('t_seed4','d8','Согласовать договор','2026-05-30T11:00:00.000Z','u_pm',0);
+INSERT INTO tasks(id,deal_id,title,due,assignee_id,done) VALUES ('t_seed5','d2','Уточнить размеры проёмов','2026-05-27T11:00:00.000Z','u_pm',1);

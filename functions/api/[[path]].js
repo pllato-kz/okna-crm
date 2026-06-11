@@ -49,6 +49,7 @@ const TABLES = {
   payments:         { table: 'payments',          pk: 'id', cols: ['id','deal_id','type_id','amount','date'], prefix: 'p' },
   payables:         { table: 'payables',          pk: 'id', cols: ['id','supplier','for_what','amount','due','status_id'], prefix: 'pay' },
   activity:         { table: 'activity',          pk: 'id', cols: ['id','user_id','text','kind_id','at'], prefix: 'a' },
+  tasks:            { table: 'tasks',             pk: 'id', cols: ['id','deal_id','title','due','assignee_id','done'], prefix: 't' },
 };
 
 // Какие ресурсы считаются справочниками (для /api/catalogs)
@@ -129,7 +130,7 @@ async function getDealFull(env, id) {
 // Полный снимок для фронта (заменит buildSeed/localStorage на Слое 4)
 async function getBootstrap(env) {
   const company = await env.DB.prepare(`SELECT * FROM company LIMIT 1`).first();
-  const [users, clients, materials, components, payables, activity, dealsRaw, movements] = await Promise.all([
+  const [users, clients, materials, components, payables, activity, dealsRaw, movements, tasks] = await Promise.all([
     listRows(env, TABLES.users),
     listRows(env, TABLES.clients),
     listRows(env, TABLES.materials),
@@ -138,6 +139,7 @@ async function getBootstrap(env) {
     listRows(env, TABLES.activity),
     listRows(env, TABLES.deals),
     listRows(env, TABLES.warehouse_movements),
+    listRows(env, TABLES.tasks),
   ]);
   // password_hash не отдаём наружу
   for (const u of users) delete u.password_hash;
@@ -152,7 +154,7 @@ async function getBootstrap(env) {
   const paymentsByDeal = {};
   for (const p of allPayments) (paymentsByDeal[p.deal_id] ||= []).push(p);
   const deals = dealsRaw.map(d => ({ ...d, items: itemsByDeal[d.id] || [], payments: paymentsByDeal[d.id] || [] }));
-  return { company, catalogs: await getCatalogs(env), users, clients, materials, components, deals, payables, activity, movements };
+  return { company, catalogs: await getCatalogs(env), users, clients, materials, components, deals, payables, activity, movements, tasks };
 }
 
 /* ============ WHATSAPP ============ */
@@ -420,6 +422,7 @@ export async function onRequest(context) {
       await env.DB.prepare(`DELETE FROM deal_item_extras WHERE item_id IN (SELECT id FROM deal_items WHERE deal_id = ?)`).bind(id).run();
       await env.DB.prepare(`DELETE FROM deal_items WHERE deal_id = ?`).bind(id).run();
       await env.DB.prepare(`DELETE FROM payments WHERE deal_id = ?`).bind(id).run();
+      await env.DB.prepare(`DELETE FROM tasks WHERE deal_id = ?`).bind(id).run();
       await env.DB.prepare(`DELETE FROM deals WHERE id = ?`).bind(id).run();
       return ok({ deleted: true });
     }

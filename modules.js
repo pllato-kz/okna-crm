@@ -43,6 +43,15 @@ function renderDashboard(){
       <div class="tl-c"><div class="tl-t">${a.text}</div><div class="tl-d">${u.name} · ${dateStr(a.at)}</div></div></div>`;
   }).join('');
 
+  // задачи и напоминания
+  const openTasks=(DB.tasks||[]).filter(t=>!t.done).sort((a,b)=>String(a.due||'').localeCompare(String(b.due||''))).slice(0,8);
+  const taskWidget=openTasks.length?openTasks.map(t=>{const tc=taskClass(t); const td=dealById(t.dealId); const tcl=td?clientById(td.clientId):null; const tu=userById(t.assignee);
+    return `<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 2px;border-bottom:1px solid var(--line);cursor:pointer" ${td?`data-act="open-deal" data-id="${td.id}"`:''}>
+      <input type="checkbox" data-act="task-toggle" data-id="${t.id}" style="width:auto;margin-top:2px;cursor:pointer">
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${t.title}</div>
+        <div class="muted2" style="font-size:11.5px;margin-top:2px">${tcl?tcl.name+' · ':''}<span style="color:${tc.color}">${dateStr(t.due)} · ${tc.txt}</span>${tu?' · '+tu.name.split(' ')[0]:''}</div></div>
+    </div>`;}).join(''):'<div class="muted" style="padding:8px 0">Открытых задач нет 🎉</div>';
+
   return `
   <div class="cards-row">
     ${kpi({icon:'money',label:'Выручка за месяц',value:moneyK(monthRevenue),color:'#16a34a',soft:'var(--green-soft)',sub:'<span class="up">▲ 18%</span> к апрелю',subClass:''})}
@@ -79,9 +88,15 @@ function renderDashboard(){
     </div>
   </div>
 
-  <div class="panel section-gap">
-    <div class="panel-h">${icon('clock')}<h3>Последние события</h3></div>
-    <div class="panel-b"><div class="timeline">${feed}</div></div>
+  <div class="grid-2 section-gap">
+    <div class="panel">
+      <div class="panel-h">${icon('clock')}<h3>Задачи и напоминания</h3><span class="ph-sub">${openTasks.length} открытых</span></div>
+      <div class="panel-b">${taskWidget}</div>
+    </div>
+    <div class="panel">
+      <div class="panel-h">${icon('clock')}<h3>Последние события</h3></div>
+      <div class="panel-b"><div class="timeline">${feed}</div></div>
+    </div>
   </div>`;
 }
 
@@ -132,6 +147,14 @@ function openDeal(id){
     return `<tr><td>${mat?mat.name:'—'} · ${c.w}×${c.h}мм</td><td class="muted">${openById(c.openId)?.name||''}, ${c.sashes} ств.</td><td class="num">${money(constrPrice(c))}</td></tr>`;
   }).join('');
   const pays=(d.payments||[]).map(p=>`<div class="stat-line"><span>${p.type} · ${dateStr(p.date)}</span><span style="color:#4ade80;font-weight:700">+${money(p.amount)}</span></div>`).join('')||'<div class="muted" style="font-size:13px">Оплат пока нет</div>';
+  const tlist=tasksForDeal(d.id);
+  const taskRows=tlist.length?tlist.map(t=>{const tc=taskClass(t); const tu=userById(t.assignee);
+    return `<div class="stat-line"><span style="display:flex;align-items:center;gap:9px;min-width:0">
+        <input type="checkbox" ${t.done?'checked':''} data-act="task-toggle" data-id="${t.id}" style="width:auto;cursor:pointer">
+        <span style="${t.done?'text-decoration:line-through;opacity:.55':''}">${t.title}</span></span>
+      <span style="display:flex;align-items:center;gap:8px;white-space:nowrap"><span class="muted2" style="font-size:11.5px;color:${tc.color}">${dateStr(t.due)} · ${tc.txt}${tu?' · '+tu.name.split(' ')[0]:''}</span>
+        <button class="x" style="width:26px;height:26px" data-act="task-del" data-id="${t.id}">${icon('x','sm')}</button></span></div>`;}).join('')
+    :'<div class="muted2" style="font-size:12px">Задач нет — добавьте напоминание о следующем шаге</div>';
   const stageOpts=STAGES.map(s=>`<button class="chip ${s.id===d.stage?'on':''}" data-act="move-stage" data-id="${d.id}" data-stage="${s.id}">${s.name}</button>`).join('');
   const canMoney=seesMoney();
   openModal(`
@@ -154,6 +177,8 @@ function openDeal(id){
       ${items?`<div class="panel" style="margin-bottom:16px"><div class="panel-h" style="padding:12px 14px">${icon('ruler','sm')}<h3 style="font-size:13.5px">Конструкции (${d.items.length})</h3></div>
         <table class="tbl"><tbody>${items}</tbody></table></div>`:''}
       ${canMoney?`<div class="panel" style="margin-bottom:16px"><div class="panel-h" style="padding:12px 14px">${icon('money','sm')}<h3 style="font-size:13.5px">Оплаты</h3></div><div class="panel-b" style="padding:12px 14px">${pays}</div></div>`:''}
+      <div class="panel" id="deal-tasks" style="margin-bottom:16px"><div class="panel-h" style="padding:12px 14px">${icon('clock','sm')}<h3 style="font-size:13.5px">Задачи</h3><button class="btn sm" style="margin-left:auto" data-act="add-task" data-id="${d.id}">${icon('plus','sm')} Добавить</button></div>
+        <div class="panel-b" style="padding:8px 14px">${taskRows}</div></div>
     </div>
     <div class="modal-f">
       <button class="btn danger" data-act="del-deal" data-id="${d.id}" style="margin-right:auto">${icon('trash','sm')} Удалить</button>
