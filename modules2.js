@@ -367,13 +367,14 @@ function catTable(type){
   const perOf=p=>({'шт':'за штуку','м':'за пог.м','периметр':'по периметру'})[p]||p;
   const rows=cfg.arr().map(x=>`<tr><td style="font-weight:600">${x.name}</td>
     <td class="num" style="white-space:nowrap">${money(x[cfg.priceKey])}<span class="muted2" style="font-weight:400">${cfg.suffix||''}</span></td>
-    ${cfg.hasPer?`<td class="muted">${perOf(x.per)}</td>`:''}
+    <td class="muted">${cfg.hasPer?perOf(x.per):''}</td>
     <td class="row-acts" style="text-align:right;white-space:nowrap">
       <button class="btn sm ghost" data-act="cat-edit" data-type="${type}" data-id="${x.id}" title="Изменить">${icon('edit','sm')}</button>
       <button class="btn sm ghost" data-act="cat-del" data-type="${type}" data-id="${x.id}" title="Удалить">${icon('trash','sm')}</button></td></tr>`).join('');
   return `<div class="panel" style="margin-top:12px"><div class="panel-h" style="padding:12px 14px">${icon('money','sm')}<h3 style="font-size:13.5px">${cfg.title}</h3>
       <button class="btn sm" style="margin-left:auto" data-act="cat-add" data-type="${type}">${icon('plus','sm')} Добавить</button></div>
-    <div class="tbl-scroll"><table class="tbl"><thead><tr><th>Наименование</th><th class="num">Цена</th>${cfg.hasPer?'<th>Расчёт</th>':''}<th></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    <div class="tbl-scroll"><table class="tbl cat-tbl"><colgroup><col><col style="width:200px"><col style="width:160px"><col style="width:96px"></colgroup>
+      <thead><tr><th>Наименование</th><th class="num">Цена</th><th>${cfg.hasPer?'Расчёт':''}</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 function renderSettings(){
   const dir = state.user && state.user.role==='director'; // редактирование — только директор
