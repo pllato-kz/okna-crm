@@ -287,9 +287,9 @@ function openProd(id){
   openModal(`
     <div class="modal-h">${icon('production')}<div><h3>Заказ · ${cl.name}</h3><div class="mh-sub">${icon('pin','sm')} ${cl.address}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b">
-      <div class="panel" style="margin-bottom:16px"><div class="panel-h" style="padding:12px 14px">${icon('ruler','sm')}<h3 style="font-size:13.5px">Спецификация (для цеха)</h3></div>
+      <div class="fld full" style="margin-bottom:16px"><label>Этап производства — нажмите, чтобы переключить</label><div class="chips oneline">${stageOpts}</div></div>
+      <div class="panel"><div class="panel-h" style="padding:12px 14px">${icon('ruler','sm')}<h3 style="font-size:13.5px">Спецификация (для цеха)</h3></div>
         <table class="tbl"><thead><tr><th>№</th><th>Профиль</th><th>Размер</th><th>Стеклопакет</th><th>Открывание</th><th style="text-align:center">Шт</th></tr></thead><tbody>${items}</tbody></table></div>
-      <div class="fld full"><label>Этап производства</label><div class="chips">${stageOpts}</div></div>
     </div>
     <div class="modal-f"><button class="btn" data-act="close-modal">Закрыть</button></div>
   `, true);
