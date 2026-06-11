@@ -165,6 +165,21 @@ const apiPersist = {
   }}),
   saveMaterial:  (m) => apiFetch('materials/' + m.id, { method: 'PUT', body: { stock: m.stock, rate: m.rate, supplier: m.supplier } }),
   saveComponent: (c) => apiFetch('components/' + c.id, { method: 'PUT', body: { stock: c.stock } }),
+  // управление номенклатурой склада (карточка позиции)
+  createMaterial: (m) => apiFetch('materials', { method: 'POST', body: {
+    id: m.id, name: m.name, type_id: apiRevId((API._cat || {}).material_types, m.type), series_id: apiRevId((API._cat || {}).material_series, m.series),
+    rate: m.rate || 0, stock: m.stock || 0, min_stock: m.min || 0, unit: m.unit, supplier: m.supplier || '',
+  }}),
+  saveMaterialCard: (m) => apiFetch('materials/' + m.id, { method: 'PUT', body: {
+    name: m.name, type_id: apiRevId((API._cat || {}).material_types, m.type), series_id: apiRevId((API._cat || {}).material_series, m.series),
+    rate: m.rate || 0, min_stock: m.min || 0, unit: m.unit, supplier: m.supplier || '',
+  }}),
+  deleteMaterial: (id) => apiFetch('materials/' + id, { method: 'DELETE' }),
+  createComponent: (c) => apiFetch('components', { method: 'POST', body: {
+    id: c.id, name: c.name, stock: c.stock || 0, min_stock: c.min || 0, unit: c.unit,
+  }}),
+  saveComponentCard: (c) => apiFetch('components/' + c.id, { method: 'PUT', body: { name: c.name, min_stock: c.min || 0, unit: c.unit } }),
+  deleteComponent: (id) => apiFetch('components/' + id, { method: 'DELETE' }),
   createPayable: (p) => apiFetch('payables', { method: 'POST', body: {
     id: p.id, supplier: p.supplier, for_what: p.forWhat, amount: p.amount, due: p.due, status_id: apiRevId((API._cat || {}).payable_statuses, p.status),
   }}),

@@ -183,7 +183,9 @@ function renderWarehouse(){
   const moves=(DB.movements||[]);
   const actCell=(itId,knd)=>`<td style="text-align:right;white-space:nowrap"><div class="row-acts" style="display:inline-flex;gap:6px;justify-content:flex-end">
     <button class="btn sm" data-act="wh-receive" data-id="${itId}" data-kind="${knd}">${icon('plus','sm')} Приход</button>
-    <button class="btn sm danger" data-act="wh-writeoff" data-id="${itId}" data-kind="${knd}">${icon('trash','sm')} Расход</button></div></td>`;
+    <button class="btn sm danger" data-act="wh-writeoff" data-id="${itId}" data-kind="${knd}">${icon('trash','sm')} Расход</button>
+    <button class="btn sm ghost" data-act="wh-edit" data-id="${itId}" data-kind="${knd}" title="Изменить">${icon('edit','sm')}</button>
+    ${showCost?`<button class="btn sm ghost" data-act="wh-del" data-id="${itId}" data-kind="${knd}" title="Удалить позицию">${icon('trash','sm')}</button>`:''}</div></td>`;
   const tabs=`<div class="tabs"><button class="tab ${tab==='profile'?'on':''}" data-act="wh-tab" data-v="profile">Профиль (${DB.materials.length})</button>
     <button class="tab ${tab==='comp'?'on':''}" data-act="wh-tab" data-v="comp">Стеклопакеты и фурнитура (${DB.components.length})</button>
     <button class="tab ${tab==='moves'?'on':''}" data-act="wh-tab" data-v="moves">Движения (${moves.length})</button></div>`;
@@ -245,7 +247,10 @@ function renderWarehouse(){
     ${kpi({icon:'alert',label:'Ниже минимума',value:low,color:'#dc2626',soft:'var(--red-soft)',sub:low?'нужен дозаказ':'всё в норме'})}
     ${kpi({icon:'layers',label:'Движений в журнале',value:moves.length,color:'#7c3aed',sub:'приход + расход'})}
   </div>
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">${tabs}<button class="btn sm" style="margin-left:auto" data-act="export" data-what="warehouse">${icon('doc','sm')} Экспорт</button></div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">${tabs}
+    ${tab==='profile'?`<button class="btn primary sm" data-act="wh-item-add" data-kind="mat">${icon('plus','sm')} Профиль</button>`:''}
+    ${tab==='comp'?`<button class="btn primary sm" data-act="wh-item-add" data-kind="comp">${icon('plus','sm')} Комплектующее</button>`:''}
+    <button class="btn sm" style="margin-left:auto" data-act="export" data-what="warehouse">${icon('doc','sm')} Экспорт</button></div>
   <div class="panel"><div class="panel-h">${icon('warehouse')}<h3>${tab==='moves'?'Журнал движений':'Остатки на складе'}</h3><span class="ph-sub">${DB.company.city}</span></div>${body}</div>`;
 }
 
