@@ -71,17 +71,32 @@ function setDealStage(d, stage){
   if(stage!=='lead' && !d.sum && (d.items||[]).length) d.sum=computeMeasure(d).total;
   saveDB(); if(apiOn()) persist(API.persist.saveDeal(d));
 }
+/* при переводе в производство — проверка нехватки материалов; уведомление в ленту (склад/ответственный) */
+function notifyProdShortage(d){
+  if(typeof materialShortage!=='function') return null;
+  const short=materialShortage(d); if(!short.length) return null;
+  const cl=clientById(d.clientId);
+  const txt='⚠ Не хватает материалов для производства — '+(cl?cl.name:d.id)+': '+short.map(s=>`${s.name} (−${s.lack} ${s.unit})`).join(', ');
+  DB.activity.unshift({who:(state.user&&state.user.id)||null, text:txt, at:SEED_NOW.toISOString(), kind:'wh'});
+  saveDB(); if(apiOn()) persist(API.persist.createActivity(DB.activity[0]));
+  return short;
+}
 function moveStage(id, stage){
   const d=dealById(id); if(!d) return;
-  setDealStage(d, stage); closeModal(); render();
-  toast(`Сделка перемещена в «${stageById(stage).name}»`);
+  setDealStage(d, stage);
+  const short = stage==='production' ? notifyProdShortage(d) : null;
+  closeModal(); render();
+  if(short) toast('⚠ Не хватает материалов — уведомлены ответственный и склад','warn');
+  else toast(`Сделка перемещена в «${stageById(stage).name}»`);
 }
 /* смена стадии из совмещённого вида (чат сделки) — обновляем модалку, не закрывая чат */
 function waMoveStage(id, stage){
   const d=dealById(id); if(!d) return;
   if(d.stage===stage) return;
-  setDealStage(d, stage); waDealChatModal(id);
-  toast(`Стадия: «${stageById(stage).name}»`);
+  setDealStage(d, stage);
+  const short = stage==='production' ? notifyProdShortage(d) : null;
+  waDealChatModal(id);
+  toast(short?'⚠ Не хватает материалов — уведомлены ответственный и склад':`Стадия: «${stageById(stage).name}»`, short?'warn':undefined);
 }
 function moveProd(id, stage){ const d=dealById(id); if(!d) return; d.prodStage=stage;
   if(stage==='installing' && d.stage==='production') d.stage='install';

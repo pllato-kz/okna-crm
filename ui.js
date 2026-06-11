@@ -240,6 +240,18 @@ function buildNotifs(){
       title:(c.k==='overdue'?'Просрочена задача: ':'Задача: ')+t.title,
       sub:`${cl?cl.name+' · ':''}${dateStr(t.due)} · ${c.txt}` });
   });
+  // 1b) нехватка материалов на производстве — ответственному за сделку, складу и директору
+  if(typeof materialShortage==='function'){
+    DB.deals.filter(d=>['production','install'].includes(d.stage)).forEach(d=>{
+      const relevant = (d.manager===me.id) || me.role==='warehouse' || me.role==='director';
+      if(!relevant) return;
+      const short=materialShortage(d); if(!short.length) return;
+      const cl=dealById(d.id)?clientById(d.clientId):null;
+      list.push({ id:'short_'+d.id, dealId:d.id, ov:true, due:'', icon:'alert', color:'#dc2626',
+        title:'Не хватает материалов: '+(cl?cl.name:d.id),
+        sub: short.map(s=>`${s.name} — не хватает ${s.lack} ${s.unit}`).slice(0,3).join('; ') });
+    });
+  }
   // 2) директор: просроченные чужие задачи (контроль)
   if(me.role==='director'){
     open.filter(t=>t.assignee!==me.id && overdue(t)).forEach(t=>{ const u=userById(t.assignee); const d=dealById(t.dealId); const cl=d?clientById(d.clientId):null;
