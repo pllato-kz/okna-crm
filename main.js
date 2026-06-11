@@ -133,13 +133,32 @@ function confirmPayment(id){
 }
 function newDealModal(){
   const opts=DB.clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  const inp='background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--txt)';
   openModal(`<div class="modal-h">${icon('funnel')}<h3>Новая сделка</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
-    <div class="modal-b"><div class="fld full" style="margin-bottom:12px"><label>Клиент</label><select id="nd-client" style="background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--txt)">${opts}</select></div>
-    <div class="fld full"><label>Комментарий</label><input id="nd-note" placeholder="Что нужно клиенту" style="background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--txt)"></div></div>
+    <div class="modal-b">
+      <div class="fld full" style="margin-bottom:12px"><label>Клиент</label>
+        <select id="nd-client" style="${inp}"><option value="__new">➕ Новый клиент</option>${opts}</select></div>
+      <div id="nd-newblock" class="constr-body" style="padding:0;margin-bottom:12px">
+        <div class="fld full"><label>Имя / организация</label><input id="nd-name" placeholder="Напр. Айгерим" style="${inp}"></div>
+        <div class="fld"><label>Телефон</label><input id="nd-phone" placeholder="+7" style="${inp}"></div>
+        <div class="fld"><label>Адрес</label><input id="nd-addr" placeholder="${escA(DB.company.city||'')}" style="${inp}"></div>
+      </div>
+      <div class="fld full"><label>Комментарий</label><input id="nd-note" placeholder="Что нужно клиенту" style="${inp}"></div></div>
     <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="create-deal">${icon('plus','sm')} Создать лид</button></div>`);
+  const sel=document.getElementById('nd-client');
+  const toggle=()=>{ const nb=document.getElementById('nd-newblock'); if(nb) nb.style.display = sel.value==='__new'?'' : 'none'; };
+  if(sel){ sel.addEventListener('change', toggle); toggle(); const nm=document.getElementById('nd-name'); if(nm) nm.focus(); }
 }
 function createDeal(){
-  const cid=document.getElementById('nd-client').value; const note=document.getElementById('nd-note').value||'Новая заявка';
+  const sel=document.getElementById('nd-client'); let cid=sel?sel.value:'';
+  if(cid==='__new'){
+    const v=i=>{const el=document.getElementById(i);return el?el.value.trim():'';};
+    const name=v('nd-name'); if(!name){ toast('Укажите имя клиента','warn'); return; }
+    const nc={id:uid('cl'),name,phone:v('nd-phone')||'—',address:v('nd-addr')||DB.company.city,type:name.match(/ТОО|ИП|ОО|Школа/)?'Юр. лицо':'Физ. лицо'};
+    DB.clients.unshift(nc); if(apiOn()) persist(API.persist.createClient(nc)); cid=nc.id;
+  }
+  if(!cid){ toast('Выберите клиента','warn'); return; }
+  const note=(document.getElementById('nd-note').value||'').trim()||'Новая заявка';
   const nd={id:uid('d'),clientId:cid,stage:'lead',manager:state.user.id,sum:0,createdAt:SEED_NOW.toISOString(),stageSince:SEED_NOW.toISOString(),note,source:'Звонок',payments:[],items:[],kp:null,prodStage:null};
   DB.deals.unshift(nd);
   saveDB(); if(apiOn()) persist(API.persist.createDeal(nd)); closeModal(); renderModule(); toast('Лид создан');
