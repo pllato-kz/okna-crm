@@ -407,6 +407,14 @@ export async function onRequest(context) {
     if (!def) return fail(404, `Неизвестный ресурс: ${resource}`);
     const id = segs[1];
 
+    // удаление профиля: блок, если используется в позициях сделок (FK)
+    if (resource === 'materials' && method === 'DELETE' && id) {
+      const cnt = await env.DB.prepare(`SELECT COUNT(*) AS n FROM deal_items WHERE profile_id = ?`).bind(id).first();
+      if (cnt && cnt.n > 0) return fail(409, `Профиль используется в сделках (${cnt.n}) — удалить нельзя`);
+      await env.DB.prepare(`DELETE FROM materials WHERE id = ?`).bind(id).run();
+      return ok({ deleted: true });
+    }
+
     // удаление сделки: явная чистка детей (позиции, опции, оплаты) — не полагаемся на каскад
     if (resource === 'deals' && method === 'DELETE' && id) {
       await env.DB.prepare(`DELETE FROM deal_item_extras WHERE item_id IN (SELECT id FROM deal_items WHERE deal_id = ?)`).bind(id).run();

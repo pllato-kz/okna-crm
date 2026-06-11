@@ -375,6 +375,69 @@ function whConfirmWriteoff(id, kind){
   if(low.length) toast(`⚠ Ниже минимума: ${low.slice(0,3).join(', ')}${low.length>3?` и ещё ${low.length-3}`:''} — нужен дозаказ`,'warn');
 }
 
+/* ====== СКЛАД: управление номенклатурой (профили / комплектующие) ====== */
+function whItemModal(kind, id){
+  const money$=seesMoney(); const isMat=(kind==='mat');
+  const it = id ? (isMat?matById(id):compById(id)) : null;
+  const typeOpts=['ПВХ','Алюминий'].map(t=>`<option${it&&it.type===t?' selected':''}>${t}</option>`).join('');
+  const serOpts=['Эконом','Средняя','Премиум'].map(s=>`<option${it&&it.series===s?' selected':''}>${s}</option>`).join('');
+  const title=(it?'Изменить':'Добавить')+(isMat?' профиль':' комплектующее');
+  const matFields=isMat?`
+      <div class="fld"><label>Тип</label><select id="wi-type">${typeOpts}</select></div>
+      <div class="fld"><label>Серия</label><select id="wi-series">${serOpts}</select></div>
+      ${money$?`<div class="fld"><label>Цена, ₸/м²</label><input id="wi-rate" type="number" min="0" value="${it?it.rate:''}"></div>`:''}
+      <div class="fld full"><label>Поставщик</label><input id="wi-sup" value="${it?escA(it.supplier||''):''}"></div>`:'';
+  openModal(`<div class="modal-h">${icon('box')}<h3>${title}</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">
+      <div class="fld full"><label>Наименование</label><input id="wi-name" value="${it?escA(it.name):''}" placeholder="${isMat?'напр. Rehau Grazio 70':'напр. Стеклопакет двухкам. 32мм'}"></div>
+      ${matFields}
+      <div class="fld"><label>Ед. изм.</label><input id="wi-unit" value="${it?escA(it.unit||''):(isMat?'пог.м':'шт')}"></div>
+      <div class="fld"><label>Минимум (для дозаказа)</label><input id="wi-min" type="number" min="0" value="${it?it.min:''}"></div>
+      ${!id?`<div class="fld"><label>Начальный остаток</label><input id="wi-stock" type="number" min="0" value="0"></div>`:''}
+    </div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="wh-item-save" data-kind="${kind}"${it?` data-id="${it.id}"`:''}>${icon('check','sm')} Сохранить</button></div>`);
+}
+function whItemSave(kind, id){
+  const money$=seesMoney(); const isMat=(kind==='mat');
+  const v=i=>{const el=document.getElementById(i);return el?el.value.trim():'';};
+  const num=i=>Math.max(0,parseFloat(v(i))||0);
+  const name=v('wi-name'); if(!name){ toast('Укажите наименование','warn'); return; }
+  const unit=v('wi-unit')||(isMat?'пог.м':'шт'); const min=num('wi-min');
+  if(isMat){
+    const type=v('wi-type')||'ПВХ'; const series=v('wi-series')||'Эконом'; const supplier=v('wi-sup');
+    if(id){ const m=matById(id); if(!m) return; m.name=name; m.type=type; m.series=series; m.unit=unit; m.min=min; m.supplier=supplier; if(money$) m.rate=Math.round(num('wi-rate'));
+      saveDB(); if(apiOn()) persist(API.persist.saveMaterialCard(m)); }
+    else { const nm={id:uid('m'),name,type,series,rate:money$?Math.round(num('wi-rate')):0,stock:num('wi-stock'),min,unit,supplier};
+      DB.materials.push(nm); saveDB(); if(apiOn()) persist(API.persist.createMaterial(nm)); }
+  } else {
+    if(id){ const c=compById(id); if(!c) return; c.name=name; c.unit=unit; c.min=min;
+      saveDB(); if(apiOn()) persist(API.persist.saveComponentCard(c)); }
+    else { const nc={id:uid('c'),name,stock:num('wi-stock'),min,unit};
+      DB.components.push(nc); saveDB(); if(apiOn()) persist(API.persist.createComponent(nc)); }
+  }
+  closeModal(); renderModule(); toast(id?'Сохранено':'Позиция добавлена');
+}
+function whItemDelModal(kind, id){
+  if(!seesMoney()) return;
+  const it = kind==='mat'?matById(id):compById(id); if(!it) return;
+  if(kind==='mat' && DB.deals.some(d=>(d.items||[]).some(c=>c.profileId===id))){
+    openModal(`<div class="modal-h">${icon('alert')}<h3>Нельзя удалить</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+      <div class="modal-b"><p style="margin:0;color:var(--muted);line-height:1.5">Профиль «${escA(it.name)}» используется в сделках. Сначала измените эти конструкции, потом удаляйте позицию.</p></div>
+      <div class="modal-f"><button class="btn" data-act="close-modal">Понятно</button></div>`);
+    return;
+  }
+  openModal(`<div class="modal-h">${icon('trash')}<h3>Удалить позицию?</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><p style="margin:0;color:var(--muted)">«${escA(it.name)}». Действие необратимо.</p></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="wh-item-del-confirm" data-kind="${kind}" data-id="${id}">${icon('trash','sm')} Удалить</button></div>`);
+}
+function whItemDelConfirm(kind, id){
+  if(!seesMoney()) return;
+  if(kind==='mat') DB.materials=DB.materials.filter(x=>x.id!==id);
+  else DB.components=DB.components.filter(x=>x.id!==id);
+  saveDB(); if(apiOn()) persist(kind==='mat'?API.persist.deleteMaterial(id):API.persist.deleteComponent(id));
+  closeModal(); renderModule(); toast('Позиция удалена');
+}
+
 /* measure mutations */
 function mAdd(){ const d=currentMeasureDeal(); if(!d) return; d.items=d.items||[];
   const nit={id:uid('cn'),profileId:'m4',w:1300,h:1400,glassId:'g2',openId:'tilt',sashes:2,qty:1,extras:['sill','slopes']};
@@ -870,6 +933,11 @@ document.addEventListener('click', e=>{
     case 'wh-confirm-receive': whConfirmReceive(id, t.dataset.kind); break;
     case 'wh-writeoff': whWriteoffModal(id, t.dataset.kind); break;
     case 'wh-confirm-writeoff': whConfirmWriteoff(id, t.dataset.kind); break;
+    case 'wh-item-add': whItemModal(t.dataset.kind, null); break;
+    case 'wh-edit': whItemModal(t.dataset.kind, id); break;
+    case 'wh-item-save': whItemSave(t.dataset.kind, t.dataset.id||null); break;
+    case 'wh-del': whItemDelModal(t.dataset.kind, id); break;
+    case 'wh-item-del-confirm': whItemDelConfirm(t.dataset.kind, id); break;
     case 'open-prod': openProd(id); break;
     case 'move-prod': moveProd(id, t.dataset.stage); break;
     case 'fin-tab': state.financeTab=t.dataset.v; renderModule(); break;
