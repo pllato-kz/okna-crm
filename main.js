@@ -418,8 +418,8 @@ function waDealChatModal(dealId){
       ${items}
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
         <button class="btn sm" data-act="open-deal" data-id="${d.id}">${icon('funnel','sm')} Открыть сделку целиком</button>
-        ${d.stage==='measure'?`<button class="btn sm" data-act="go-measure-deal" data-id="${d.id}">${icon('ruler','sm')} Открыть замер</button>`:''}
-        ${money$&&debt>0?`<button class="btn sm green" data-act="add-payment" data-id="${d.id}">${icon('money','sm')} Принять оплату</button>`:''}
+        ${d.stage==='measure'?`<button class="btn sm soft" data-act="go-measure-deal" data-id="${d.id}">${icon('ruler','sm')} Открыть замер</button>`:''}
+        ${money$&&debt>0?`<button class="btn sm primary" data-act="add-payment" data-id="${d.id}">${icon('money','sm')} Принять оплату</button>`:''}
       </div>
     </div>`;
   const hint = (apiOn() && !canSend) ? `<div class="muted2" style="text-align:center;font-size:11px;padding:6px 14px;color:#fbbf24">WhatsApp не подключён — отправка недоступна (Настройки → WhatsApp)</div>` : '';
