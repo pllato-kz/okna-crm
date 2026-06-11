@@ -187,6 +187,16 @@ const apiPersist = {
     : apiFetch('module_roles?module_id=' + encodeURIComponent(moduleId) + '&role_id=' + encodeURIComponent(roleId), { method: 'DELETE' }),
 };
 
+/* ---- WhatsApp / Green API ---- */
+const apiWa = {
+  getConfig: () => apiFetch('wa/config'),
+  saveConfig: (cfg) => apiFetch('wa/config', { method: 'PUT', body: {
+    idInstance: cfg.idInstance || '', apiToken: cfg.apiToken || '', enabled: cfg.enabled ? 1 : 0,
+  }}),
+  status: () => apiFetch('wa/status'),
+  send: (phone, message, extra) => apiFetch('wa/send', { method: 'POST', body: Object.assign({ phone, message }, extra || {}) }),
+};
+
 const API = {
   TOKEN_KEY: API_TOKEN_KEY,
   enabled: false,            // включается после успешного входа/bootstrap; в демо-режиме остаётся false
@@ -201,5 +211,6 @@ const API = {
   mapBootstrap: apiMapBootstrap,
   isAuthed: () => !!apiGetToken(),
   persist: apiPersist,
+  wa: apiWa,
 };
 try { globalThis.API = API; } catch (e) {}

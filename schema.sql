@@ -308,3 +308,18 @@ CREATE TABLE activity (
 );
 CREATE INDEX idx_activity_at   ON activity(at);
 CREATE INDEX idx_activity_user ON activity(user_id);
+
+-- ============================================================
+-- ИНТЕГРАЦИИ
+-- ============================================================
+
+-- Настройки WhatsApp-интеграции через Green API. Одна строка (id='main').
+-- api_token — секрет: хранится только на сервере, наружу (в bootstrap) НЕ отдаётся.
+CREATE TABLE wa_config (
+  id           TEXT PRIMARY KEY DEFAULT 'main',
+  id_instance  TEXT,                          -- idInstance Green API
+  api_token    TEXT,                          -- apiTokenInstance (секрет)
+  enabled      INTEGER NOT NULL DEFAULT 0,     -- 0/1 — включена ли отправка
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+INSERT INTO wa_config (id, enabled) VALUES ('main', 0);
