@@ -198,6 +198,51 @@ function delDealConfirm(id){
   closeModal(); render(); toast('Сделка удалена');
 }
 
+/* ====== КРЕДИТОРКА (payables) — ручное ведение ====== */
+const PAY_STATUSES=['ожидает','просрочено','оплачено'];
+function payableModal(id){
+  const p = id ? DB.payables.find(x=>x.id===id) : null;
+  const opts = PAY_STATUSES.map(s=>`<option value="${s}"${p&&p.status===s?' selected':''}>${s}</option>`).join('');
+  openModal(`<div class="modal-h">${icon('wallet')}<h3>${p?'Изменить долг':'Новый долг поставщику'}</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">
+      <div class="fld full"><label>Поставщик</label><input id="pay-sup" value="${p?escA(p.supplier):''}" placeholder="напр. Rehau KZ"></div>
+      <div class="fld full"><label>За что</label><input id="pay-for" value="${p?escA(p.forWhat||''):''}" placeholder="напр. Профиль, партия"></div>
+      <div class="fld"><label>Сумма, ₸</label><input id="pay-amt" type="number" min="0" value="${p?p.amount:''}"></div>
+      <div class="fld"><label>Срок оплаты</label><input id="pay-due" type="date" value="${p&&p.due?String(p.due).slice(0,10):''}"></div>
+      <div class="fld"><label>Статус</label><select id="pay-status">${opts}</select></div>
+    </div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="save-payable"${p?` data-id="${p.id}"`:''}>${icon('check','sm')} Сохранить</button></div>`);
+}
+function savePayable(id){
+  const v=i=>{const el=document.getElementById(i);return el?el.value.trim():'';};
+  const supplier=v('pay-sup'); if(!supplier){ toast('Укажите поставщика','warn'); return; }
+  const forWhat=v('pay-for');
+  const amount=Math.max(0,Math.round(parseFloat(v('pay-amt'))||0));
+  const dueRaw=v('pay-due'); const due=dueRaw?new Date(dueRaw).toISOString():'';
+  const status=v('pay-status')||'ожидает';
+  if(id){ const p=DB.payables.find(x=>x.id===id); if(!p) return; Object.assign(p,{supplier,forWhat,amount,due,status});
+    saveDB(); if(apiOn()) persist(API.persist.savePayable(p)); }
+  else { const np={id:uid('pay'),supplier,forWhat,amount,due,status}; DB.payables.push(np);
+    saveDB(); if(apiOn()) persist(API.persist.createPayable(np)); }
+  closeModal(); renderModule(); toast(id?'Долг обновлён':'Долг добавлен');
+}
+function payablePaid(id){
+  const p=DB.payables.find(x=>x.id===id); if(!p) return;
+  p.status='оплачено'; saveDB(); if(apiOn()) persist(API.persist.savePayable(p));
+  renderModule(); toast('Отмечено как оплачено');
+}
+function delPayableModal(id){
+  const p=DB.payables.find(x=>x.id===id); if(!p) return;
+  openModal(`<div class="modal-h">${icon('trash')}<h3>Удалить запись?</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><p style="margin:0;color:var(--muted);line-height:1.5">${escA(p.supplier)} · ${money(p.amount)}.<br>Действие необратимо.</p></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="del-payable-confirm" data-id="${id}">${icon('trash','sm')} Удалить</button></div>`);
+}
+function delPayableConfirm(id){
+  DB.payables=DB.payables.filter(x=>x.id!==id);
+  saveDB(); if(apiOn()) persist(API.persist.deletePayable(id));
+  closeModal(); renderModule(); toast('Запись удалена');
+}
+
 /* warehouse — приход (пополнение) */
 function whReceiveModal(id, kind){
   const it = kind==='mat' ? matById(id) : compById(id);
@@ -708,6 +753,12 @@ document.addEventListener('click', e=>{
     case 'new-deal': newDealModal(); break;
     case 'create-deal': createDeal(); break;
     case 'export': doExport(t.dataset.what); break;
+    case 'new-payable': payableModal(null); break;
+    case 'edit-payable': payableModal(id); break;
+    case 'save-payable': savePayable(t.dataset.id||null); break;
+    case 'payable-paid': payablePaid(id); break;
+    case 'del-payable': delPayableModal(id); break;
+    case 'del-payable-confirm': delPayableConfirm(id); break;
     case 'del-deal': delDealModal(id); break;
     case 'del-deal-confirm': delDealConfirm(id); break;
     case 'open-client': openClient(id); clearSearch(); break;

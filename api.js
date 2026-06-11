@@ -162,6 +162,13 @@ const apiPersist = {
   }}),
   saveMaterial:  (m) => apiFetch('materials/' + m.id, { method: 'PUT', body: { stock: m.stock, rate: m.rate, supplier: m.supplier } }),
   saveComponent: (c) => apiFetch('components/' + c.id, { method: 'PUT', body: { stock: c.stock } }),
+  createPayable: (p) => apiFetch('payables', { method: 'POST', body: {
+    id: p.id, supplier: p.supplier, for_what: p.forWhat, amount: p.amount, due: p.due, status_id: apiRevId((API._cat || {}).payable_statuses, p.status),
+  }}),
+  savePayable: (p) => apiFetch('payables/' + p.id, { method: 'PUT', body: {
+    supplier: p.supplier, for_what: p.forWhat, amount: p.amount, due: p.due, status_id: apiRevId((API._cat || {}).payable_statuses, p.status),
+  }}),
+  deletePayable: (id) => apiFetch('payables/' + id, { method: 'DELETE' }),
   createMovement: (m) => apiFetch('warehouse_movements', { method: 'POST', body: {
     id: m.id, kind: m.kind, item_id: m.itemId, name: m.name, unit: m.unit,
     dir: m.dir, type: m.type, qty: m.qty, reason: m.reason || '',
