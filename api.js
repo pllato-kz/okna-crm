@@ -94,6 +94,11 @@ function apiMapBootstrap(boot){
     id: p.id, supplier: p.supplier, forWhat: p.for_what, amount: p.amount, due: p.due, status: apiName(payStatuses, p.status_id),
   }));
   const activity = (boot.activity || []).map(a => ({ who: a.user_id, text: a.text, at: a.at, kind: a.kind_id }));
+  const movements = (boot.movements || []).map(m => ({
+    id: m.id, kind: m.kind, itemId: m.item_id, name: m.name, unit: m.unit,
+    dir: m.dir, type: m.type, qty: m.qty, reason: m.reason,
+    balanceAfter: m.balance_after, dealId: m.deal_id, who: m.user_id, at: m.at,
+  }));
 
   // справочники-константы фронта (раньше хардкод в data.js)
   const STAGES      = apiSortByOrder(cat.deal_stages).map(s => ({ id: s.id, name: s.name, color: s.color }));
@@ -105,7 +110,7 @@ function apiMapBootstrap(boot){
   for (const mr of (cat.module_roles || [])) (MODULE_ROLES[mr.module_id] = MODULE_ROLES[mr.module_id] || []).push(mr.role_id);
 
   return {
-    DB: { v: 1, company, users, materials, components, clients, deals, payables, activity },
+    DB: { v: 1, company, users, materials, components, clients, deals, payables, activity, movements },
     catalogs: { STAGES, PROD_STAGES, GLASS, OPENINGS, EXTRAS, MODULE_ROLES },
   };
 }
@@ -157,6 +162,11 @@ const apiPersist = {
   }}),
   saveMaterial:  (m) => apiFetch('materials/' + m.id, { method: 'PUT', body: { stock: m.stock, rate: m.rate, supplier: m.supplier } }),
   saveComponent: (c) => apiFetch('components/' + c.id, { method: 'PUT', body: { stock: c.stock } }),
+  createMovement: (m) => apiFetch('warehouse_movements', { method: 'POST', body: {
+    id: m.id, kind: m.kind, item_id: m.itemId, name: m.name, unit: m.unit,
+    dir: m.dir, type: m.type, qty: m.qty, reason: m.reason || '',
+    balance_after: m.balanceAfter, deal_id: m.dealId || null, user_id: m.who, at: m.at,
+  }}),
   createActivity:(a) => apiFetch('activity', { method: 'POST', body: { user_id: a.who, text: a.text, kind_id: a.kind, at: a.at } }),
 
   /* ---- настройки (только директор; бэкенд гейтит роль) ---- */

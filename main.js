@@ -33,6 +33,20 @@ function persistStockDiff(before){
   for (const x of DB.materials)  if (before['m:' + x.id] !== x.stock) persist(API.persist.saveMaterial(x));
   for (const x of DB.components) if (before['c:' + x.id] !== x.stock) persist(API.persist.saveComponent(x));
 }
+/* Запись движения склада (приход/расход). Вызывать ПОСЛЕ изменения item.stock —
+   balanceAfter берётся из текущего остатка. Пишет в журнал и (в API-режиме) на сервер. */
+function recordMovement(o){
+  DB.movements = DB.movements || [];
+  const rec = {
+    id: uid('wm'), kind: o.kind, itemId: o.item.id, name: o.item.name, unit: o.item.unit,
+    dir: o.dir, type: o.type, qty: o.qty, reason: o.reason || '',
+    balanceAfter: o.item.stock, dealId: o.dealId || null,
+    who: (state.user && state.user.id) || null, at: SEED_NOW.toISOString(),
+  };
+  DB.movements.unshift(rec);
+  if (apiOn()) persist(API.persist.createMovement(rec));
+  return rec;
+}
 async function apiLoginSubmit(){
   const emEl=document.getElementById('api-email'), pwEl=document.getElementById('api-pass');
   const email=(emEl&&emEl.value||'').trim(), password=(pwEl&&pwEl.value||'');
@@ -60,13 +74,17 @@ function moveStage(id, stage){
 }
 function moveProd(id, stage){ const d=dealById(id); if(!d) return; d.prodStage=stage;
   if(stage==='installing' && d.stage==='production') d.stage='install';
-  const before = apiOn() ? snapshotStock() : null;
+  const before = snapshotStock();   // всегда — для журнала движений
   const used=consumeForStage(d, stage);
   if(used.length){
-    DB.activity.unshift({who:state.user.id,text:`Списано со склада (${PROD_STAGES.find(s=>s.id===stage).name}) — ${clientById(d.clientId).name}`,at:SEED_NOW.toISOString(),kind:'wh'});
+    const cl=clientById(d.clientId);
+    DB.activity.unshift({who:state.user.id,text:`Списано со склада (${PROD_STAGES.find(s=>s.id===stage).name}) — ${cl.name}`,at:SEED_NOW.toISOString(),kind:'wh'});
+    // движения по уменьшившимся позициям — в журнал прихода/расхода
+    for(const m of DB.materials){ const b=before['m:'+m.id]; if(b!=null && m.stock<b) recordMovement({kind:'mat', item:m, dir:'out', type:'production', qty:Math.round((b-m.stock)*10)/10, reason:`В производство — ${cl.name}`, dealId:d.id}); }
+    for(const c of DB.components){ const b=before['c:'+c.id]; if(b!=null && c.stock<b) recordMovement({kind:'comp', item:c, dir:'out', type:'production', qty:Math.round((b-c.stock)*10)/10, reason:`В производство — ${cl.name}`, dealId:d.id}); }
   }
   saveDB();
-  if(apiOn()){ persist(API.persist.saveDeal(d)); if(before) persistStockDiff(before); if(used.length) persist(API.persist.createActivity(DB.activity[0])); }
+  if(apiOn()){ persist(API.persist.saveDeal(d)); persistStockDiff(before); if(used.length) persist(API.persist.createActivity(DB.activity[0])); }
   closeModal(); render();
   if(used.length){ toast(`Этап «${PROD_STAGES.find(s=>s.id===stage).name}» · списано: ${used.join(', ')}`); }
   else { toast(`Этап: ${PROD_STAGES.find(s=>s.id===stage).name}`); }
@@ -152,11 +170,45 @@ function whConfirmReceive(id, kind){
   const rateEl=document.getElementById('wr-rate'); if(rateEl){ const r=parseFloat(rateEl.value); if(r>0) it.rate=Math.round(r); }
   const supEl=document.getElementById('wr-sup'); if(supEl && supEl.value.trim()) it.supplier=supEl.value.trim();
   it.stock = Math.round((it.stock+qty)*10)/10;
+  const reason = (supEl && supEl.value.trim()) ? 'Поставка — '+supEl.value.trim() : 'Поступление на склад';
+  recordMovement({kind, item:it, dir:'in', type:'receipt', qty, reason});
   DB.activity.unshift({who:state.user.id,text:`Приход на склад: ${it.name} +${qty} ${it.unit}`,at:SEED_NOW.toISOString(),kind:'wh'});
   saveDB();
   if(apiOn()){ persist(kind==='mat'?API.persist.saveMaterial(it):API.persist.saveComponent(it)); persist(API.persist.createActivity(DB.activity[0])); }
   closeModal(); render();
   toast(`Оприходовано: ${it.name} +${qty} ${it.unit} · остаток ${it.stock} ${it.unit}`);
+}
+
+/* warehouse — расход / списание (брак, в производство вручную, возврат, корректировка) */
+function whWriteoffModal(id, kind){
+  const it = kind==='mat' ? matById(id) : compById(id);
+  if(!it) return;
+  const opts = WRITEOFF_TYPES.map(t=>`<option value="${t}">${MOVE_TYPES[t].label}</option>`).join('');
+  openModal(`<div class="modal-h">${icon('trash')}<div><h3>Расход со склада</h3><div class="mh-sub">${it.name} · остаток ${it.stock} ${it.unit}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">
+      <div class="fld"><label>Количество, ${it.unit}</label><input type="number" min="0" step="0.1" max="${it.stock}" id="wo-qty" placeholder="0" autofocus></div>
+      <div class="fld"><label>Тип расхода</label><select id="wo-type">${opts}</select></div>
+      <div class="fld full"><label>Причина / комментарий</label><input id="wo-reason" placeholder="напр. брак при резке"></div>
+    </div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="wh-confirm-writeoff" data-id="${id}" data-kind="${kind}">${icon('check','sm')} Списать</button></div>`);
+}
+function whConfirmWriteoff(id, kind){
+  const it = kind==='mat' ? matById(id) : compById(id);
+  if(!it) return;
+  const qty = Math.max(0, Math.round((parseFloat(document.getElementById('wo-qty').value)||0)*10)/10);
+  if(qty<=0){ toast('Укажите количество','warn'); return; }
+  if(qty>it.stock){ toast(`Нельзя списать больше остатка (${it.stock} ${it.unit})`,'warn'); return; }
+  const type=(document.getElementById('wo-type')||{}).value||'writeoff';
+  const reason=((document.getElementById('wo-reason')||{}).value||'').trim()||MOVE_TYPES[type].label;
+  it.stock = Math.round((it.stock-qty)*10)/10;
+  recordMovement({kind, item:it, dir:'out', type, qty, reason});
+  DB.activity.unshift({who:state.user.id,text:`Расход со склада: ${it.name} −${qty} ${it.unit} (${MOVE_TYPES[type].label})`,at:SEED_NOW.toISOString(),kind:'wh'});
+  saveDB();
+  if(apiOn()){ persist(kind==='mat'?API.persist.saveMaterial(it):API.persist.saveComponent(it)); persist(API.persist.createActivity(DB.activity[0])); }
+  closeModal(); render();
+  toast(`Списано: ${it.name} −${qty} ${it.unit} · остаток ${it.stock} ${it.unit}`);
+  const low=[...DB.materials,...DB.components].filter(x=>x.stock<x.min).map(x=>x.name);
+  if(low.length) toast(`⚠ Ниже минимума: ${low.slice(0,3).join(', ')}${low.length>3?` и ещё ${low.length-3}`:''} — нужен дозаказ`,'warn');
 }
 
 /* measure mutations */
@@ -376,6 +428,8 @@ document.addEventListener('click', e=>{
     case 'wh-tab': state.whTab=t.dataset.v; renderModule(); break;
     case 'wh-receive': whReceiveModal(id, t.dataset.kind); break;
     case 'wh-confirm-receive': whConfirmReceive(id, t.dataset.kind); break;
+    case 'wh-writeoff': whWriteoffModal(id, t.dataset.kind); break;
+    case 'wh-confirm-writeoff': whConfirmWriteoff(id, t.dataset.kind); break;
     case 'open-prod': openProd(id); break;
     case 'move-prod': moveProd(id, t.dataset.stage); break;
     case 'fin-tab': state.financeTab=t.dataset.v; renderModule(); break;

@@ -206,3 +206,10 @@ INSERT INTO activity(id,user_id,text,kind_id,at) VALUES ('a2','u_ps','Завер
 INSERT INTO activity(id,user_id,text,kind_id,at) VALUES ('a3','u_isk','Сделка ТОО «СтройДом» переведена в «Аванс»','funnel','2026-05-26T11:00:00.000Z');
 INSERT INTO activity(id,user_id,text,kind_id,at) VALUES ('a4','u_as','Заказ «Канат Жумабеков» переведён в «Сборка»','prod','2026-05-27T11:00:00.000Z');
 INSERT INTO activity(id,user_id,text,kind_id,at) VALUES ('a5','u_pm','Новый лид из Instagram — Айгуль Нурланова','lead','2026-05-28T11:00:00.000Z');
+
+-- Движения склада (журнал прихода/расхода)
+INSERT INTO warehouse_movements(id,kind,item_id,name,unit,dir,type,qty,reason,balance_after,deal_id,user_id,at) VALUES ('wm_seed1','mat','m4','Rehau Grazio 70','пог.м','in','receipt',200,'Поставка Rehau KZ',355,NULL,'u_wh','2026-05-23T10:00:00.000Z');
+INSERT INTO warehouse_movements(id,kind,item_id,name,unit,dir,type,qty,reason,balance_after,deal_id,user_id,at) VALUES ('wm_seed2','comp','c2','Стеклопакет двухкам. 32мм','м²','in','receipt',40,'Поставка Стеклопакет-Сервис',62,NULL,'u_wh','2026-05-24T10:00:00.000Z');
+INSERT INTO warehouse_movements(id,kind,item_id,name,unit,dir,type,qty,reason,balance_after,deal_id,user_id,at) VALUES ('wm_seed3','mat','m5','Veka Softline 70','пог.м','out','production',48,'В производство — Бекзат Сулейменов',120,'d11','u_as','2026-05-24T14:00:00.000Z');
+INSERT INTO warehouse_movements(id,kind,item_id,name,unit,dir,type,qty,reason,balance_after,deal_id,user_id,at) VALUES ('wm_seed4','comp','c5','Фурнитура MACO пов.-откидная','компл','out','writeoff',2,'Брак при сборке',34,NULL,'u_as','2026-05-26T11:00:00.000Z');
+INSERT INTO warehouse_movements(id,kind,item_id,name,unit,dir,type,qty,reason,balance_after,deal_id,user_id,at) VALUES ('wm_seed5','comp','c8','Отлив оцинков. 150мм','пог.м','out','return',6,'Возврат поставщику — пересорт',18,NULL,'u_wh','2026-05-27T09:00:00.000Z');

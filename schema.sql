@@ -198,6 +198,28 @@ CREATE TABLE components (
   unit       TEXT
 );
 
+-- Движения склада: журнал прихода и расхода (приход поставки, списание в
+-- производство, брак, возврат поставщику, корректировка). qty всегда > 0,
+-- направление — в поле dir. balance_after — остаток после операции (для аудита).
+CREATE TABLE warehouse_movements (
+  id             TEXT PRIMARY KEY,
+  kind           TEXT NOT NULL,            -- 'mat' | 'comp'
+  item_id        TEXT NOT NULL,            -- materials.id | components.id
+  name           TEXT,                     -- снимок названия на момент операции
+  unit           TEXT,
+  dir            TEXT NOT NULL,            -- 'in' | 'out'
+  type           TEXT,                     -- receipt | production | writeoff | return | adjust
+  qty            REAL NOT NULL DEFAULT 0,  -- всегда положительное
+  reason         TEXT,                     -- причина/комментарий (для расхода)
+  balance_after  REAL,                     -- остаток после операции
+  deal_id        TEXT,                     -- если списание под сделку (опц.)
+  user_id        TEXT REFERENCES users(id),
+  at             TEXT,                     -- когда (ISO)
+  created_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX idx_wh_mov_item ON warehouse_movements(item_id);
+CREATE INDEX idx_wh_mov_at   ON warehouse_movements(at);
+
 -- ============================================================
 -- СДЕЛКИ
 -- ============================================================
