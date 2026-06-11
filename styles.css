@@ -213,6 +213,8 @@ input,select,textarea{font-family:inherit}
 .chip{padding:7px 12px;border-radius:9px;border:1px solid var(--line);background:var(--bg2);font-size:12.5px;font-weight:600;color:var(--muted);transition:.12s}
 .chip.on{background:var(--accent-soft);border-color:var(--accent2);color:#bfdbfe}
 .chip:hover{border-color:var(--line2)}
+.chips.oneline{flex-wrap:nowrap;overflow-x:auto;gap:5px;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.chips.oneline .chip{flex:0 0 auto;white-space:nowrap;padding:7px 9px;font-size:11.5px}
 .extras{display:flex;flex-wrap:wrap;gap:8px}
 .ex-toggle{display:flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--bg2);font-size:12.5px;font-weight:600;color:var(--muted)}
 .ex-toggle.on{background:var(--green-soft);border-color:#16653455;color:#86efac}

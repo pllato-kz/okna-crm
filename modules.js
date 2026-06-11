@@ -164,7 +164,7 @@ function openDeal(id){
       <button class="x" data-act="close-modal">${icon('x')}</button>
     </div>
     <div class="modal-b">
-      <div class="fld full" style="margin-bottom:14px"><label>Стадия — нажмите, чтобы переключить</label><div class="chips">${stageOpts}</div></div>
+      <div class="fld full" style="margin-bottom:14px"><label>Стадия — нажмите, чтобы переключить</label><div class="chips oneline">${stageOpts}</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
         <span class="tag">${icon('user','sm')} ${m.name}</span>
         <span class="tag">${icon('layers','sm')} ${d.source}</span>
