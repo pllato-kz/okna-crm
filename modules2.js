@@ -123,7 +123,7 @@ function initMeasureBindings(){
       const c=(d.items||[]).find(x=>x.id===inp.dataset.cid); if(!c) return;
       let v=parseFloat(inp.value)||0; if(inp.dataset.field==='sashes'){v=Math.max(1,Math.min(5,Math.round(v)));} if(inp.dataset.field==='qty'){v=Math.max(1,Math.round(v));}
       c[inp.dataset.field]=v; saveDB(); patchMeasure();
-      if(window.API && API.enabled){ if(API.persist.saveItem(c).catch){ API.persist.saveItem(c).catch(()=>{}); } }
+      if(window.API && API.enabled) API.persist.saveItem(c).catch(()=>{});
     });
   });
 }
