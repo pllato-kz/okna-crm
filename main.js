@@ -556,6 +556,70 @@ function waCheck(){
   }).catch(e=>{ if(el){ el.textContent='ошибка: '+((e&&e.message)||''); el.style.color='#f87171'; } });
 }
 
+/* ============ ЭКСПОРТ CSV ============ */
+function csvCell(v){ v=(v==null?'':String(v)); return /[";\n\r]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
+function exportCSV(name, rows){
+  const csv=rows.map(r=>r.map(csvCell).join(';')).join('\r\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  toast('Выгружено: '+name);
+}
+function expStamp(){ return new Date().toISOString().slice(0,10); }
+function doExport(what){
+  const money$=seesMoney();
+  if(what==='clients'){
+    const rows=[['Имя','Тип','Телефон','Адрес','Сделок','Сумма заказов','Долг']];
+    DB.clients.forEach(cl=>{ const ds=DB.deals.filter(d=>d.clientId===cl.id);
+      rows.push([cl.name,cl.type,cl.phone,cl.address,ds.length,ds.reduce((s,d)=>s+(d.sum||0),0),ds.reduce((s,d)=>s+dealDebt(d),0)]); });
+    return exportCSV(`клиенты_${expStamp()}.csv`, rows);
+  }
+  if(what==='deals'){
+    const rows=[['Клиент','Стадия','Менеджер','Источник','Сумма','Оплачено','Долг','Создана','Примечание']];
+    DB.deals.forEach(d=>{ const cl=clientById(d.clientId); const m=userById(d.manager);
+      rows.push([cl?cl.name:'', stageById(d.stage)?stageById(d.stage).name:d.stage, m?m.name:'', d.source||'', d.sum||0, dealPaid(d), dealDebt(d), d.createdAt?dateFull(d.createdAt):'', d.note||'']); });
+    return exportCSV(`сделки_${expStamp()}.csv`, rows);
+  }
+  if(what==='warehouse'){
+    const tab=state.whTab;
+    if(tab==='comp'){
+      const rows=[['Наименование','Остаток','Ед.','Минимум']];
+      DB.components.forEach(c=>rows.push([c.name,c.stock,c.unit,c.min]));
+      return exportCSV(`склад_комплектующие_${expStamp()}.csv`, rows);
+    }
+    if(tab==='moves'){
+      const rows=[['Дата','Позиция','Операция','Направление','Количество','Ед.','Причина','Сотрудник']];
+      (DB.movements||[]).slice().sort((a,b)=>String(b.at||'').localeCompare(String(a.at||''))).forEach(m=>{
+        const u=userById(m.who); rows.push([m.at?dateFull(m.at):'', m.name||m.itemId, moveType(m.type).label, m.dir==='in'?'приход':'расход', m.qty, m.unit||'', m.reason||'', u?u.name:'']); });
+      return exportCSV(`склад_движения_${expStamp()}.csv`, rows);
+    }
+    const head=['Профиль','Тип','Серия']; if(money$) head.push('Цена за м²'); head.push('Остаток','Ед.','Минимум','Поставщик');
+    const rows=[head];
+    DB.materials.forEach(m=>{ const r=[m.name,m.type,m.series]; if(money$) r.push(m.rate); r.push(m.stock,m.unit,m.min,m.supplier); rows.push(r); });
+    return exportCSV(`склад_профиль_${expStamp()}.csv`, rows);
+  }
+  if(what==='finance'){
+    const tab=state.financeTab;
+    if(tab==='pay'){
+      const rows=[['Поставщик','За что','Сумма','Срок','Статус']];
+      DB.payables.forEach(p=>rows.push([p.supplier,p.forWhat,p.amount,p.due?dateFull(p.due):'',p.status]));
+      return exportCSV(`кредиторка_${expStamp()}.csv`, rows);
+    }
+    if(tab==='pl'){
+      const revenue=DB.deals.reduce((s,d)=>s+dealPaid(d),0);
+      const orders=DB.deals.filter(d=>d.sum>0).reduce((s,d)=>s+d.sum,0);
+      const cost=Math.round(revenue*0.56); const margin=revenue-cost;
+      const rows=[['Показатель','Значение'],['Получено (касса)',revenue],['Законтрактовано',orders],['Себестоимость',cost],['Маржа',margin],['Рентабельность, %',Math.round(margin/Math.max(1,revenue)*100)]];
+      return exportCSV(`финансы_отчет_${expStamp()}.csv`, rows);
+    }
+    const rows=[['Клиент','Стадия','Заказ','Оплачено','Долг']];
+    DB.deals.filter(d=>dealDebt(d)>0 && d.sum>0).forEach(d=>{ const cl=clientById(d.clientId);
+      rows.push([cl?cl.name:'', stageById(d.stage)?stageById(d.stage).name:d.stage, d.sum, dealPaid(d), dealDebt(d)]); });
+    return exportCSV(`дебиторка_${expStamp()}.csv`, rows);
+  }
+}
+
 /* ============ ССЫЛКА ДЛЯ КЛИЕНТА ============ */
 function sharePick(t){
   document.querySelectorAll('.share-opt').forEach(b=>b.classList.remove('on'));
@@ -643,6 +707,7 @@ document.addEventListener('click', e=>{
     case 'wa-move-stage': waMoveStage(id, t.dataset.stage); break;
     case 'new-deal': newDealModal(); break;
     case 'create-deal': createDeal(); break;
+    case 'export': doExport(t.dataset.what); break;
     case 'del-deal': delDealModal(id); break;
     case 'del-deal-confirm': delDealConfirm(id); break;
     case 'open-client': openClient(id); clearSearch(); break;

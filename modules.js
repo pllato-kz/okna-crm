@@ -101,7 +101,7 @@ function renderFunnel(){
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
     <div class="tag blue">${icon('funnel','sm')} ${DB.deals.length} сделок</div>
     <div class="tag">в работе: ${moneyK(totalSum)}</div>
-    <div style="margin-left:auto"><button class="btn primary" data-act="new-deal">${icon('plus','sm')} Новая сделка</button></div>
+    <div style="margin-left:auto;display:flex;gap:8px"><button class="btn sm" data-act="export" data-what="deals">${icon('doc','sm')} Экспорт</button><button class="btn primary" data-act="new-deal">${icon('plus','sm')} Новая сделка</button></div>
   </div>
   <div class="kanban">${cols}</div>
   <div class="muted2" style="font-size:12px;margin-top:12px">Перетащите карточку между колонками мышью, либо откройте сделку и смените стадию.</div>`;
@@ -182,7 +182,7 @@ function renderClients(){
   }).join('');
   return `<div class="panel">
     <div class="panel-h">${icon('clients')}<h3>Клиенты</h3><span class="ph-sub">${DB.clients.length} записей</span>
-      <div style="margin-left:auto"><button class="btn primary sm" data-act="new-client">${icon('plus','sm')} Добавить</button></div></div>
+      <div style="margin-left:auto;display:flex;gap:8px"><button class="btn sm" data-act="export" data-what="clients">${icon('doc','sm')} Экспорт</button><button class="btn primary sm" data-act="new-client">${icon('plus','sm')} Добавить</button></div></div>
     <table class="tbl">
       <thead><tr><th>Клиент</th><th>Телефон</th><th>Адрес</th><th class="num">Сделок</th><th class="num">Сумма</th><th class="num">Долг</th></tr></thead>
       <tbody>${rows}</tbody>
