@@ -122,6 +122,7 @@ const MODULE_META = {
 };
 function renderShell(){
   const u=state.user;
+  const notifN = (typeof buildNotifs==='function') ? buildNotifs().length : 0;
   const measureCount = DB.deals.filter(d=>d.stage==='measure').length;
   const prodCount = DB.deals.filter(d=>['production','install'].includes(d.stage)).length;
   const nav = navGroups().map(g=>{
@@ -165,7 +166,7 @@ function renderShell(){
         </div>
         <div class="search">${icon('search','sm')}<input id="global-search" placeholder="Поиск клиента, сделки…" data-act="search" autocomplete="off"><div class="search-dd" id="search-dd"></div></div>
         <button class="icon-btn" data-act="theme" title="Сменить тему">${icon(state.theme==='light'?'moon':'sun')}</button>
-        <button class="icon-btn" data-act="notif" title="Уведомления">${icon('bell')}<span class="dot"></span></button>
+        <button class="icon-btn" data-act="notif" title="Уведомления">${icon('bell')}${notifN?`<span class="notif-badge">${notifN>9?'9+':notifN}</span>`:''}</button>
         <button class="icon-btn" data-act="reset" title="Сбросить демо-данные">${icon('refresh')}</button>
       </header>
       <section class="content" id="view"></section>
@@ -225,13 +226,36 @@ function notifKindMeta(kind){
     wh:     {icon:'box',       color:'#7c3aed'},
   })[kind] || {icon:'bell', color:'var(--accent)'};
 }
+/* Персональные уведомления: каждому — его задачи; директору — ещё и просрочки по всем (контроль). */
+function buildNotifs(){
+  const me=state.user; if(!me || !Array.isArray(DB.tasks)) return [];
+  const open=DB.tasks.filter(t=>!t.done);
+  const cls=t=>(typeof taskClass==='function')?taskClass(t):{k:'',txt:'',color:'var(--muted)'};
+  const overdue=t=>(typeof taskDayDiff==='function')?taskDayDiff(t.due)<0:false;
+  const list=[];
+  // 1) мои задачи
+  open.filter(t=>t.assignee===me.id).forEach(t=>{ const c=cls(t); const d=dealById(t.dealId); const cl=d?clientById(d.clientId):null;
+    list.push({ id:'my_'+t.id, dealId:t.dealId, ov:c.k==='overdue', due:t.due,
+      icon:c.k==='overdue'?'alert':'clock', color:c.color,
+      title:(c.k==='overdue'?'Просрочена задача: ':'Задача: ')+t.title,
+      sub:`${cl?cl.name+' · ':''}${dateStr(t.due)} · ${c.txt}` });
+  });
+  // 2) директор: просроченные чужие задачи (контроль)
+  if(me.role==='director'){
+    open.filter(t=>t.assignee!==me.id && overdue(t)).forEach(t=>{ const u=userById(t.assignee); const d=dealById(t.dealId); const cl=d?clientById(d.clientId):null;
+      list.push({ id:'ov_'+t.id, dealId:t.dealId, ov:true, due:t.due, icon:'alert', color:'#f87171',
+        title:'Просрочка у сотрудника: '+t.title, sub:`${u?u.name+' · ':''}${cl?cl.name+' · ':''}${dateStr(t.due)}` });
+    });
+  }
+  return list.sort((a,b)=>(b.ov-a.ov)||String(a.due||'').localeCompare(String(b.due||'')));
+}
 function notifModal(){
-  const acts=(DB.activity||[]).slice(0,12);
-  const items=acts.map(a=>{ const u=userById(a.who); const m=notifKindMeta(a.kind);
-    return `<div class="tl-item"><div class="tl-dot" style="background:${m.color}24;color:${m.color}">${icon(m.icon,'sm')}</div>
-      <div class="tl-c"><div class="tl-t">${a.text}</div><div class="tl-d">${u?u.name:'—'} · ${dateStr(a.at)}</div></div></div>`;
-  }).join('') || '<div class="muted" style="padding:16px;text-align:center">Событий пока нет</div>';
-  openModal(`<div class="modal-h">${icon('bell')}<div><h3>Уведомления</h3><div class="mh-sub">Последние события · ${acts.length}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+  const list=buildNotifs();
+  const items=list.map(n=>`<div class="tl-item" ${n.dealId?`data-act="open-deal" data-id="${n.dealId}" style="cursor:pointer"`:''}>
+      <div class="tl-dot" style="background:${n.color}24;color:${n.color}">${icon(n.icon,'sm')}</div>
+      <div class="tl-c"><div class="tl-t">${n.title}</div><div class="tl-d">${n.sub}</div></div></div>`).join('')
+    || '<div class="muted" style="padding:18px;text-align:center">Новых уведомлений нет 🎉</div>';
+  openModal(`<div class="modal-h">${icon('bell')}<div><h3>Уведомления</h3><div class="mh-sub">${list.length?'актуальных: '+list.length:'всё под контролем'}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="timeline">${items}</div></div>
     <div class="modal-f"><button class="btn" data-act="close-modal">Закрыть</button></div>`);
 }
