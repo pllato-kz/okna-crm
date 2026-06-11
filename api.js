@@ -144,6 +144,9 @@ const apiPersist = {
   createClient: (c) => apiFetch('clients', { method: 'POST', body: {
     id: c.id, name: c.name, phone: c.phone, address: c.address, type_id: apiRevId((API._cat || {}).client_types, c.type),
   }}),
+  saveClient: (c) => apiFetch('clients/' + c.id, { method: 'PUT', body: {
+    name: c.name, phone: c.phone, address: c.address, type_id: apiRevId((API._cat || {}).client_types, c.type),
+  }}),
   createDeal: (d) => apiFetch('deals', { method: 'POST', body: apiDealToServer(d, true) }),
   saveDeal:   (d) => apiFetch('deals/' + d.id, { method: 'PUT', body: apiDealToServer(d, false) }),
   createItem: (dealId, it) => apiFetch('deal_items', { method: 'POST', body: {

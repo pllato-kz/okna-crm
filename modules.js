@@ -211,7 +211,7 @@ function openClient(id){
       <div class="panel" style="margin-top:14px"><div class="panel-h" style="padding:12px 14px">${icon('funnel','sm')}<h3 style="font-size:13.5px">История сделок</h3></div><div class="panel-b" style="padding:12px 14px">${dealRows}</div></div>
     </div>
     <div class="modal-f"><button class="btn danger" data-act="del-client" data-id="${cl.id}" style="margin-right:auto">${icon('trash','sm')} Удалить</button>
-      <button class="btn" data-act="close-modal">Закрыть</button>
+      <button class="btn" data-act="edit-client" data-id="${cl.id}">${icon('edit','sm')} Изменить</button>
       <button class="btn" data-act="wa-client" data-id="${cl.id}">${icon('send','sm')} Сообщение</button>
       <button class="btn green" data-act="wa-chat" data-id="${cl.id}">${icon('wa','sm')} Чат WhatsApp</button></div>
   `);
