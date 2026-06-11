@@ -426,6 +426,8 @@ document.addEventListener('click', e=>{
     case 'quick-prepay': applyPrepay(id); break;
     case 'confirm-prepay': applyPrepay(id); break;
     case 'wh-tab': state.whTab=t.dataset.v; renderModule(); break;
+    case 'wh-mv-type': state.whMoveType=t.dataset.v; renderModule(); break;
+    case 'wh-mv-period': state.whMovePeriod=t.dataset.v; renderModule(); break;
     case 'wh-receive': whReceiveModal(id, t.dataset.kind); break;
     case 'wh-confirm-receive': whConfirmReceive(id, t.dataset.kind); break;
     case 'wh-writeoff': whWriteoffModal(id, t.dataset.kind); break;

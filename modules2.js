@@ -207,7 +207,18 @@ function renderWarehouse(){
         ${actCell(c.id,'comp')}</tr>`;}).join('');
     body=`<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Наименование</th><th>Остаток</th><th>Минимум</th><th>Статус</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
   } else {
-    const list=moves.slice().sort((a,b)=>String(b.at||'').localeCompare(String(a.at||''))).slice(0,80);
+    const ft=state.whMoveType||'all', fp=state.whMovePeriod||'all';
+    // фильтр по типу операции
+    const byType=m=> ft==='all' ? true : (ft==='out' ? moveType(m.type).dir==='out' : m.type===ft);
+    // фильтр по периоду (относительно SEED_NOW — «сейчас» демо)
+    const fromTs = fp==='all' ? 0 : (SEED_NOW.getTime() - parseInt(fp,10)*86400000);
+    const byPeriod=m=> fp==='all' ? true : (new Date(m.at).getTime() >= fromTs);
+    const filtered=moves.filter(m=>byType(m)&&byPeriod(m));
+    const list=filtered.slice().sort((a,b)=>String(b.at||'').localeCompare(String(a.at||''))).slice(0,120);
+    const typeChips=[['all','Все'],['receipt','Приход'],['production','В производство'],['writeoff','Брак'],['return','Возврат'],['adjust','Корректировка']]
+      .map(([v,l])=>`<button class="chip ${ft===v?'on':''}" data-act="wh-mv-type" data-v="${v}">${l}</button>`).join('');
+    const periodChips=[['all','Всё время'],['30','30 дней'],['7','7 дней']]
+      .map(([v,l])=>`<button class="chip ${fp===v?'on':''}" data-act="wh-mv-period" data-v="${v}">${l}</button>`).join('');
     const rows=list.map(m=>{const mt=moveType(m.type); const u=userById(m.who);
       const qcell=m.dir==='in'
         ? `<span style="color:#4ade80;font-weight:700;white-space:nowrap">+${m.qty} ${m.unit||''}</span>`
@@ -218,11 +229,14 @@ function renderWarehouse(){
         <td class="muted">${m.reason||'—'}</td>
         <td class="num">${qcell}</td>
         <td class="muted" style="white-space:nowrap">${u?u.name:'—'}</td></tr>`;}).join('');
-    const inSum=moves.filter(m=>m.dir==='in').length, outSum=moves.filter(m=>m.dir==='out').length;
-    body=`<div style="padding:12px 18px;display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--line)">
-        <span class="tag green">${inSum} прихода</span><span class="tag red">${outSum} расхода</span><span>журнал прихода и расхода материалов и комплектующих</span></div>
+    const inSum=filtered.filter(m=>m.dir==='in').length, outSum=filtered.filter(m=>m.dir==='out').length;
+    body=`<div style="padding:14px 18px;border-bottom:1px solid var(--line)">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><span class="muted2" style="font-size:11.5px;min-width:64px">Операция</span><div class="chips">${typeChips}</div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="muted2" style="font-size:11.5px;min-width:64px">Период</span><div class="chips">${periodChips}</div></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--muted)">
+          <span class="tag green">${inSum} прихода</span><span class="tag red">${outSum} расхода</span><span>найдено: ${filtered.length}</span></div></div>
       <div class="tbl-scroll"><table class="tbl"><thead><tr><th>Дата</th><th>Позиция</th><th>Операция</th><th>Причина</th><th class="num">Кол-во</th><th>Сотрудник</th></tr></thead>
-      <tbody>${rows||'<tr><td colspan=6 class="muted" style="text-align:center;padding:30px">Движений пока нет</td></tr>'}</tbody></table></div>`;
+      <tbody>${rows||'<tr><td colspan=6 class="muted" style="text-align:center;padding:30px">Нет движений по выбранным фильтрам</td></tr>'}</tbody></table></div>`;
   }
   const low=[...DB.materials,...DB.components].filter(x=>x.stock<x.min).length;
   return `
