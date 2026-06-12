@@ -422,3 +422,10 @@ input,select,textarea{font-family:inherit}
   font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;resize:none;outline:none;word-break:break-all}
 .share-url:focus{border-color:var(--accent2)}
 .share-result .btn{justify-content:center}
+
+/* подсветка найденной из поиска карточки/строки */
+.flash{animation:flashpulse 2s ease-out}
+@keyframes flashpulse{
+  0%,55%{box-shadow:0 0 0 3px var(--accent2);background-color:var(--accent-soft)}
+  100%{box-shadow:0 0 0 0 rgba(18,150,196,0);background-color:transparent}
+}
