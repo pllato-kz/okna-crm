@@ -248,10 +248,10 @@ function renderWarehouse(){
     const periodChips=[['all','Всё время'],['30','30 дней'],['7','7 дней']]
       .map(([v,l])=>`<button class="chip ${fp===v?'on':''}" data-act="wh-mv-period" data-v="${v}">${l}</button>`).join('');
     const dInpSt='background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:5px 8px;color:var(--txt);font-size:12px;outline:none';
-    const dateRange=`<span class="chip ${fp==='date'?'on':''}" style="cursor:default">с</span>
-      <input type="date" data-act="wh-mv-from" value="${state.whMoveFrom||''}" style="${dInpSt}">
+    const dateRange=`<span class="muted2" style="font-size:11.5px">с</span>
+      <input type="date" data-act="wh-mv-from" value="${state.whMoveFrom||''}" style="${dInpSt}${fp==='date'?';border-color:var(--accent2)':''}">
       <span class="muted2" style="font-size:11.5px">по</span>
-      <input type="date" data-act="wh-mv-to" value="${state.whMoveTo||''}" style="${dInpSt}">`;
+      <input type="date" data-act="wh-mv-to" value="${state.whMoveTo||''}" style="${dInpSt}${fp==='date'?';border-color:var(--accent2)':''}">`;
     const rows=list.map(m=>{const mt=moveType(m.type); const u=userById(m.who);
       const qcell=m.dir==='in'
         ? `<span style="color:#4ade80;font-weight:700;white-space:nowrap">+${m.qty} ${m.unit||''}</span>`
