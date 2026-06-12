@@ -328,14 +328,30 @@ function renderFinance(){
       ||'<tr><td colspan=6 class="muted" style="text-align:center;padding:30px">Кредиторки нет</td></tr>';
     body=`<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Поставщик</th><th>За что</th><th class="num">Сумма</th><th>Срок</th><th>Статус</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
   } else {
-    const revenue=DB.deals.reduce((s,d)=>s+dealPaid(d),0);
-    const orders=DB.deals.filter(d=>d.sum>0).reduce((s,d)=>s+d.sum,0);
+    // период отчётности
+    const fp=state.financePeriod||'all';
+    let fromTs=0, periodLabel='за всё время';
+    if(fp==='7'){ fromTs=SEED_NOW.getTime()-7*864e5; periodLabel='за 7 дней'; }
+    else if(fp==='30'){ fromTs=SEED_NOW.getTime()-30*864e5; periodLabel='за 30 дней'; }
+    else if(fp==='date' && state.financeFrom){ fromTs=new Date(state.financeFrom).getTime(); periodLabel='с '+dateFull(state.financeFrom); }
+    const inP=ts=>fromTs===0?true:(ts>=fromTs);
+    const revenue=DB.deals.reduce((s,d)=>s+(d.payments||[]).filter(p=>inP(new Date(p.date).getTime())).reduce((a,p)=>a+p.amount,0),0);
+    const orders=DB.deals.filter(d=>d.sum>0 && inP(new Date(d.createdAt).getTime())).reduce((s,d)=>s+d.sum,0);
     const cost=Math.round(revenue*0.56); const margin=revenue-cost;
+    const revenueAll=DB.deals.reduce((s,d)=>s+dealPaid(d),0);
     const won=DB.deals.filter(d=>['production','install','done'].includes(d.stage)).length;
     const conv=Math.round(won/Math.max(1,DB.deals.length)*100);
     const stageRows=STAGES.map(s=>{const cnt=DB.deals.filter(d=>stageIndex(d.stage)>=stageIndex(s.id)).length;
       return {label:s.name,value:cnt,display:cnt,color:`linear-gradient(90deg,${s.color},${s.color}cc)`};});
+    const perChips=[['all','Всё время'],['30','30 дней'],['7','7 дней']].map(([v,l])=>`<button class="chip ${fp===v?'on':''}" data-act="fin-period" data-v="${v}">${l}</button>`).join('');
+    const fromVal=(fp==='date'&&state.financeFrom)?String(state.financeFrom).slice(0,10):'';
     body=`
+      <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:16px">
+        <span class="muted2" style="font-size:11.5px">Период:</span><div class="chips">${perChips}</div>
+        <span class="muted2" style="font-size:11.5px;margin-left:4px">или с даты:</span>
+        <input type="date" data-act="fin-date" value="${fromVal}" style="background:var(--bg2);border:1px solid ${fp==='date'?'var(--accent2)':'var(--line)'};border-radius:9px;padding:7px 10px;color:var(--txt);font-size:13px">
+        <span class="muted2" style="font-size:11.5px;margin-left:auto">${periodLabel}</span>
+      </div>
       <div class="cards-row" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:18px">
         ${kpi({icon:'money',label:'Получено (касса)',value:moneyK(revenue),color:'#16a34a',soft:'var(--green-soft)'})}
         ${kpi({icon:'doc',label:'Законтрактовано',value:moneyK(orders),color:'#2563eb'})}
@@ -344,7 +360,7 @@ function renderFinance(){
       </div>
       <div class="grid-2b">
         <div class="panel"><div class="panel-h">${icon('funnel','sm')}<h3>Конверсия по этапам</h3><span class="ph-sub">${conv}% доходимость</span></div><div class="panel-b">${bars(stageRows)}</div></div>
-        <div class="panel"><div class="panel-h">${icon('trend','sm')}<h3>Выручка по месяцам</h3></div><div class="panel-b">${bars([['дек',3.1],['янв',3.8],['фев',4.2],['мар',3.6],['апр',4.9],['май',revenue/1e6]].map((r,i,a)=>({label:r[0],value:r[1],display:r[1].toFixed(1)+' млн',color:i===a.length-1?'linear-gradient(90deg,#16a34a,#4ade80)':'linear-gradient(90deg,#2563eb,#3b82f6)'})))}</div></div>
+        <div class="panel"><div class="panel-h">${icon('trend','sm')}<h3>Выручка по месяцам</h3></div><div class="panel-b">${bars([['дек',3.1],['янв',3.8],['фев',4.2],['мар',3.6],['апр',4.9],['май',revenueAll/1e6]].map((r,i,a)=>({label:r[0],value:r[1],display:r[1].toFixed(1)+' млн',color:i===a.length-1?'linear-gradient(90deg,#16a34a,#4ade80)':'linear-gradient(90deg,#2563eb,#3b82f6)'})))}</div></div>
       </div>`;
   }
   return `
