@@ -294,6 +294,49 @@ const state = { user:null, module:null, measureDealId:null, financeTab:'recv', f
 let waConfig = { configured:false, enabled:false, idInstance:'' };
 applyTheme(state.theme);
 
+/* ============ БЫСТРЫЕ СООБЩЕНИЯ WHATSAPP (шаблоны по этапам) ============ */
+// Шаблоны хранятся в localStorage (переживают перезагрузку в любом режиме).
+// Плейсхолдеры: {client} {company} {phone} {address} {stage} {manager} {total} {prepay} {debt}
+const WA_TPL_KEY = 'okna_crm_wa_templates';
+const WA_TPL_VARS = ['{client}','{company}','{phone}','{address}','{stage}','{manager}','{total}','{prepay}','{debt}'];
+function defaultWaTemplates(){ return [
+  {id:'wt_hello',    stage:'any',       label:'Приветствие',           text:'Здравствуйте, {client}! Это {company}. Спасибо за обращение — готовы помочь с расчётом и замером по вашим окнам.'},
+  {id:'wt_lead',     stage:'lead',      label:'Новый лид',             text:'{client}, здравствуйте! Это {company}. Подскажите удобное время, чтобы обсудить ваши окна и записать на бесплатный замер?'},
+  {id:'wt_meas',     stage:'measure',   label:'Запись на замер',       text:'{client}, здравствуйте! Это {company}. Готовы приехать на замер. В какой день и время вам удобно?'},
+  {id:'wt_meas2',    stage:'measure',   label:'Замерщик выехал',       text:'{client}, наш замерщик выехал к вам по адресу {address}. Будет в течение часа.'},
+  {id:'wt_kp',       stage:'calc',      label:'КП готово',             text:'{client}, подготовили коммерческое предложение по вашим окнам на сумму {total}. Для запуска заказа предоплата — {prepay}. С радостью ответим на вопросы.'},
+  {id:'wt_contract', stage:'contract',  label:'Договор',               text:'{client}, договор готов. Отправляем реквизиты и детали. Подскажите, всё ли удобно?'},
+  {id:'wt_prepaid',  stage:'prepaid',   label:'Аванс получен',         text:'{client}, спасибо! Аванс получен, запускаем ваш заказ в производство. Сообщим о готовности.'},
+  {id:'wt_prod',     stage:'production',label:'В производстве',        text:'{client}, ваши окна в производстве. Держим вас в курсе и сообщим, как только всё будет готово к монтажу.'},
+  {id:'wt_install',  stage:'install',   label:'Согласовать монтаж',    text:'{client}, изделия готовы! Согласуем дату монтажа — когда вам удобно принять бригаду?'},
+  {id:'wt_done',     stage:'done',      label:'Завершено',             text:'{client}, спасибо, что выбрали {company}! Работы завершены. Будем благодарны за отзыв и рекомендации 🙂'},
+  {id:'wt_debt',     stage:'any',       label:'Напоминание об оплате', text:'{client}, напоминаем про остаток оплаты по заказу — {debt}. Подскажите, когда планируете внести?'},
+]; }
+function loadWaTemplates(){
+  try{ const raw=localStorage.getItem(WA_TPL_KEY); if(raw){ const a=JSON.parse(raw); if(Array.isArray(a)) return a; } }catch(e){}
+  const def=defaultWaTemplates(); try{ localStorage.setItem(WA_TPL_KEY, JSON.stringify(def)); }catch(e){} return def;
+}
+function saveWaTemplates(){ try{ localStorage.setItem(WA_TPL_KEY, JSON.stringify(WA_TEMPLATES)); }catch(e){} }
+let WA_TEMPLATES = loadWaTemplates();
+// данные для подстановки плейсхолдеров
+function waTplData(cl, d){
+  const co=(DB.company&&DB.company.name)||''; let total='',prepay='',debt='';
+  if(d){ const k=(typeof computeMeasure==='function')?computeMeasure(d):{total:d.sum||0,prepay:0};
+    total=money(k.total); prepay=money(k.prepay); debt=money(Math.max(0,(d.sum||k.total)-dealPaid(d))); }
+  return { '{client}':cl?cl.name:'', '{company}':co, '{phone}':cl?cl.phone:'', '{address}':cl?cl.address:'',
+    '{stage}':d?stageById(d.stage).name:'', '{manager}':d?((userById(d.manager)||{}).name||''):'',
+    '{total}':total, '{prepay}':prepay, '{debt}':debt };
+}
+function renderWaTpl(text, cl, d){ const map=waTplData(cl,d);
+  return String(text||'').replace(/\{client\}|\{company\}|\{phone\}|\{address\}|\{stage\}|\{manager\}|\{total\}|\{prepay\}|\{debt\}/g, m=>map[m]!=null?map[m]:m); }
+// подходящие шаблоны для сделки: этап сделки + универсальные
+function waTemplatesFor(d){
+  const stage = d ? d.stage : 'lead';
+  const stageTpls = WA_TEMPLATES.filter(t=>t.stage===stage);
+  const anyTpls   = WA_TEMPLATES.filter(t=>t.stage==='any');
+  return stageTpls.concat(anyTpls);
+}
+
 /* ============ ДОСТУП ПО ССЫЛКЕ (демо-гейт) ============ */
 /* Демка с фейковыми данными: подпись не криптостойкая, задача — мягко ограничить
    вход клиента по сроку, а не защищать секреты. */
