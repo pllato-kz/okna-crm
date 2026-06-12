@@ -1584,7 +1584,7 @@ document.addEventListener('click', e=>{
     case 'wh-low': state.whLow=!state.whLow; renderModule(); break;
     case 'wh-flt-reset': state.whSearch=''; state.whLow=false; renderModule(); break;
     case 'wh-mv-type': state.whMoveType=t.dataset.v; renderModule(); break;
-    case 'wh-mv-period': state.whMovePeriod=t.dataset.v; renderModule(); break;
+    case 'wh-mv-period': state.whMovePeriod=t.dataset.v; state.whMoveFrom=null; state.whMoveTo=null; renderModule(); break;
     case 'wh-receive': whReceiveModal(id, t.dataset.kind); break;
     case 'wh-confirm-receive': whConfirmReceive(id, t.dataset.kind); break;
     case 'wh-writeoff': whWriteoffModal(id, t.dataset.kind); break;
@@ -1618,6 +1618,8 @@ document.addEventListener('change', e=>{
   if(t.dataset.act==='trash-retention'){ trashSetRetention(t.dataset.id, parseInt(t.value,10)); }
   if(t.dataset.act==='fin-date'){ state.financeFrom=t.value||null; state.financePeriod=(state.financeFrom||state.financeTo)?'date':'all'; renderModule(); }
   if(t.dataset.act==='fin-date-to'){ state.financeTo=t.value||null; state.financePeriod=(state.financeFrom||state.financeTo)?'date':'all'; renderModule(); }
+  if(t.dataset.act==='wh-mv-from'){ state.whMoveFrom=t.value||null; state.whMovePeriod=(state.whMoveFrom||state.whMoveTo)?'date':'all'; renderModule(); }
+  if(t.dataset.act==='wh-mv-to'){ state.whMoveTo=t.value||null; state.whMovePeriod=(state.whMoveFrom||state.whMoveTo)?'date':'all'; renderModule(); }
 });
 document.addEventListener('input', e=>{
   const t=e.target.closest('[data-act]'); if(!t) return;
