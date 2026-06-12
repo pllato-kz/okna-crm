@@ -211,19 +211,19 @@ function buildSeed(){
   D({id:'d10', clientId:'cl11',stage:'prepaid',  manager:'u_pm', sum:368000,  createdAt:daysAgo(9).toISOString(),  stageSince:daysAgo(1).toISOString(),  note:'Аванс 30% получен',
       items:[constr('m3',1300,1400,'g2','tilt',2,['mosquito','sill','slopes','mount'])],
       payments:[{id:uid('p'),type:'Аванс',amount:110000,date:daysAgo(1).toISOString()}]});
-  D({id:'d11', clientId:'cl8', stage:'production',manager:'u_isk',sum:740000,  createdAt:daysAgo(20).toISOString(), stageSince:daysAgo(5).toISOString(),  prodStage:'assembly', note:'В сборке, срок 3 дня',
+  D({id:'d11', clientId:'cl8', stage:'production',manager:'u_isk',sum:740000,  createdAt:daysAgo(20).toISOString(), stageSince:daysAgo(5).toISOString(),  prodStage:'assembly', readyDate:daysAgo(1).toISOString().slice(0,10), installDate:daysAgo(-2).toISOString().slice(0,10), note:'В сборке, срок 3 дня',
       items:[constr('m5',1500,1500,'g3','tilt',2,['sill','slopes','mount']), constr('m5',1500,1500,'g3','tilt',2,['sill','slopes','mount'])],
       payments:[{id:uid('p'),type:'Аванс',amount:370000,date:daysAgo(5).toISOString()}]});
-  D({id:'d12', clientId:'cl12',stage:'production',manager:'u_isk',sum:2380000, createdAt:daysAgo(24).toISOString(), stageSince:daysAgo(6).toISOString(),  prodStage:'glass', note:'Гос. объект, 24 окна',
+  D({id:'d12', clientId:'cl12',stage:'production',manager:'u_isk',sum:2380000, createdAt:daysAgo(24).toISOString(), stageSince:daysAgo(6).toISOString(),  prodStage:'glass', readyDate:daysAgo(-4).toISOString().slice(0,10), installDate:daysAgo(-7).toISOString().slice(0,10), note:'Гос. объект, 24 окна',
       items:[constr('m3',1500,1800,'g2','tilt',2,['mount','demount'])],
       payments:[{id:uid('p'),type:'Аванс',amount:1428000,date:daysAgo(6).toISOString()}]});
-  D({id:'d13', clientId:'cl1', stage:'install',  manager:'u_pm', sum:295000,  createdAt:daysAgo(26).toISOString(), stageSince:daysAgo(2).toISOString(),  prodStage:'installing', note:'Монтаж сегодня',
+  D({id:'d13', clientId:'cl1', stage:'install',  manager:'u_pm', sum:295000,  createdAt:daysAgo(26).toISOString(), stageSince:daysAgo(2).toISOString(),  prodStage:'installing', readyDate:daysAgo(2).toISOString().slice(0,10), installDate:daysAgo(0).toISOString().slice(0,10), note:'Монтаж сегодня',
       items:[constr('m4',1400,1400,'g2','tilt',2,['sill','slopes','mount'])],
       payments:[{id:uid('p'),type:'Аванс',amount:150000,date:daysAgo(8).toISOString()}]});
-  D({id:'d14', clientId:'cl5', stage:'done',     manager:'u_isk',sum:1240000, createdAt:daysAgo(40).toISOString(), stageSince:daysAgo(7).toISOString(),  prodStage:'installing', note:'Сдан, остаток оплаты',
+  D({id:'d14', clientId:'cl5', stage:'done',     manager:'u_isk',sum:1240000, createdAt:daysAgo(40).toISOString(), stageSince:daysAgo(7).toISOString(),  prodStage:'installing', readyDate:daysAgo(8).toISOString().slice(0,10), installDate:daysAgo(5).toISOString().slice(0,10), note:'Сдан, остаток оплаты',
       items:[constr('m9',1600,1700,'g3','tilt',2,['sill','slopes','mount','demount'])],
       payments:[{id:uid('p'),type:'Аванс',amount:620000,date:daysAgo(20).toISOString()},{id:uid('p'),type:'Доплата',amount:400000,date:daysAgo(5).toISOString()}]});
-  D({id:'d15', clientId:'cl3', stage:'done',     manager:'u_pm', sum:486000,  createdAt:daysAgo(34).toISOString(), stageSince:daysAgo(10).toISOString(), prodStage:'installing', note:'Закрыт полностью',
+  D({id:'d15', clientId:'cl3', stage:'done',     manager:'u_pm', sum:486000,  createdAt:daysAgo(34).toISOString(), stageSince:daysAgo(10).toISOString(), prodStage:'installing', readyDate:daysAgo(12).toISOString().slice(0,10), installDate:daysAgo(8).toISOString().slice(0,10), note:'Закрыт полностью',
       items:[constr('m4',1500,1500,'g2','tilt',2,['sill','slopes','mount'])],
       payments:[{id:uid('p'),type:'Аванс',amount:243000,date:daysAgo(18).toISOString()},{id:uid('p'),type:'Доплата',amount:243000,date:daysAgo(4).toISOString()}]});
 

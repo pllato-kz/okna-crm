@@ -43,7 +43,7 @@ const TABLES = {
   materials:        { table: 'materials',         pk: 'id', cols: ['id','name','type_id','series_id','rate','stock','min_stock','unit','supplier'], prefix: 'm' },
   components:       { table: 'components',        pk: 'id', cols: ['id','name','stock','min_stock','unit'], prefix: 'c' },
   warehouse_movements: { table: 'warehouse_movements', pk: 'id', cols: ['id','kind','item_id','name','unit','dir','type','qty','reason','balance_after','deal_id','user_id','at'], prefix: 'wm' },
-  deals:            { table: 'deals',             pk: 'id', cols: ['id','client_id','stage_id','manager_id','source_id','prod_stage_id','sum','note','hot','discount','prepay_pct','consumed_profile','consumed_glass','consumed_fittings','stage_since'], prefix: 'd' },
+  deals:            { table: 'deals',             pk: 'id', cols: ['id','client_id','stage_id','manager_id','source_id','prod_stage_id','sum','note','hot','discount','prepay_pct','consumed_profile','consumed_glass','consumed_fittings','ready_date','install_date','stage_since'], prefix: 'd' },
   deal_items:       { table: 'deal_items',        pk: 'id', cols: ['id','deal_id','profile_id','glass_id','opening_id','w','h','sashes','qty','sort'], prefix: 'cn' },
   deal_item_extras: { table: 'deal_item_extras',  pk: null, cols: ['item_id','extra_id'], composite: ['item_id','extra_id'] },
   payments:         { table: 'payments',          pk: 'id', cols: ['id','deal_id','type_id','amount','date'], prefix: 'p' },

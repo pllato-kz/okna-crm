@@ -83,6 +83,7 @@ function apiMapBootstrap(boot){
     hot: !!d.hot, discount: d.discount, prepayPct: d.prepay_pct,
     consumed: { profile: !!d.consumed_profile, glass: !!d.consumed_glass, fittings: !!d.consumed_fittings },
     createdAt: d.created_at, stageSince: d.stage_since,
+    readyDate: d.ready_date || null, installDate: d.install_date || null,
     items: (d.items || []).map(it => ({
       id: it.id, profileId: it.profile_id, glassId: it.glass_id, openId: it.opening_id,
       w: it.w, h: it.h, sashes: it.sashes, qty: it.qty, extras: (it.extras || []).slice(),
@@ -138,6 +139,7 @@ function apiDealToServer(d, withId){
     consumed_profile: d.consumed && d.consumed.profile ? 1 : 0,
     consumed_glass: d.consumed && d.consumed.glass ? 1 : 0,
     consumed_fittings: d.consumed && d.consumed.fittings ? 1 : 0,
+    ready_date: d.readyDate || null, install_date: d.installDate || null,
     stage_since: d.stageSince || null,
   };
   if (withId) b.id = d.id;

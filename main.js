@@ -1759,6 +1759,7 @@ document.addEventListener('change', e=>{
   if(t.dataset.act==='fin-date-to'){ state.financeTo=t.value||null; state.financePeriod=(state.financeFrom||state.financeTo)?'date':'all'; renderModule(); }
   if(t.dataset.act==='wh-mv-from'){ state.whMoveFrom=t.value||null; state.whMovePeriod=(state.whMoveFrom||state.whMoveTo)?'date':'all'; renderModule(); }
   if(t.dataset.act==='wh-mv-to'){ state.whMoveTo=t.value||null; state.whMovePeriod=(state.whMoveFrom||state.whMoveTo)?'date':'all'; renderModule(); }
+  if(t.dataset.act==='prod-date'){ const d=dealById(t.dataset.id); if(d){ d[t.dataset.field]=t.value||null; saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); renderModule(); openProd(d.id); } }
 });
 document.addEventListener('input', e=>{
   const t=e.target.closest('[data-act]'); if(!t) return;
