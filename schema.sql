@@ -65,9 +65,10 @@ CREATE TABLE deal_stages (
 
 -- Этапы цеха (PROD_STAGES): queue → cutting → glass → assembly → ready → installing
 CREATE TABLE prod_stages (
-  id   TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  sort INTEGER NOT NULL DEFAULT 0
+  id    TEXT PRIMARY KEY,
+  name  TEXT NOT NULL,
+  color TEXT,
+  sort  INTEGER NOT NULL DEFAULT 0
 );
 
 -- Типы профиля (ПВХ / Алюминий)

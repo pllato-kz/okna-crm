@@ -89,14 +89,23 @@ let STAGES = loadStages();
 const stageById = id => STAGES.find(s=>s.id===id);
 const stageIndex = id => STAGES.findIndex(s=>s.id===id);
 
-const PROD_STAGES = [
-  {id:'queue',     name:'Очередь'},
-  {id:'cutting',   name:'Резка профиля'},
-  {id:'glass',     name:'Стеклопакет'},
-  {id:'assembly',  name:'Сборка'},
-  {id:'ready',     name:'Готово к монтажу'},
-  {id:'installing',name:'Монтаж'},
+// Этапы цеха (производство). Редактируемые (добавить/удалить/изменить/цвет),
+// хранятся в localStorage; в API-режиме переопределяются справочником prod_stages.
+const DEFAULT_PROD_STAGES = [
+  {id:'queue',     name:'Очередь',          color:'#64748b'},
+  {id:'cutting',   name:'Резка профиля',    color:'#0891b2'},
+  {id:'glass',     name:'Стеклопакет',      color:'#7c3aed'},
+  {id:'assembly',  name:'Сборка',           color:'#d97706'},
+  {id:'ready',     name:'Готово к монтажу', color:'#0d9488'},
+  {id:'installing',name:'Монтаж',           color:'#db2777'},
 ];
+// Этапы, на id которых завязаны списание материалов и переход на монтаж — не удалять.
+const SYSTEM_PROD_IDS = ['queue','cutting','glass','assembly','installing'];
+const PROD_STAGES_KEY = 'okna_crm_prod_stages';
+function loadProdStages(){ try{ const raw=localStorage.getItem(PROD_STAGES_KEY); if(raw){ const a=JSON.parse(raw); if(Array.isArray(a)&&a.length) return a; } }catch(e){} return DEFAULT_PROD_STAGES.map(s=>({...s})); }
+function saveProdStages(){ try{ localStorage.setItem(PROD_STAGES_KEY, JSON.stringify(PROD_STAGES)); }catch(e){} }
+let PROD_STAGES = loadProdStages();
+const prodStageById = id => PROD_STAGES.find(s=>s.id===id);
 
 const GLASS = [
   {id:'g1', name:'Однокамерный 24мм',            rate:3500},
@@ -298,7 +307,7 @@ function trashMsLeft(rec){
 const THEME_KEY = 'okna_crm_theme';
 function loadTheme(){ try{ return localStorage.getItem(THEME_KEY) || 'light'; }catch(e){ return 'light'; } }
 function applyTheme(t){ document.documentElement.setAttribute('data-theme', t); }
-const state = { user:null, module:null, measureDealId:null, financeTab:'recv', financePeriod:'all', financeFrom:null, financeTo:null, whTab:'profile', whMoveType:'all', whMovePeriod:'all', funnelMgr:'all', funnelStage:'all', funnelSrc:'all', clientType:'all', clientDebt:'all', clientSearch:'', stageEdit:false, sideOpen:false, theme:loadTheme() };
+const state = { user:null, module:null, measureDealId:null, financeTab:'recv', financePeriod:'all', financeFrom:null, financeTo:null, whTab:'profile', whMoveType:'all', whMovePeriod:'all', funnelMgr:'all', funnelStage:'all', funnelSrc:'all', clientType:'all', clientDebt:'all', clientSearch:'', stageEdit:false, prodEdit:false, sideOpen:false, theme:loadTheme() };
 /* настройки WhatsApp (Green API); заполняется при входе в API-режиме, токен наружу не приходит */
 let waConfig = { configured:false, enabled:false, idInstance:'' };
 applyTheme(state.theme);

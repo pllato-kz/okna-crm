@@ -27,7 +27,7 @@ const TABLES = {
   client_types:     { table: 'client_types',     pk: 'id', cols: ['id','name'] },
   lead_sources:     { table: 'lead_sources',     pk: 'id', cols: ['id','name','sort'] },
   deal_stages:      { table: 'deal_stages',      pk: 'id', cols: ['id','name','color','sort'] },
-  prod_stages:      { table: 'prod_stages',      pk: 'id', cols: ['id','name','sort'] },
+  prod_stages:      { table: 'prod_stages',      pk: 'id', cols: ['id','name','color','sort'] },
   material_types:   { table: 'material_types',   pk: 'id', cols: ['id','name'] },
   material_series:  { table: 'material_series',  pk: 'id', cols: ['id','name','sort'] },
   glass_types:      { table: 'glass_types',      pk: 'id', cols: ['id','name','rate','sort'] },
