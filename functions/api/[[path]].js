@@ -20,7 +20,7 @@ const fail = (status, message) => json({ error: message }, status);
 // Для каждого ресурса: имя таблицы, первичный ключ и разрешённые колонки.
 // Запись идёт только по этим колонкам — защита от инъекций и лишних полей.
 const TABLES = {
-  company:          { table: 'company',          pk: 'id', cols: ['id','name','legal','city','phone','workshop','revenue_year'] },
+  company:          { table: 'company',          pk: 'id', cols: ['id','name','legal','city','phone','workshop','revenue_year','doc_settings'] },
   roles:            { table: 'roles',            pk: 'id', cols: ['id','name','sort'] },
   modules:          { table: 'modules',          pk: 'id', cols: ['id','name','sort'] },
   module_roles:     { table: 'module_roles',     pk: null, cols: ['module_id','role_id'], composite: ['module_id','role_id'] },

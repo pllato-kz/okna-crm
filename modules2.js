@@ -225,14 +225,21 @@ function contractDocHtml(d){
     return `<tr><td>${i+1}</td><td>${escA(m.name)} (${escA(m.series)}), ${c.w}×${c.h}мм, ${escA(openById(c.openId).name)}, ${c.sashes} ств., ${escA(glassById(c.glassId).name)}</td><td style="text-align:center">${q}</td><td style="text-align:right">${money(constrPrice(c))}</td></tr>`;}).join('');
   const ready=d.readyDate?dateFull(d.readyDate):'4–6 недель с даты аванса';
   const install=d.installDate?dateFull(d.installDate):'в течение 5 дней после готовности';
+  // подстановка плейсхолдеров в (редактируемый) шаблон договора
+  const map={
+    '{company}':co.legal, '{director}':co.director, '{client}':cl.name, '{address}':cl.address||'—',
+    '{total}':money(k.total), '{totalWords}':sumWords(k.total), '{vat}':vr?`, в том числе НДС ${vr}%`:'',
+    '{prepayPct}':k.prepayPct, '{prepay}':money(k.prepay), '{rest}':money(k.total-k.prepay),
+    '{ready}':ready, '{install}':install };
+  const tpl=(co.contractTpl&&co.contractTpl.trim())?co.contractTpl:DEFAULT_CONTRACT_TPL;
+  let filled=tpl; Object.keys(map).forEach(key=>{ filled=filled.split(key).join(String(map[key])); });
+  // экранируем (XSS), затем включаем разметку: **жирный** и абзацы по пустой строке
+  const body=filled.split(/\n\s*\n/).map(par=>
+    `<p>${escA(par).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>')}</p>`).join('');
   return `<div class="kp-doc doc-contract">
         <div style="text-align:center;margin-bottom:4px"><h2 style="margin:0">Договор подряда № ${escA(no)}</h2></div>
         <div style="display:flex;justify-content:space-between;color:#64748b;font-size:12px;margin-bottom:14px"><span>г. ${escA(co.city)}</span><span>${dateFull(dt)}</span></div>
-        <p><b>${escA(co.legal)}</b>, именуемое в дальнейшем «Исполнитель», в лице директора ${escA(co.director)}, действующего на основании Устава, с одной стороны, и <b>${escA(cl.name)}</b>, именуемый в дальнейшем «Заказчик», с другой стороны, заключили настоящий договор о нижеследующем.</p>
-        <p><b>1. Предмет договора.</b> Исполнитель обязуется изготовить и смонтировать светопрозрачные конструкции по адресу: ${escA(cl.address||'—')} в соответствии со спецификацией (Приложение №1), а Заказчик — принять и оплатить работы.</p>
-        <p><b>2. Цена и порядок оплаты.</b> Общая стоимость работ — <b>${money(k.total)}</b> (${sumWords(k.total)})${vr?`, в том числе НДС ${vr}%`:''}. Аванс ${k.prepayPct}% (${money(k.prepay)}) — в течение 3 дней с даты подписания; остаток ${money(k.total-k.prepay)} — после монтажа.</p>
-        <p><b>3. Сроки.</b> Готовность изделий — ${ready}. Монтаж — ${install}.</p>
-        <p><b>4. Гарантия.</b> Гарантийный срок на изделия и монтаж — 5 лет с даты подписания акта приёма-передачи.</p>
+        ${body}
         <div style="font-weight:700;margin:14px 0 2px">Приложение №1. Спецификация</div>
         <table><thead><tr><th>№</th><th>Наименование</th><th style="text-align:center">Кол-во</th><th style="text-align:right">Стоимость</th></tr></thead><tbody>${spec}</tbody></table>
         <div class="kp-tot">Итого: ${money(k.total)}</div>
@@ -660,6 +667,10 @@ function renderSettings(){
       <div class="stat-line"><span>Телефон</span><span>${escA(DB.company.phone)}</span></div>
       <div class="stat-line"><span>Производство</span><span style="text-align:right">${escA(DB.company.workshop)}</span></div>
       <div class="stat-line"><span>Оборот</span><span>${escA(DB.company.revenueYear)}</span></div>
+      ${DB.company.inn?`<div class="stat-line"><span>ИНН / ОКПО</span><span>${escA(DB.company.inn)}${DB.company.okpo?' · '+escA(DB.company.okpo):''}</span></div>`:''}
+      ${DB.company.bank?`<div class="stat-line"><span>Банк</span><span style="text-align:right">${escA(DB.company.bank)}</span></div>`:''}
+      ${DB.company.account?`<div class="stat-line"><span>Р/с · БИК</span><span style="text-align:right">${escA(DB.company.account)}${DB.company.bik?' · '+escA(DB.company.bik):''}</span></div>`:''}
+      <div class="stat-line"><span>НДС</span><span>${DB.company.vatRate?escA(DB.company.vatRate)+' %':'без НДС'}</span></div>
     </div></div>
     <div class="panel"><div class="panel-h">${icon('clients')}<h3>Сотрудники</h3><span class="ph-sub">${DB.users.length}</span>${usAdd}</div>
       <div class="tbl-scroll"><table class="tbl"><tbody>${emps}</tbody></table></div></div>

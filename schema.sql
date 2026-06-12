@@ -140,7 +140,8 @@ CREATE TABLE company (
   city          TEXT,
   phone         TEXT,
   workshop      TEXT,
-  revenue_year  TEXT
+  revenue_year  TEXT,
+  doc_settings  TEXT                                -- JSON: реквизиты и шаблон договора для счетов/договоров
 );
 
 -- Сотрудники = пользователи системы. Реальная авторизация: email + хэш пароля.
