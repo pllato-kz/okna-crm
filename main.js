@@ -832,16 +832,18 @@ function delRoleConfirm(roleId){
 
 /* ============ WHATSAPP (Green API) ============ */
 function waPreset(cl, d){
-  const co=DB.company.name;
-  if(d && (d.sum || (d.items||[]).length)){ const k=computeMeasure(d);
-    return `${cl.name}, здравствуйте! Это ${co}. Подготовили коммерческое предложение по вашим окнам на сумму ${money(k.total)}. Для запуска заказа предоплата — ${money(k.prepay)}. С радостью ответим на вопросы.`; }
-  return `${cl.name}, здравствуйте! Это ${co}. Спасибо за обращение — готовы помочь с расчётом и замером по вашим окнам.`;
+  const tpls=waTemplatesFor(d);
+  if(tpls.length) return renderWaTpl(tpls[0].text, cl, d);
+  return renderWaTpl('Здравствуйте, {client}! Это {company}.', cl, d);
 }
 function waSendModal(clientId, dealId){
   const d = dealId ? dealById(dealId) : null;
   const cl = clientId ? clientById(clientId) : (d ? clientById(d.clientId) : null);
   if(!cl){ toast('Клиент не найден','warn'); return; }
-  const preset = waPreset(cl, d);
+  const tpls = waTemplatesFor(d).map(t=>({label:t.label, text:renderWaTpl(t.text, cl, d)}));
+  const preset = tpls.length ? tpls[0].text : waPreset(cl, d);
+  const tplChips = tpls.length ? `<div class="fld full" style="margin-bottom:10px"><label>Быстрое сообщение — выберите шаблон</label>
+      <div class="chips" style="flex-wrap:wrap">${tpls.map((t,i)=>`<button type="button" class="chip ${i===0?'on':''}" data-act="wa-tpl-pick" data-text="${escA(t.text)}">${escA(t.label)}</button>`).join('')}</div></div>` : '';
   let notice='';
   if(!apiOn()){
     notice = `<div class="muted2" style="font-size:11.5px;margin-top:10px;line-height:1.5;color:#fbbf24">Демо-режим: реальная отправка доступна после входа по логину и подключения Green API в Настройках.</div>`;
@@ -850,12 +852,47 @@ function waSendModal(clientId, dealId){
   }
   openModal(`<div class="modal-h">${icon('wa')}<div><h3>Сообщение в WhatsApp</h3><div class="mh-sub">${cl.name} · ${cl.phone}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b">
+      ${tplChips}
       <div class="fld full"><label>Текст сообщения</label><textarea id="wa-msg" rows="5" style="background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--txt);font-family:inherit;font-size:13.5px;resize:vertical">${escA(preset)}</textarea></div>
       ${notice}
     </div>
     <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button>
       <button class="btn green" data-act="wa-send" data-id="${clientId||''}" data-deal="${dealId||''}">${icon('send','sm')} Отправить</button></div>`);
 }
+/* ---- управление шаблонами быстрых сообщений (директор) ---- */
+function waTplModal(id){
+  if(!isDirector()) return;
+  const t = id ? WA_TEMPLATES.find(x=>x.id===id) : null;
+  const stageOpts = [`<option value="any"${(!t||t.stage==='any')?' selected':''}>Любой этап</option>`]
+    .concat(STAGES.map(s=>`<option value="${s.id}"${t&&t.stage===s.id?' selected':''}>${s.name}</option>`)).join('');
+  const taSt='background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--txt);font-family:inherit;font-size:13.5px;resize:vertical;width:100%';
+  openModal(`<div class="modal-h">${icon('wa')}<h3>${t?'Изменить шаблон':'Новый шаблон'}</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">
+      <div class="fld"><label>Этап</label><select id="wt-stage">${stageOpts}</select></div>
+      <div class="fld"><label>Название</label><input id="wt-label" value="${t?escA(t.label):''}" placeholder="напр. Запись на замер"></div>
+      <div class="fld full"><label>Текст сообщения</label><textarea id="wt-text" rows="4" style="${taSt}">${t?escA(t.text):''}</textarea></div>
+      <div class="fld full"><div class="muted2" style="font-size:11px;line-height:1.7">Подстановки: ${WA_TPL_VARS.map(v=>`<code style="background:var(--bg2);padding:1px 5px;border-radius:4px">${v}</code>`).join(' ')}</div></div>
+    </div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="wa-tpl-save"${t?` data-id="${t.id}"`:''}>${icon('check','sm')} Сохранить</button></div>`);
+}
+function waTplSave(id){
+  if(!isDirector()) return;
+  const v=i=>{const el=document.getElementById(i);return el?el.value.trim():'';};
+  const stage=v('wt-stage')||'any'; const label=v('wt-label'); const text=v('wt-text');
+  if(!label){ toast('Укажите название','warn'); return; }
+  if(!text){ toast('Введите текст сообщения','warn'); return; }
+  if(id){ const t=WA_TEMPLATES.find(x=>x.id===id); if(!t) return; t.stage=stage; t.label=label; t.text=text; }
+  else { WA_TEMPLATES.push({id:uid('wt'), stage, label, text}); }
+  saveWaTemplates(); closeModal(); renderModule(); toast(id?'Шаблон сохранён':'Шаблон добавлен');
+}
+function waTplDelModal(id){
+  if(!isDirector()) return; const t=WA_TEMPLATES.find(x=>x.id===id); if(!t) return;
+  openModal(`<div class="modal-h">${icon('trash')}<h3>Удалить шаблон?</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><p style="margin:0;color:var(--muted);line-height:1.5">«${escA(t.label)}». Можно вернуть стандартные шаблоны кнопкой сброса.</p></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="wa-tpl-del-confirm" data-id="${id}">${icon('trash','sm')} Удалить</button></div>`);
+}
+function waTplDelConfirm(id){ if(!isDirector()) return; WA_TEMPLATES=WA_TEMPLATES.filter(x=>x.id!==id); saveWaTemplates(); closeModal(); renderModule(); toast('Шаблон удалён'); }
+function waTplReset(){ if(!isDirector()) return; WA_TEMPLATES=defaultWaTemplates(); saveWaTemplates(); renderModule(); toast('Шаблоны сброшены к стандартным'); }
 function logWaActivity(cl){
   if(!cl) return;
   DB.activity.unshift({who:(state.user&&state.user.id)||null, text:`Отправлено сообщение в WhatsApp — ${cl.name}`, at:SEED_NOW.toISOString(), kind:'lead'});
@@ -1235,6 +1272,14 @@ document.addEventListener('click', e=>{
     case 'del-user': delUserModal(id); break;
     case 'del-user-confirm': delUserConfirm(id); break;
     case 'perm-toggle': togglePerm(t.dataset.mod, t.dataset.role); break;
+    case 'wa-tpl-pick': { const ta=document.getElementById('wa-msg'); if(ta) ta.value=t.dataset.text;
+      document.querySelectorAll('[data-act="wa-tpl-pick"]').forEach(b=>b.classList.remove('on')); t.classList.add('on'); } break;
+    case 'wa-tpl-add': waTplModal(null); break;
+    case 'wa-tpl-edit': waTplModal(id); break;
+    case 'wa-tpl-save': waTplSave(t.dataset.id||null); break;
+    case 'wa-tpl-del': waTplDelModal(id); break;
+    case 'wa-tpl-del-confirm': waTplDelConfirm(id); break;
+    case 'wa-tpl-reset': waTplReset(); break;
     case 'add-role': addRoleModal(); break;
     case 'create-role': createRole(); break;
     case 'del-role': delRoleModal(t.dataset.id); break;

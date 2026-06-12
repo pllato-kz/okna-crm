@@ -413,6 +413,23 @@ function catTable(type){
     <div class="tbl-scroll"><table class="tbl cat-tbl"><colgroup><col><col style="width:200px"><col style="width:160px"><col style="width:96px"></colgroup>
       <thead><tr><th>Наименование</th><th><span style="display:flex;justify-content:flex-end"><span>Цена</span><span style="flex:0 0 64px"></span></span></th><th>${cfg.hasPer?'Расчёт':''}</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
+// Быстрые сообщения WhatsApp: шаблоны по этапам (редактирование — директор)
+function waTplPanelHtml(){
+  const byStage={}; (WA_TEMPLATES||[]).forEach(t=>{ (byStage[t.stage]=byStage[t.stage]||[]).push(t); });
+  const order=['any',...STAGES.map(s=>s.id)];
+  const stageLabel=s=> s==='any'?'Любой этап':((stageById(s)||{}).name||s);
+  const rows=order.filter(s=>byStage[s]&&byStage[s].length).map(s=>byStage[s].map(t=>
+    `<tr><td style="white-space:nowrap"><span class="tag ${s==='any'?'':'blue'}">${stageLabel(s)}</span></td>
+      <td style="font-weight:600;white-space:nowrap">${escA(t.label)}</td>
+      <td class="muted" style="font-size:12px">${escA(t.text.length>90?t.text.slice(0,90)+'…':t.text)}</td>
+      <td class="row-acts" style="white-space:nowrap"><button class="btn sm ghost" data-act="wa-tpl-edit" data-id="${t.id}" title="Изменить">${icon('edit','sm')}</button>
+        <button class="btn sm ghost danger" data-act="wa-tpl-del" data-id="${t.id}" title="Удалить">${icon('trash','sm')}</button></td></tr>`
+  ).join('')).join('');
+  return `<div class="panel section-gap"><div class="panel-h">${icon('wa')}<h3>Быстрые сообщения WhatsApp</h3>
+    <span class="ph-sub">шаблоны по этапам · подставляются при отправке</span>
+    <div style="margin-left:auto;display:flex;gap:8px"><button class="btn sm ghost" data-act="wa-tpl-reset" title="Вернуть стандартные">${icon('refresh','sm')}</button><button class="btn sm" data-act="wa-tpl-add">${icon('plus','sm')} Шаблон</button></div></div>
+    <div class="tbl-scroll"><table class="tbl"><thead><tr><th>Этап</th><th>Название</th><th>Текст</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">Шаблонов нет</td></tr>'}</tbody></table></div></div>`;
+}
 // Корзина: список мягко удалённых записей с восстановлением и сроком хранения
 function trashPanelHtml(){
   if(typeof purgeExpiredTrash==='function') purgeExpiredTrash();
@@ -491,6 +508,7 @@ function renderSettings(){
   <div class="panel section-gap"><div class="panel-h">${icon('shield')}<h3>Права доступа</h3><span class="ph-sub">${dir?'нажмите на ячейку, чтобы открыть/закрыть доступ роли к модулю':'кто что видит — сборщики и склад не видят финансы'}</span>${dir?`<button class="btn sm" style="margin-left:auto" data-act="add-role">${icon('plus','sm')} Роль</button>`:''}</div>
     <div class="tbl-scroll"><table class="tbl perm-tbl"><thead>${permHead}</thead><tbody>${permRows}</tbody></table></div></div>
   ${waPanel}
+  ${dir?waTplPanelHtml():''}
   ${dir?`<div class="section-gap"><div class="panel-h" style="border:none;padding:6px 0"><h3 style="font-size:15px">Каталоги и прайс</h3><span class="ph-sub">цены сразу применяются в расчёте КП</span></div>${catTable('glass')}${catTable('opening')}${catTable('extra')}</div>`:''}
   ${trashPanelHtml()}
   <div class="panel section-gap"><div class="panel-h">${icon('refresh')}<h3>Демо-данные</h3></div><div class="panel-b">
