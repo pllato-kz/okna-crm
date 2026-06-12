@@ -273,7 +273,6 @@ function renderProduction(){
   return `
   <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
     <div class="tag violet">${icon('production','sm')} ${orders.length} заказов на линии</div>
-    <div class="tag">Цех: ${DB.company.workshop}</div>
     ${!seesMoney()?'<div class="tag">режим производства — финансы скрыты</div>':''}
   </div>
   <div class="kanban">${cols}</div>
