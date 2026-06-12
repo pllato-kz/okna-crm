@@ -59,13 +59,25 @@ function renderMeasure(){
     </div>
   </div>`;
 }
+/* символ открывания на эскизе створки (стандартные условные обозначения):
+   поворотное — треугольник с вершиной у петель; поворотно-откидное —
+   треугольник поворота + нижний треугольник откида; глухое — без символа.
+   flip отражает створку по горизонтали (петли с разных сторон у пары). */
+function openSymbol(openId, flip){
+  if(openId!=='turn' && openId!=='tilt') return '';
+  const turn = `<polyline points="92,10 8,70 92,130"/>`;          // вершина слева — петли слева (поворот)
+  const tilt = `<polyline points="10,12 50,132 90,12"/>`;          // вершина снизу — откид
+  const body = openId==='tilt' ? turn+tilt : turn;
+  return `<svg class="win-sym${flip?' flip':''}" viewBox="0 0 100 140" preserveAspectRatio="none">${body}</svg>`;
+}
 function constrCard(c,i){
   const m=matById(c.profileId);
   const profOpts=DB.materials.map(o=>`<option value="${o.id}" ${o.id===c.profileId?'selected':''}>${o.name} · ${o.series}</option>`).join('');
   const glassOpts=GLASS.map(g=>`<option value="${g.id}" ${g.id===c.glassId?'selected':''}>${g.name}</option>`).join('');
   const openChips=OPENINGS.map(o=>`<button class="chip ${o.id===c.openId?'on':''}" data-act="m-open" data-cid="${c.id}" data-v="${o.id}">${o.name}</button>`).join('');
   const extras=EXTRAS.map(e=>`<button class="ex-toggle ${(c.extras||[]).includes(e.id)?'on':''}" data-act="m-extra" data-cid="${c.id}" data-v="${e.id}">${(c.extras||[]).includes(e.id)?icon('check','sm'):icon('plus','sm')} ${e.name}</button>`).join('');
-  const sashes=[]; for(let s=0;s<(c.sashes||1);s++){ const cls=c.openId==='tilt'?'tilt':(c.openId==='turn'?'turn':''); sashes.push(`<div class="win-sash ${cls}"></div>`); }
+  const cnt=c.sashes||1; const sashes=[];
+  for(let s=0;s<cnt;s++){ const flip = s>=Math.ceil(cnt/2); sashes.push(`<div class="win-sash">${openSymbol(c.openId, flip)}</div>`); }
   return `<div class="constr" data-cid="${c.id}">
     <div class="constr-h">
       <span class="ci">${icon('ruler','sm')}</span>
