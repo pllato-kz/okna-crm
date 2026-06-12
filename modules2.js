@@ -458,6 +458,7 @@ function renderSettings(){
     const self = state.user && state.user.id===u.id;
     const acts = dir ? `<td class="row-acts">
       <button class="btn sm ghost" data-act="edit-user" data-id="${u.id}" title="Изменить">${icon('edit','sm')}</button>
+      <button class="btn sm ghost" data-act="user-pass" data-id="${u.id}" title="Сменить пароль">${icon('lock','sm')}</button>
       ${self?'':`<button class="btn sm ghost" data-act="del-user" data-id="${u.id}" title="Удалить">${icon('trash','sm')}</button>`}</td>` : '';
     return `<tr><td><div class="cell-name">${avatarXs(u.name,u.id)}<span style="font-weight:600">${u.name}</span></div></td>
       <td><span class="tag blue">${roleRu(u.role)}</span></td><td class="muted">${u.title}</td>${acts}</tr>`;

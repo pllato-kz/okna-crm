@@ -727,16 +727,48 @@ function userModal(id){
   const roleOf = u?u.role:'manager';
   const opts = ROLES.map(r=>`<option value="${r.id}"${r.id===roleOf?' selected':''}>${escA(r.name)}</option>`).join('');
   const apiMode = apiOn();
-  const pwHint = u ? '(пусто — без изменений)' : (apiMode ? '(мин. 6 символов)' : '(в демо не требуется)');
+  // пароль задаётся только при создании; у существующих — отдельная кнопка «Сменить пароль»
+  const passField = u
+    ? `<div class="fld full"><label>Пароль</label><button class="btn sm" data-act="user-pass" data-id="${u.id}" style="width:fit-content">${icon('lock','sm')} Сменить пароль</button></div>`
+    : `<div class="fld full"><label>Пароль ${apiMode?'(мин. 6 символов)':'(в демо не требуется)'}</label><input id="us-pass" type="text" placeholder="okna2026"></div>`;
   openModal(`<div class="modal-h">${icon('user')}<h3>${u?'Сотрудник':'Новый сотрудник'}</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="constr-body" style="padding:0">
       <div class="fld full"><label>Имя</label><input id="us-name" value="${u?escA(u.name):''}"></div>
       <div class="fld"><label>Должность</label><input id="us-title" value="${u?escA(u.title):''}" placeholder="напр. Менеджер по продажам"></div>
       <div class="fld"><label>Роль (права доступа)</label><select id="us-role">${opts}</select></div>
       <div class="fld full"><label>Email (логин)</label><input id="us-email" value="${u?escA(u.email||''):''}" placeholder="name@okna.kz"></div>
-      <div class="fld full"><label>Пароль ${pwHint}</label><input id="us-pass" type="text" placeholder="${u?'••••••':'okna2026'}"></div>
+      ${passField}
     </div></div>
     <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="save-user"${u?` data-id="${u.id}"`:''}>${icon('check','sm')} ${u?'Сохранить':'Добавить'}</button></div>`);
+}
+/* ---- смена пароля сотрудника (директор, либо себе) ---- */
+function genPassword(){ const a='abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<8;i++) s+=a[Math.floor(Math.random()*a.length)]; return s; }
+function userPassFill(){ const g=genPassword(); const a=document.getElementById('up-pass'), bb=document.getElementById('up-pass2'); if(a)a.value=g; if(bb)bb.value=g; }
+function userPassModal(id){
+  if(!isDirector()) return; const u=userById(id); if(!u) return;
+  const apiMode=apiOn();
+  openModal(`<div class="modal-h">${icon('lock')}<div><h3>Сменить пароль</h3><div class="mh-sub">${escA(u.name)} · ${escA(u.title||roleRu(u.role))}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">
+      <div class="fld full"><label>Новый пароль</label><input id="up-pass" type="text" autocomplete="new-password" placeholder="минимум 6 символов"></div>
+      <div class="fld full"><label>Повторите пароль</label><input id="up-pass2" type="text" autocomplete="new-password"></div>
+      <div class="fld full"><button class="btn sm" data-act="gen-pass" style="width:fit-content">${icon('refresh','sm')} Сгенерировать</button></div>
+      ${apiMode?'':`<div class="muted2" style="font-size:11.5px;line-height:1.5;color:#fbbf24">В демо вход выполняется выбором роли — пароль применится в подключённом (серверном) режиме.</div>`}
+    </div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="user-pass-save" data-id="${id}">${icon('check','sm')} Сохранить пароль</button></div>`);
+  const el=document.getElementById('up-pass'); if(el) el.focus();
+}
+function userPassSave(id){
+  if(!isDirector()) return; const u=userById(id); if(!u) return;
+  const v=i=>{ const el=document.getElementById(i); return el?el.value.trim():''; };
+  const p1=v('up-pass'), p2=v('up-pass2');
+  if(p1.length<6){ toast('Пароль минимум 6 символов','warn'); return; }
+  if(p1!==p2){ toast('Пароли не совпадают','warn'); return; }
+  if(apiOn()){
+    persist(API.persist.setUserPassword(id, p1).then(()=>toast(`Пароль обновлён · ${u.name}`)));
+  } else {
+    u.password=p1; saveDB(); toast('Пароль сохранён (демо)');
+  }
+  closeModal();
 }
 function saveUser(id){
   if(!isDirector()) return;
@@ -1353,6 +1385,9 @@ document.addEventListener('click', e=>{
     case 'save-user': saveUser(t.dataset.id||null); break;
     case 'del-user': delUserModal(id); break;
     case 'del-user-confirm': delUserConfirm(id); break;
+    case 'user-pass': userPassModal(id); break;
+    case 'user-pass-save': userPassSave(id); break;
+    case 'gen-pass': userPassFill(); break;
     case 'perm-toggle': togglePerm(t.dataset.mod, t.dataset.role); break;
     case 'wa-tpl-pick': { const ta=document.getElementById('wa-msg'); if(ta) ta.value=t.dataset.text;
       document.querySelectorAll('[data-act="wa-tpl-pick"]').forEach(b=>b.classList.remove('on')); t.classList.add('on'); } break;
