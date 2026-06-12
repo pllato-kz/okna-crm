@@ -192,6 +192,111 @@ function printKp(id){
   w.document.close();
 }
 
+/* ===== Счёт на оплату и Договор подряда (из данных сделки) ===== */
+/* Разметка счёта — общая для модалки и окна печати */
+function invoiceDocHtml(d){
+  const cl=clientById(d.clientId); const k=computeMeasure(d); const co=DB.company;
+  const no=d.id.replace('d','')+'-'+SEED_NOW.getFullYear();
+  const vr=co.vatRate||0; const vat=vr?Math.round(k.total-k.total/(1+vr/100)):0;
+  const rows=(d.items||[]).map((c,i)=>{ const m=matById(c.profileId); const q=c.qty||1; const line=constrPrice(c); const unit=Math.round(line/q);
+    return `<tr><td>${i+1}</td><td>${escA(m.name)} (${escA(m.series)})<br><span style="color:#64748b">${c.w}×${c.h}мм, ${escA(openById(c.openId).name)}, ${c.sashes} ств., ${escA(glassById(c.glassId).name)}</span></td><td style="text-align:center">${q}</td><td style="text-align:right">${money(unit)}</td><td style="text-align:right">${money(line)}</td></tr>`;}).join('');
+  return `<div class="kp-doc">
+        <div class="kp-co"><div><h2>Счёт на оплату № ${no}</h2><div style="color:#64748b;font-size:12px">от ${dateFull(SEED_NOW)}</div></div>
+          <div style="text-align:right;font-size:12px;color:#64748b">${escA(co.legal)}<br>${escA(co.address)}<br>${escA(co.phone)}</div></div>
+        <div class="doc-req">
+          <div><b>Поставщик:</b> ${escA(co.legal)}, ИНН ${escA(co.inn)}, ОКПО ${escA(co.okpo)}</div>
+          <div><b>Банк:</b> ${escA(co.bank)} · р/с ${escA(co.account)} · БИК ${escA(co.bik)}</div>
+          <div><b>Покупатель:</b> ${escA(cl.name)}, ${escA(cl.phone)}${cl.address?', '+escA(cl.address):''}</div>
+        </div>
+        <table><thead><tr><th>№</th><th>Наименование</th><th style="text-align:center">Кол-во</th><th style="text-align:right">Цена</th><th style="text-align:right">Сумма</th></tr></thead><tbody>${rows}</tbody></table>
+        ${k.discount?`<div style="text-align:right;color:#64748b;font-size:12.5px">Сумма: ${money(k.subtotal)} · Скидка: −${money(k.discount)}</div>`:''}
+        <div class="kp-tot">Всего к оплате: ${money(k.total)}</div>
+        <div style="text-align:right;color:#64748b;font-size:12px">${vr?`в т.ч. НДС ${vr}%: ${money(vat)}`:'без НДС'}</div>
+        <div class="doc-words">Всего наименований ${(d.items||[]).length}, на сумму <b>${money(k.total)}</b><br>${sumWords(k.total)}</div>
+        <div class="doc-sign"><div>Руководитель ______________ <span style="color:#64748b">${escA(co.directorShort)}</span></div>${co.stamp?`<div class="doc-stamp">М.П.</div>`:''}</div>
+      </div>`;
+}
+/* Разметка договора подряда */
+function contractDocHtml(d){
+  const cl=clientById(d.clientId); const k=computeMeasure(d); const co=DB.company;
+  const no=d.contractNo||nextContractNo(); const dt=d.contractDate?new Date(d.contractDate+'T12:00:00'):SEED_NOW;
+  const vr=co.vatRate||0;
+  const spec=(d.items||[]).map((c,i)=>{ const m=matById(c.profileId); const q=c.qty||1;
+    return `<tr><td>${i+1}</td><td>${escA(m.name)} (${escA(m.series)}), ${c.w}×${c.h}мм, ${escA(openById(c.openId).name)}, ${c.sashes} ств., ${escA(glassById(c.glassId).name)}</td><td style="text-align:center">${q}</td><td style="text-align:right">${money(constrPrice(c))}</td></tr>`;}).join('');
+  const ready=d.readyDate?dateFull(d.readyDate):'4–6 недель с даты аванса';
+  const install=d.installDate?dateFull(d.installDate):'в течение 5 дней после готовности';
+  // подстановка плейсхолдеров в (редактируемый) шаблон договора
+  const map={
+    '{company}':co.legal, '{director}':co.director, '{client}':cl.name, '{address}':cl.address||'—',
+    '{total}':money(k.total), '{totalWords}':sumWords(k.total), '{vat}':vr?`, в том числе НДС ${vr}%`:'',
+    '{prepayPct}':k.prepayPct, '{prepay}':money(k.prepay), '{rest}':money(k.total-k.prepay),
+    '{ready}':ready, '{install}':install };
+  const tpl=(co.contractTpl&&co.contractTpl.trim())?co.contractTpl:DEFAULT_CONTRACT_TPL;
+  let filled=tpl; Object.keys(map).forEach(key=>{ filled=filled.split(key).join(String(map[key])); });
+  // экранируем (XSS), затем включаем разметку: **жирный** и абзацы по пустой строке
+  const body=filled.split(/\n\s*\n/).map(par=>
+    `<p>${escA(par).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>')}</p>`).join('');
+  return `<div class="kp-doc doc-contract">
+        <div style="text-align:center;margin-bottom:4px"><h2 style="margin:0">Договор подряда № ${escA(no)}</h2></div>
+        <div style="display:flex;justify-content:space-between;color:#64748b;font-size:12px;margin-bottom:14px"><span>г. ${escA(co.city)}</span><span>${dateFull(dt)}</span></div>
+        ${body}
+        <div style="font-weight:700;margin:14px 0 2px">Приложение №1. Спецификация</div>
+        <table><thead><tr><th>№</th><th>Наименование</th><th style="text-align:center">Кол-во</th><th style="text-align:right">Стоимость</th></tr></thead><tbody>${spec}</tbody></table>
+        <div class="kp-tot">Итого: ${money(k.total)}</div>
+        <div class="doc-parties">
+          <div><div style="font-weight:700;margin-bottom:4px">Исполнитель</div>${escA(co.legal)}<br>ИНН ${escA(co.inn)}, ОКПО ${escA(co.okpo)}<br>${escA(co.bank)}<br>р/с ${escA(co.account)}, БИК ${escA(co.bik)}<br>${escA(co.phone)}<br><br>_____________ /${escA(co.directorShort)}/ ${co.stamp?'М.П.':''}</div>
+          <div><div style="font-weight:700;margin-bottom:4px">Заказчик</div>${escA(cl.name)}<br>${escA(cl.phone)}<br>${escA(cl.address||'')}<br><br><br>_____________ /______________/</div>
+        </div>
+      </div>`;
+}
+/* общий стиль печатного окна для счёта/договора */
+const DOC_PRINT_CSS=`*{box-sizing:border-box} body{margin:0;background:#fff;font-family:Inter,system-ui,-apple-system,Arial,sans-serif;color:#1a2233}
+  .wrap{max-width:720px;margin:0 auto;padding:28px}
+  .kp-doc h2{font-size:18px;color:#0b1220;margin:0 0 4px}
+  .kp-doc .kp-co{display:flex;justify-content:space-between;border-bottom:2px solid #e5e9f0;padding-bottom:14px;margin-bottom:14px}
+  .kp-doc table{width:100%;border-collapse:collapse;margin:14px 0;font-size:12.5px}
+  .kp-doc th{background:#f1f4f9;text-align:left;padding:9px 10px;color:#475569;font-size:11px;text-transform:uppercase}
+  .kp-doc td{padding:9px 10px;border-bottom:1px solid #eef1f6;vertical-align:top}
+  .kp-doc .kp-tot{text-align:right;font-size:16px;font-weight:800;color:#0b1220;margin-top:6px}
+  .doc-req{font-size:12.5px;line-height:1.7;background:#f8fafc;border:1px solid #e5e9f0;border-radius:8px;padding:10px 12px;margin-bottom:4px}
+  .doc-words{margin-top:10px;font-size:12.5px}
+  .doc-sign{display:flex;justify-content:space-between;align-items:flex-end;margin-top:26px;font-size:13px}
+  .doc-stamp{color:#94a3b8}
+  .doc-contract p{font-size:13px;line-height:1.6;margin:8px 0}
+  .doc-parties{display:flex;gap:24px;margin-top:20px;font-size:12px;line-height:1.6}
+  .doc-parties>div{flex:1}
+  @page{margin:14mm}`;
+function printDoc(html, title){
+  const w=window.open('','_blank','width=840,height=960');
+  if(!w){ toast('Разрешите всплывающие окна, чтобы распечатать документ','warn'); return; }
+  w.document.write(`<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><title>${escA(title)}</title><style>${DOC_PRINT_CSS}</style></head><body><div class="wrap">${html}</div><script>window.onload=function(){window.focus();window.print();};<\/script></body></html>`);
+  w.document.close();
+}
+function openInvoice(id){
+  const d=dealById(id); if(!d) return; const cl=clientById(d.clientId);
+  openModal(`
+    <div class="modal-h">${icon('doc')}<div><h3>Счёт на оплату</h3><div class="mh-sub">${escA(cl.name)} · ${dateFull(SEED_NOW)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b">${invoiceDocHtml(d)}</div>
+    <div class="modal-f">
+      <button class="btn" data-act="print-invoice" data-id="${d.id}">${icon('doc','sm')} Печать / PDF</button>
+      ${canWa()?`<button class="btn green" data-act="wa-deal-chat" data-id="${d.id}">${icon('wa','sm')} Чат WhatsApp</button>`:''}
+    </div>
+  `, true);
+}
+function printInvoice(id){ const d=dealById(id); if(!d) return; printDoc(invoiceDocHtml(d), 'Счёт — '+clientById(d.clientId).name); }
+function openContract(id){
+  const d=dealById(id); if(!d) return; const cl=clientById(d.clientId);
+  openModal(`
+    <div class="modal-h">${icon('doc')}<div><h3>Договор подряда${d.contractNo?' № '+escA(d.contractNo):''}</h3><div class="mh-sub">${escA(cl.name)} · ${d.contractDate?dateFull(d.contractDate):dateFull(SEED_NOW)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b">${contractDocHtml(d)}</div>
+    <div class="modal-f">
+      <button class="btn" data-act="print-contract" data-id="${d.id}">${icon('doc','sm')} Печать / PDF</button>
+      ${canWa()?`<button class="btn green" data-act="wa-deal-chat" data-id="${d.id}">${icon('wa','sm')} Чат WhatsApp</button>`:''}
+    </div>
+  `, true);
+}
+function printContract(id){ const d=dealById(id); if(!d) return; printDoc(contractDocHtml(d), 'Договор — '+clientById(d.clientId).name); }
+
 /* ============ WAREHOUSE ============ */
 function renderWarehouse(){
   const showCost=seesMoney();
@@ -562,6 +667,10 @@ function renderSettings(){
       <div class="stat-line"><span>Телефон</span><span>${escA(DB.company.phone)}</span></div>
       <div class="stat-line"><span>Производство</span><span style="text-align:right">${escA(DB.company.workshop)}</span></div>
       <div class="stat-line"><span>Оборот</span><span>${escA(DB.company.revenueYear)}</span></div>
+      ${DB.company.inn?`<div class="stat-line"><span>ИНН / ОКПО</span><span>${escA(DB.company.inn)}${DB.company.okpo?' · '+escA(DB.company.okpo):''}</span></div>`:''}
+      ${DB.company.bank?`<div class="stat-line"><span>Банк</span><span style="text-align:right">${escA(DB.company.bank)}</span></div>`:''}
+      ${DB.company.account?`<div class="stat-line"><span>Р/с · БИК</span><span style="text-align:right">${escA(DB.company.account)}${DB.company.bik?' · '+escA(DB.company.bik):''}</span></div>`:''}
+      <div class="stat-line"><span>НДС</span><span>${DB.company.vatRate?escA(DB.company.vatRate)+' %':'без НДС'}</span></div>
     </div></div>
     <div class="panel"><div class="panel-h">${icon('clients')}<h3>Сотрудники</h3><span class="ph-sub">${DB.users.length}</span>${usAdd}</div>
       <div class="tbl-scroll"><table class="tbl"><tbody>${emps}</tbody></table></div></div>

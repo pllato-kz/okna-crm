@@ -62,6 +62,8 @@ function apiMapBootstrap(boot){
     id: boot.company.id,
     name: boot.company.name, legal: boot.company.legal, city: boot.company.city,
     phone: boot.company.phone, workshop: boot.company.workshop, revenueYear: boot.company.revenue_year,
+    // реквизиты и шаблон договора лежат в одном JSON-поле doc_settings
+    ...(() => { try { return boot.company.doc_settings ? JSON.parse(boot.company.doc_settings) : {}; } catch(e){ return {}; } })(),
   } : {};
 
   const users = (boot.users || []).map(u => ({
@@ -84,6 +86,7 @@ function apiMapBootstrap(boot){
     consumed: { profile: !!d.consumed_profile, glass: !!d.consumed_glass, fittings: !!d.consumed_fittings },
     createdAt: d.created_at, stageSince: d.stage_since,
     readyDate: d.ready_date || null, installDate: d.install_date || null,
+    contractNo: d.contract_no || null, contractDate: d.contract_date || null,
     items: (d.items || []).map(it => ({
       id: it.id, profileId: it.profile_id, glassId: it.glass_id, openId: it.opening_id,
       w: it.w, h: it.h, sashes: it.sashes, qty: it.qty, extras: (it.extras || []).slice(),
@@ -140,6 +143,7 @@ function apiDealToServer(d, withId){
     consumed_glass: d.consumed && d.consumed.glass ? 1 : 0,
     consumed_fittings: d.consumed && d.consumed.fittings ? 1 : 0,
     ready_date: d.readyDate || null, install_date: d.installDate || null,
+    contract_no: d.contractNo || null, contract_date: d.contractDate || null,
     stage_since: d.stageSince || null,
   };
   if (withId) b.id = d.id;
@@ -211,6 +215,11 @@ const apiPersist = {
   /* ---- настройки (только директор; бэкенд гейтит роль) ---- */
   saveCompany: (c) => apiFetch('company/' + c.id, { method: 'PUT', body: {
     name: c.name, legal: c.legal, city: c.city, phone: c.phone, workshop: c.workshop, revenue_year: c.revenueYear,
+    doc_settings: JSON.stringify({
+      address: c.address || '', inn: c.inn || '', okpo: c.okpo || '', bank: c.bank || '',
+      account: c.account || '', bik: c.bik || '', director: c.director || '', directorShort: c.directorShort || '',
+      vatRate: c.vatRate || 0, stamp: !!c.stamp, contractTpl: c.contractTpl || '',
+    }),
   }}),
   createUser: (u) => apiFetch('users', { method: 'POST', body: {
     id: u.id, name: u.name, email: u.email, role_id: u.role, title: u.title,

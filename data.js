@@ -55,6 +55,28 @@ function icon(name, cls){ return `<svg class="svg-i ${cls||''}" viewBox="0 0 24 
 const fmtNum = new Intl.NumberFormat('ru-RU');
 function money(n){ return fmtNum.format(Math.round(n||0)) + ' сом'; }
 function moneyK(n){ n=n||0; if(Math.abs(n)>=1e6) return (n/1e6).toFixed(n%1e6===0?0:1).replace('.',',')+' млн сом'; if(Math.abs(n)>=1e3) return Math.round(n/1e3)+' тыс сом'; return fmtNum.format(Math.round(n))+' сом'; }
+/* выбор падежной формы по числу: f=[ед., 2-4, 5+] */
+function rusPlural(n,f){ n=Math.abs(n)%100; const n1=n%10; if(n>10&&n<20) return f[2]; if(n1>1&&n1<5) return f[1]; if(n1===1) return f[0]; return f[2]; }
+/* целое число прописью (для договоров и счетов) */
+function numToWordsRu(num){
+  num=Math.round(Math.abs(num)); if(num===0) return 'ноль';
+  const ones=['','один','два','три','четыре','пять','шесть','семь','восемь','девять','десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать','шестнадцать','семнадцать','восемнадцать','девятнадцать'];
+  const onesF=['','одна','две','три','четыре','пять','шесть','семь','восемь','девять','десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать','шестнадцать','семнадцать','восемнадцать','девятнадцать'];
+  const tens=['','','двадцать','тридцать','сорок','пятьдесят','шестьдесят','семьдесят','восемьдесят','девяносто'];
+  const hund=['','сто','двести','триста','четыреста','пятьсот','шестьсот','семьсот','восемьсот','девятьсот'];
+  function triad(n,fem){ const r=[]; const h=Math.floor(n/100), t=Math.floor((n%100)/10), o=n%10;
+    if(h) r.push(hund[h]);
+    if(t>=2){ r.push(tens[t]); if(o) r.push((fem?onesF:ones)[o]); }
+    else { const last=n%100; if(last) r.push((fem?onesF:ones)[last]); }
+    return r.join(' '); }
+  const res=[]; const mil=Math.floor(num/1e6)%1000, thou=Math.floor(num/1e3)%1000, rest=num%1000;
+  if(mil){ res.push(triad(mil,false), rusPlural(mil,['миллион','миллиона','миллионов'])); }
+  if(thou){ res.push(triad(thou,true), rusPlural(thou,['тысяча','тысячи','тысяч'])); }
+  if(rest){ res.push(triad(rest,false)); }
+  return res.join(' ').replace(/\s+/g,' ').trim();
+}
+/* сумма прописью в сомах, с заглавной буквы */
+function sumWords(n){ n=Math.round(n||0); const w=numToWordsRu(n); return w.charAt(0).toUpperCase()+w.slice(1)+' '+rusPlural(n,['сом','сома','сомов']); }
 function initials(name){ return name.split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join(''); }
 function colorFor(s){ const p=['#2563eb','#7c3aed','#0891b2','#db2777','#d97706','#16a34a','#dc2626','#0d9488','#9333ea','#ca8a04']; let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return p[h%p.length]; }
 function daysAgo(n){ const d=new Date(SEED_NOW); d.setDate(d.getDate()-n); return d; }
@@ -129,10 +151,28 @@ const extraById = id => EXTRAS.find(e=>e.id===id);
 /* источники лидов (для выбора в сделке) */
 const SOURCES = ['Instagram','2GIS','Сайт','Рекомендация','Билборд','Звонок'];
 
+/* Шаблон договора по умолчанию. Плейсхолдеры подставляются при генерации;
+   **жирный** — двойными звёздочками, абзацы — пустой строкой. Директор может
+   переопределить этот текст в Настройках — тогда хранится в company.contractTpl. */
+const DEFAULT_CONTRACT_TPL =
+`**{company}**, именуемое в дальнейшем «Исполнитель», в лице директора {director}, действующего на основании Устава, с одной стороны, и **{client}**, именуемый в дальнейшем «Заказчик», с другой стороны, заключили настоящий договор о нижеследующем.
+
+**1. Предмет договора.** Исполнитель обязуется изготовить и смонтировать светопрозрачные конструкции по адресу: {address} в соответствии со спецификацией (Приложение №1), а Заказчик — принять и оплатить работы.
+
+**2. Цена и порядок оплаты.** Общая стоимость работ — **{total}** ({totalWords}){vat}. Аванс {prepayPct}% ({prepay}) — в течение 3 дней с даты подписания; остаток {rest} — после монтажа.
+
+**3. Сроки.** Готовность изделий — {ready}. Монтаж — {install}.
+
+**4. Гарантия.** Гарантийный срок на изделия и монтаж — 5 лет с даты подписания акта приёма-передачи.`;
+
 /* ============ SEED BUILDER ============ */
 function buildSeed(){
   const company = { name:'Ocean Glass', legal:'ОсОО «Ocean Glass»', city:'Ош', phone:'+996 995 031 003',
-    workshop:'Ноокатский тракт 6-км · завод закалки стекла, окна, фасады, перегородки', revenueYear:'≈ 1 млн $/год' };
+    workshop:'Ноокатский тракт 6-км · завод закалки стекла, окна, фасады, перегородки', revenueYear:'≈ 1 млн $/год',
+    // реквизиты для счетов и договоров
+    address:'г. Ош, Ноокатский тракт, 6 км', inn:'02508199501234', okpo:'29381745',
+    bank:'ОАО «Айыл Банк», г. Ош', account:'1280010000123456', bik:'128001',
+    director:'Сапаров Исхак Маратович', directorShort:'Сапаров И. М.', vatRate:12, stamp:true };
 
   const users = [
     {id:'u_isk', name:'Исхак Сапаров',  role:'director',  title:'Директор',            primary:true},
@@ -203,7 +243,7 @@ function buildSeed(){
       items:[constr('m6',1500,1500,'g3','tilt',2,['sill','slopes','mount','demount']), constr('m6',1500,1500,'g3','tilt',2,['sill','slopes','mount'])]});
   D({id:'d7',  clientId:'cl7', stage:'calc',     manager:'u_pm', sum:285000,  createdAt:daysAgo(7).toISOString(),  stageSince:daysAgo(1).toISOString(),  note:'КП отправлено, ждём ответ',
       items:[constr('m3',1400,1400,'g2','tilt',2,['mosquito','sill','slopes','mount'])]});
-  D({id:'d8',  clientId:'cl10',stage:'contract', manager:'u_pm', sum:512000,  createdAt:daysAgo(11).toISOString(), stageSince:daysAgo(2).toISOString(),  note:'Согласование договора',
+  D({id:'d8',  clientId:'cl10',stage:'contract', manager:'u_pm', sum:512000,  createdAt:daysAgo(11).toISOString(), stageSince:daysAgo(2).toISOString(),  contractNo:'Д-2026-006', contractDate:daysAgo(1).toISOString().slice(0,10), note:'Согласование договора',
       items:[constr('m4',1600,1500,'g2','tilt',2,['sill','slopes','mount']), constr('m4',700,1400,'g2','turn',1,['sill','mount'])]});
   D({id:'d9',  clientId:'cl4', stage:'prepaid',  manager:'u_isk',sum:1850000, createdAt:daysAgo(16).toISOString(), stageSince:daysAgo(3).toISOString(),  note:'Объект ТОО, аванс 50%',
       items:[constr('m8',1800,2100,'g3','tilt',2,['mount','demount']), constr('m8',1800,2100,'g3','tilt',2,['mount','demount']), constr('m8',1200,2100,'g3','turn',1,['mount'])],
@@ -211,19 +251,19 @@ function buildSeed(){
   D({id:'d10', clientId:'cl11',stage:'prepaid',  manager:'u_pm', sum:368000,  createdAt:daysAgo(9).toISOString(),  stageSince:daysAgo(1).toISOString(),  note:'Аванс 30% получен',
       items:[constr('m3',1300,1400,'g2','tilt',2,['mosquito','sill','slopes','mount'])],
       payments:[{id:uid('p'),type:'Аванс',amount:110000,date:daysAgo(1).toISOString()}]});
-  D({id:'d11', clientId:'cl8', stage:'production',manager:'u_isk',sum:740000,  createdAt:daysAgo(20).toISOString(), stageSince:daysAgo(5).toISOString(),  prodStage:'assembly', readyDate:daysAgo(1).toISOString().slice(0,10), installDate:daysAgo(-2).toISOString().slice(0,10), note:'В сборке, срок 3 дня',
+  D({id:'d11', clientId:'cl8', stage:'production',manager:'u_isk',sum:740000,  createdAt:daysAgo(20).toISOString(), stageSince:daysAgo(5).toISOString(),  prodStage:'assembly', readyDate:daysAgo(1).toISOString().slice(0,10), installDate:daysAgo(-2).toISOString().slice(0,10), contractNo:'Д-2026-005', contractDate:daysAgo(18).toISOString().slice(0,10), note:'В сборке, срок 3 дня',
       items:[constr('m5',1500,1500,'g3','tilt',2,['sill','slopes','mount']), constr('m5',1500,1500,'g3','tilt',2,['sill','slopes','mount'])],
       payments:[{id:uid('p'),type:'Аванс',amount:370000,date:daysAgo(5).toISOString()}]});
-  D({id:'d12', clientId:'cl12',stage:'production',manager:'u_isk',sum:2380000, createdAt:daysAgo(24).toISOString(), stageSince:daysAgo(6).toISOString(),  prodStage:'glass', readyDate:daysAgo(-4).toISOString().slice(0,10), installDate:daysAgo(-7).toISOString().slice(0,10), note:'Гос. объект, 24 окна',
+  D({id:'d12', clientId:'cl12',stage:'production',manager:'u_isk',sum:2380000, createdAt:daysAgo(24).toISOString(), stageSince:daysAgo(6).toISOString(),  prodStage:'glass', readyDate:daysAgo(-4).toISOString().slice(0,10), installDate:daysAgo(-7).toISOString().slice(0,10), contractNo:'Д-2026-004', contractDate:daysAgo(22).toISOString().slice(0,10), note:'Гос. объект, 24 окна',
       items:[constr('m3',1500,1800,'g2','tilt',2,['mount','demount'])],
       payments:[{id:uid('p'),type:'Аванс',amount:1428000,date:daysAgo(6).toISOString()}]});
-  D({id:'d13', clientId:'cl1', stage:'install',  manager:'u_pm', sum:295000,  createdAt:daysAgo(26).toISOString(), stageSince:daysAgo(2).toISOString(),  prodStage:'installing', readyDate:daysAgo(2).toISOString().slice(0,10), installDate:daysAgo(0).toISOString().slice(0,10), note:'Монтаж сегодня',
+  D({id:'d13', clientId:'cl1', stage:'install',  manager:'u_pm', sum:295000,  createdAt:daysAgo(26).toISOString(), stageSince:daysAgo(2).toISOString(),  prodStage:'installing', readyDate:daysAgo(2).toISOString().slice(0,10), installDate:daysAgo(0).toISOString().slice(0,10), contractNo:'Д-2026-003', contractDate:daysAgo(24).toISOString().slice(0,10), note:'Монтаж сегодня',
       items:[constr('m4',1400,1400,'g2','tilt',2,['sill','slopes','mount'])],
       payments:[{id:uid('p'),type:'Аванс',amount:150000,date:daysAgo(8).toISOString()}]});
-  D({id:'d14', clientId:'cl5', stage:'done',     manager:'u_isk',sum:1240000, createdAt:daysAgo(40).toISOString(), stageSince:daysAgo(7).toISOString(),  prodStage:'installing', readyDate:daysAgo(8).toISOString().slice(0,10), installDate:daysAgo(5).toISOString().slice(0,10), note:'Сдан, остаток оплаты',
+  D({id:'d14', clientId:'cl5', stage:'done',     manager:'u_isk',sum:1240000, createdAt:daysAgo(40).toISOString(), stageSince:daysAgo(7).toISOString(),  prodStage:'installing', readyDate:daysAgo(8).toISOString().slice(0,10), installDate:daysAgo(5).toISOString().slice(0,10), contractNo:'Д-2026-001', contractDate:daysAgo(38).toISOString().slice(0,10), note:'Сдан, остаток оплаты',
       items:[constr('m9',1600,1700,'g3','tilt',2,['sill','slopes','mount','demount'])],
       payments:[{id:uid('p'),type:'Аванс',amount:620000,date:daysAgo(20).toISOString()},{id:uid('p'),type:'Доплата',amount:400000,date:daysAgo(5).toISOString()}]});
-  D({id:'d15', clientId:'cl3', stage:'done',     manager:'u_pm', sum:486000,  createdAt:daysAgo(34).toISOString(), stageSince:daysAgo(10).toISOString(), prodStage:'installing', readyDate:daysAgo(12).toISOString().slice(0,10), installDate:daysAgo(8).toISOString().slice(0,10), note:'Закрыт полностью',
+  D({id:'d15', clientId:'cl3', stage:'done',     manager:'u_pm', sum:486000,  createdAt:daysAgo(34).toISOString(), stageSince:daysAgo(10).toISOString(), prodStage:'installing', readyDate:daysAgo(12).toISOString().slice(0,10), installDate:daysAgo(8).toISOString().slice(0,10), contractNo:'Д-2026-002', contractDate:daysAgo(32).toISOString().slice(0,10), note:'Закрыт полностью',
       items:[constr('m4',1500,1500,'g2','tilt',2,['sill','slopes','mount'])],
       payments:[{id:uid('p'),type:'Аванс',amount:243000,date:daysAgo(18).toISOString()},{id:uid('p'),type:'Доплата',amount:243000,date:daysAgo(4).toISOString()}]});
 
@@ -481,6 +521,13 @@ function constrPrice(c){
 function dealItemsSum(d){ return (d.items||[]).reduce((s,c)=>s+constrPrice(c),0); }
 function dealPaid(d){ return (d.payments||[]).reduce((s,p)=>s+p.amount,0); }
 function dealDebt(d){ const sum=d.sum||dealItemsSum(d); return Math.max(0, sum-dealPaid(d)); }
+/* следующий номер договора: Д-<год>-NNN, сквозной по уже выданным */
+function nextContractNo(){
+  const year=SEED_NOW.getFullYear();
+  const used=(DB.deals||[]).map(d=>d.contractNo).filter(Boolean);
+  let max=0; used.forEach(no=>{ const m=/-(\d+)$/.exec(no); if(m) max=Math.max(max,+m[1]); });
+  return 'Д-'+year+'-'+String(max+1).padStart(3,'0');
+}
 
 /* ============ PERMISSIONS ============ */
 // Роли — единый источник. Директор может добавлять/удалять роли (sys:true —

@@ -140,7 +140,8 @@ CREATE TABLE company (
   city          TEXT,
   phone         TEXT,
   workshop      TEXT,
-  revenue_year  TEXT
+  revenue_year  TEXT,
+  doc_settings  TEXT                                -- JSON: реквизиты и шаблон договора для счетов/договоров
 );
 
 -- Сотрудники = пользователи системы. Реальная авторизация: email + хэш пароля.
@@ -256,6 +257,8 @@ CREATE TABLE deals (
   consumed_fittings  INTEGER NOT NULL DEFAULT 0,
   ready_date     TEXT,                              -- плановая готовность (производство)
   install_date   TEXT,                              -- плановый монтаж
+  contract_no    TEXT,                              -- номер договора подряда
+  contract_date  TEXT,                              -- дата договора
   created_at     TEXT NOT NULL DEFAULT (datetime('now')),
   stage_since    TEXT                                -- когда зашла в текущую стадию
 );
