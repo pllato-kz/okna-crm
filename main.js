@@ -830,6 +830,73 @@ function delRoleConfirm(roleId){
   closeModal(); renderModule(); toast('Роль удалена');
 }
 
+/* ============ СТАДИИ ВОРОНКИ (добавить / изменить / удалить + цвет) ============ */
+function stageEditModal(id){
+  if(!isDirector()) return; const s=stageById(id); if(!s) return;
+  openModal(`<div class="modal-h">${icon('funnel')}<h3>Изменить стадию</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">
+      <div class="fld"><label>Название</label><input id="stg-name" value="${escA(s.name)}" autocomplete="off"></div>
+      <div class="fld"><label>Цвет</label><input id="stg-color" type="color" value="${s.color}" style="height:42px;padding:4px;cursor:pointer"></div>
+    </div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="stage-save" data-id="${id}">${icon('check','sm')} Сохранить</button></div>`);
+}
+function stageAddModal(){
+  if(!isDirector()) return;
+  openModal(`<div class="modal-h">${icon('funnel')}<h3>Новая стадия</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">
+      <div class="fld"><label>Название</label><input id="stg-name" placeholder="напр. Согласование" autocomplete="off"></div>
+      <div class="fld"><label>Цвет</label><input id="stg-color" type="color" value="#2563eb" style="height:42px;padding:4px;cursor:pointer"></div>
+    </div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="stage-save">${icon('check','sm')} Добавить</button></div>`);
+  const el=document.getElementById('stg-name'); if(el) el.focus();
+}
+function stageSave(id){
+  if(!isDirector()) return;
+  const v=i=>{const el=document.getElementById(i);return el?el.value.trim():'';};
+  const name=v('stg-name'); const color=v('stg-color')||'#2563eb';
+  if(!name){ toast('Укажите название','warn'); return; }
+  if(id){ const s=stageById(id); if(!s) return; s.name=name; s.color=color;
+    if(apiOn()) persist(API.fetch('deal_stages/'+id,{method:'PUT',body:{name,color}})); }
+  else {
+    const ns={id:uid('st'), name, color, sort:STAGES.length};
+    const doneIdx=STAGES.findIndex(s=>s.id==='done');
+    if(doneIdx>=0) STAGES.splice(doneIdx,0,ns); else STAGES.push(ns);
+    STAGES.forEach((s,i)=>s.sort=i);
+    if(apiOn()) persist(API.fetch('deal_stages',{method:'POST',body:{id:ns.id,name,color,sort:ns.sort}}));
+  }
+  saveStages(); closeModal(); render(); toast(id?'Стадия изменена':'Стадия добавлена');
+}
+function stageDelModal(id){
+  if(!isDirector()) return; const s=stageById(id); if(!s) return;
+  if(STAGES.length<=1){ toast('Должна остаться хотя бы одна стадия','warn'); return; }
+  const dealsIn=DB.deals.filter(d=>d.stage===id);
+  const others=STAGES.filter(x=>x.id!==id);
+  const moveSel = dealsIn.length
+    ? `<div class="fld full" style="margin-top:10px"><label>Перенести сделки (${dealsIn.length}) в стадию</label><select id="stg-move">${others.map(o=>`<option value="${o.id}">${escA(o.name)}</option>`).join('')}</select></div>`
+    : `<p class="muted2" style="margin:8px 0 0;font-size:12.5px">В этой стадии нет сделок.</p>`;
+  openModal(`<div class="modal-h">${icon('trash')}<h3>Удалить стадию?</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><p style="margin:0;color:var(--muted);line-height:1.5">Стадия «${escA(s.name)}» будет удалена.</p>${moveSel}</div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="stage-del-confirm" data-id="${id}">${icon('trash','sm')} Удалить</button></div>`);
+}
+function stageDelConfirm(id){
+  if(!isDirector()) return; const s=stageById(id); if(!s) return;
+  if(STAGES.length<=1){ toast('Должна остаться хотя бы одна стадия','warn'); return; }
+  const dealsIn=DB.deals.filter(d=>d.stage===id);
+  if(dealsIn.length){ const sel=document.getElementById('stg-move'); const target=sel?sel.value:null;
+    if(!target){ toast('Выберите стадию для переноса','warn'); return; }
+    dealsIn.forEach(d=>{ d.stage=target; d.stageSince=SEED_NOW.toISOString(); }); }
+  const i=STAGES.findIndex(x=>x.id===id); if(i>=0) STAGES.splice(i,1);
+  STAGES.forEach((s2,ix)=>s2.sort=ix);
+  if(state.funnelStage===id) state.funnelStage='all';
+  saveStages(); saveDB();
+  if(apiOn()){
+    Promise.all(dealsIn.map(d=>API.persist.saveDeal(d)))
+      .then(()=>API.fetch('deal_stages/'+id,{method:'DELETE'}))
+      .catch(e=>toast('Сервер: '+((e&&e.message)||''),'warn'));
+  }
+  closeModal(); render(); toast('Стадия удалена');
+}
+
 /* ============ WHATSAPP (Green API) ============ */
 function waPreset(cl, d){
   const tpls=waTemplatesFor(d);
@@ -1304,6 +1371,12 @@ document.addEventListener('click', e=>{
     case 'kpi-nav': { const mod=t.dataset.mod; if(!canSee(mod)){ toast('Нет доступа к разделу','warn'); break; } state.module=mod; state.sideOpen=false; if(mod==='finance'&&t.dataset.tab) state.financeTab=t.dataset.tab; render(); } break;
     case 'go-measure-deal': state.measureDealId=id; state.module='measure'; closeModal(); render(); break;
     case 'open-deal': openDeal(id); clearSearch(); break;
+    case 'stage-edit-toggle': state.stageEdit=!state.stageEdit; renderModule(); break;
+    case 'stage-add': stageAddModal(); break;
+    case 'stage-edit': stageEditModal(id); break;
+    case 'stage-save': stageSave(t.dataset.id||null); break;
+    case 'stage-del': stageDelModal(id); break;
+    case 'stage-del-confirm': stageDelConfirm(id); break;
     case 'goto-deal': gotoDeal(id); break;
     case 'search-open-deal': searchOpenDeal(id); break;
     case 'search-open-client': searchOpenClient(id); break;

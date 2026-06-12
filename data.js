@@ -67,7 +67,9 @@ function escA(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g
 const SEED_NOW = new Date('2026-05-29T11:00:00');
 
 /* ============ STATIC CATALOG ============ */
-const STAGES = [
+// Стадии воронки. Редактируемые (добавить/удалить/изменить/цвет), хранятся
+// в localStorage; в API-режиме переопределяются справочником deal_stages.
+const DEFAULT_STAGES = [
   {id:'lead',       name:'Новый лид',   color:'#64748b'},
   {id:'measure',    name:'Замер',       color:'#0891b2'},
   {id:'calc',       name:'Расчёт / КП', color:'#7c3aed'},
@@ -77,6 +79,10 @@ const STAGES = [
   {id:'install',    name:'Монтаж',      color:'#0d9488'},
   {id:'done',       name:'Выполнено',   color:'#16a34a'},
 ];
+const STAGES_KEY = 'okna_crm_stages';
+function loadStages(){ try{ const raw=localStorage.getItem(STAGES_KEY); if(raw){ const a=JSON.parse(raw); if(Array.isArray(a)&&a.length) return a; } }catch(e){} return DEFAULT_STAGES.map(s=>({...s})); }
+function saveStages(){ try{ localStorage.setItem(STAGES_KEY, JSON.stringify(STAGES)); }catch(e){} }
+let STAGES = loadStages();
 const stageById = id => STAGES.find(s=>s.id===id);
 const stageIndex = id => STAGES.findIndex(s=>s.id===id);
 
@@ -289,7 +295,7 @@ function trashMsLeft(rec){
 const THEME_KEY = 'okna_crm_theme';
 function loadTheme(){ try{ return localStorage.getItem(THEME_KEY) || 'light'; }catch(e){ return 'light'; } }
 function applyTheme(t){ document.documentElement.setAttribute('data-theme', t); }
-const state = { user:null, module:null, measureDealId:null, financeTab:'recv', financePeriod:'all', financeFrom:null, financeTo:null, whTab:'profile', whMoveType:'all', whMovePeriod:'all', funnelMgr:'all', funnelStage:'all', funnelSrc:'all', clientType:'all', clientDebt:'all', clientSearch:'', sideOpen:false, theme:loadTheme() };
+const state = { user:null, module:null, measureDealId:null, financeTab:'recv', financePeriod:'all', financeFrom:null, financeTo:null, whTab:'profile', whMoveType:'all', whMovePeriod:'all', funnelMgr:'all', funnelStage:'all', funnelSrc:'all', clientType:'all', clientDebt:'all', clientSearch:'', stageEdit:false, sideOpen:false, theme:loadTheme() };
 /* настройки WhatsApp (Green API); заполняется при входе в API-режиме, токен наружу не приходит */
 let waConfig = { configured:false, enabled:false, idInstance:'' };
 applyTheme(state.theme);

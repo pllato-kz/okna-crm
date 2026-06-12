@@ -106,19 +106,27 @@ function renderFunnel(){
   const anyFilter = fMgr!=='all'||fStage!=='all'||fSrc!=='all';
   // фильтры по ответственному и источнику применяем к набору сделок,
   // фильтр по стадии — прячет лишние колонки канбана
+  const dir = state.user && state.user.role==='director';
+  const editing = dir && state.stageEdit;
   const matchMS=d=> (fMgr==='all'||d.manager===fMgr) && (fSrc==='all'||d.source===fSrc);
   const deals=DB.deals.filter(matchMS);
   const totalSum=deals.filter(d=>d.stage!=='done').reduce((s,d)=>s+(d.sum||0),0);
-  const stagesShown = fStage==='all' ? STAGES : STAGES.filter(s=>s.id===fStage);
+  const stagesShown = (editing || fStage==='all') ? STAGES : STAGES.filter(s=>s.id===fStage);
   const cols=stagesShown.map(s=>{
     const arr=deals.filter(d=>d.stage===s.id);
     const sum=arr.reduce((a,d)=>a+(d.sum||0),0);
     const cards=arr.map(d=>funnelCard(d)).join('') || `<div class="muted2" style="font-size:12px;text-align:center;padding:14px 0">пусто</div>`;
+    const head = editing
+      ? `<span class="dot-i" style="background:${s.color}"></span><span class="kc-name">${s.name}</span>
+         <span style="margin-left:auto;display:flex;gap:4px">
+           <button class="x" style="width:26px;height:26px" data-act="stage-edit" data-id="${s.id}" title="Изменить стадию">${icon('edit','sm')}</button>
+           <button class="x" style="width:26px;height:26px" data-act="stage-del" data-id="${s.id}" title="Удалить стадию">${icon('trash','sm')}</button></span>`
+      : `<span class="dot-i" style="background:${s.color}"></span><span class="kc-name">${s.name}</span><span class="kc-count">${arr.length}</span><span class="kc-sum">${sum?moneyK(sum):''}</span>`;
     return `<div class="kcol" data-stage="${s.id}">
-      <div class="kcol-h"><span class="dot-i" style="background:${s.color}"></span><span class="kc-name">${s.name}</span><span class="kc-count">${arr.length}</span><span class="kc-sum">${sum?moneyK(sum):''}</span></div>
+      <div class="kcol-h">${head}</div>
       <div class="kcol-b" data-drop="${s.id}">${cards}</div>
     </div>`;
-  }).join('');
+  }).join('') + (editing ? `<div class="kcol" style="border-style:dashed;display:grid;place-items:center;min-height:120px"><button class="btn sm" data-act="stage-add">${icon('plus','sm')} Стадия</button></div>` : '');
   // селекты фильтров
   const selSt='background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:7px 10px;color:var(--txt);font-size:13px;outline:none;cursor:pointer';
   const mgrs=DB.users.filter(u=>['director','manager'].includes(u.role)||DB.deals.some(d=>d.manager===u.id));
@@ -130,8 +138,12 @@ function renderFunnel(){
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
     <div class="tag blue">${icon('funnel','sm')} ${deals.length}${anyFilter?` из ${DB.deals.length}`:''} сделок</div>
     <div class="tag">в работе: ${moneyK(totalSum)}</div>
-    <div style="margin-left:auto;display:flex;gap:8px"><button class="btn sm" data-act="export" data-what="deals">${icon('doc','sm')} Экспорт</button><button class="btn primary" data-act="new-deal">${icon('plus','sm')} Новая сделка</button></div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn sm" data-act="export" data-what="deals">${icon('doc','sm')} Экспорт</button>
+      ${dir?`<button class="btn sm ${editing?'primary':''}" data-act="stage-edit-toggle">${icon('edit','sm')} ${editing?'Готово':'Стадии'}</button>`:''}
+      <button class="btn primary" data-act="new-deal">${icon('plus','sm')} Новая сделка</button></div>
   </div>
+  ${editing?`<div class="muted2" style="font-size:12px;margin-bottom:12px;padding:9px 12px;background:var(--accent-soft);border-radius:9px">Режим редактирования стадий: измените название и цвет, добавьте или удалите стадию. При удалении укажете, куда перенести её сделки.</div>`:''}
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
     <span class="muted2" style="font-size:11.5px">Фильтры:</span>
     <select data-act="funnel-mgr" style="${selSt}">${mgrOpts}</select>
