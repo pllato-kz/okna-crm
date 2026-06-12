@@ -46,7 +46,7 @@ function renderDashboard(){
   // задачи и напоминания
   const openTasks=(DB.tasks||[]).filter(t=>!t.done).sort((a,b)=>String(a.due||'').localeCompare(String(b.due||''))).slice(0,8);
   const taskWidget=openTasks.length?openTasks.map(t=>{const tc=taskClass(t); const td=dealById(t.dealId); const tcl=td?clientById(td.clientId):null; const tu=userById(t.assignee);
-    return `<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 2px;border-bottom:1px solid var(--line);cursor:pointer" ${td?`data-act="open-deal" data-id="${td.id}"`:''}>
+    return `<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 2px;border-bottom:1px solid var(--line);cursor:pointer" ${td?`data-act="goto-deal" data-id="${td.id}"`:''}>
       <input type="checkbox" data-act="task-toggle" data-id="${t.id}" style="width:auto;margin-top:2px;cursor:pointer">
       <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${t.title}</div>
         <div class="muted2" style="font-size:11.5px;margin-top:2px">${tcl?tcl.name+' · ':''}<span style="color:${tc.color}">${dateStr(t.due)} · ${tc.txt}</span>${tu?' · '+tu.name.split(' ')[0]:''}</div></div>
