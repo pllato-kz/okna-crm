@@ -52,8 +52,8 @@ function renderMeasure(){
         <div class="panel-b" id="measure-summary">${summaryBlock(d)}</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
-        <button class="btn primary" data-act="gen-kp" data-id="${d.id}" ${(d.items||[]).length?'':'disabled'}>${icon('doc','sm')} Сформировать КП</button>
-        <button class="btn green" data-act="quick-prepay" data-id="${d.id}" ${(d.items||[]).length?'':'disabled'}>${icon('money','sm')} Принять предоплату на месте</button>
+        <button class="btn soft" data-act="gen-kp" data-id="${d.id}" ${(d.items||[]).length?'':'disabled'}>${icon('doc','sm')} Сформировать КП</button>
+        <button class="btn primary" data-act="quick-prepay" data-id="${d.id}" ${(d.items||[]).length?'':'disabled'}>${icon('money','sm')} Принять предоплату на месте</button>
       </div>
       <div class="muted2" style="font-size:11.5px;margin-top:10px;line-height:1.5">Замерщик собирает заказ на планшете, система сразу считает стоимость, формирует КП и принимает аванс — клиент не уходит «подумать».</div>
     </div>
@@ -164,8 +164,8 @@ function openKp(id){
     </div>
     <div class="modal-f">
       <button class="btn" data-act="print-kp" data-id="${d.id}">${icon('doc','sm')} Печать / PDF</button>
-      <button class="btn" data-act="wa-deal" data-id="${d.id}">${icon('wa','sm')} Отправить в WhatsApp</button>
-      <button class="btn green" data-act="confirm-prepay" data-id="${d.id}">${icon('money','sm')} Принять предоплату ${money(k.prepay)}</button>
+      <button class="btn green" data-act="wa-deal" data-id="${d.id}">${icon('wa','sm')} Отправить в WhatsApp</button>
+      <button class="btn primary" data-act="confirm-prepay" data-id="${d.id}">${icon('money','sm')} Принять предоплату ${money(k.prepay)}</button>
     </div>
   `, true);
 }

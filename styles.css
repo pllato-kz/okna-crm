@@ -125,7 +125,7 @@ input,select,textarea{font-family:inherit}
 .btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;
   box-shadow:0 8px 20px -8px #1296c4aa}
 .btn.primary:hover{filter:brightness(1.07)}
-.btn.green{background:linear-gradient(135deg,#15803d,#16a34a);border-color:transparent;box-shadow:0 8px 20px -8px #16a34aaa}
+.btn.green{background:linear-gradient(135deg,#1fae53,#27c862);border-color:transparent;box-shadow:0 8px 20px -8px #27c862aa}
 .btn.soft{background:var(--accent-soft);color:#7fd0ec;border-color:#1e40af55}
 .btn.soft:hover{background:var(--accent-soft);border-color:var(--accent2);filter:brightness(1.12)}
 .btn.ghost{background:transparent}
