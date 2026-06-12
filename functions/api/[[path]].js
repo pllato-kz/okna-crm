@@ -92,11 +92,19 @@ const RESOURCE_POLICY = {
 // Денежные поля сделки: не отдаём и не принимаем от не-finance ролей (иначе сборщик
 // и склад видят/затирают суммы; редактируя стадию производства, обнулили бы sum).
 const MONEY_DEAL_FIELDS = ['sum', 'discount', 'prepay_pct'];
+// Поля сделки, которые не-finance роли НЕ вправе писать через generic CRUD:
+// деньги + номер/дата договора (их выдаёт только атомарный finance-эндпоинт).
+const PROTECTED_DEAL_WRITE_FIELDS = [...MONEY_DEAL_FIELDS, 'contract_no', 'contract_date'];
 function redactDealMoney(d) {
   if (!d) return d;
   for (const f of MONEY_DEAL_FIELDS) delete d[f];
   if ('payments' in d) d.payments = [];
   return d;
+}
+// Не отдаём хэши паролей наружу ни одним путём.
+function stripSecrets(rows) {
+  for (const r of (Array.isArray(rows) ? rows : [rows])) { if (r) delete r.password_hash; }
+  return rows;
 }
 // Проверка политики для generic-ресурса; возвращает текст ошибки или null (ок).
 function policyDeny(resource, method, role) {
@@ -209,7 +217,9 @@ async function getBootstrap(env, auth) {
   const finance = !auth || isFinance(auth.role);
   const dealsOut = finance ? deals : deals.map(d => redactDealMoney({ ...d }));
   const payablesOut = finance ? payables : [];
-  return { company, catalogs: await getCatalogs(env), users, clients, materials, components, deals: dealsOut, payables: payablesOut, activity, movements, tasks };
+  // лента активности типа «money» содержит суммы оплат — прячем от не-finance
+  const activityOut = finance ? activity : activity.filter(a => a.kind_id !== 'money');
+  return { company, catalogs: await getCatalogs(env), users, clients, materials, components, deals: dealsOut, payables: payablesOut, activity: activityOut, movements, tasks };
 }
 
 /* ============ WHATSAPP ============ */
@@ -611,25 +621,30 @@ export async function onRequest(context) {
       return fail(405, 'Метод не поддерживается');
     }
 
-    // для не-finance ролей денежные поля сделки не отдаём и не принимаем
+    // для не-finance ролей денежные поля сделки не отдаём и не принимаем;
+    // номер/дату договора им тоже писать нельзя (только finance-эндпоинт).
     const redactMoney = resource === 'deals' && !isFinance(context.auth.role);
     if (method === 'GET') {
-      if (id) { const row = await getRow(env, def, id); if (redactMoney) redactDealMoney(row); return row ? ok(row) : fail(404, 'Не найдено'); }
-      const rows = await listRows(env, def);
+      if (id) { const row = await getRow(env, def, id); if (redactMoney) redactDealMoney(row); if (resource === 'users') stripSecrets(row); return row ? ok(row) : fail(404, 'Не найдено'); }
+      let rows = await listRows(env, def);
       if (redactMoney) rows.forEach(redactDealMoney);
+      if (resource === 'users') stripSecrets(rows);
+      // лента «money» содержит суммы оплат — прячем от не-finance
+      if (resource === 'activity' && !isFinance(context.auth.role)) rows = rows.filter(a => a.kind_id !== 'money');
       return ok(rows);
     }
     if (method === 'POST') {
       const body = await readBody(request);
-      if (redactMoney) for (const f of MONEY_DEAL_FIELDS) delete body[f];
+      if (redactMoney) for (const f of PROTECTED_DEAL_WRITE_FIELDS) delete body[f];
       return created(await insertRow(env, def, body));
     }
     if (method === 'PUT' || method === 'PATCH') {
       if (!id) return fail(400, 'Нужен id в пути');
       const body = await readBody(request);
-      if (redactMoney) for (const f of MONEY_DEAL_FIELDS) delete body[f];
+      if (redactMoney) for (const f of PROTECTED_DEAL_WRITE_FIELDS) delete body[f];
       const row = await updateRow(env, def, id, body);
       if (redactMoney) redactDealMoney(row);
+      if (resource === 'users') stripSecrets(row);
       return row ? ok(row) : fail(404, 'Не найдено');
     }
     if (method === 'DELETE') {
