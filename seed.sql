@@ -52,12 +52,12 @@ INSERT INTO deal_stages(id,name,color,sort) VALUES ('prepaid','Аванс','#d97
 INSERT INTO deal_stages(id,name,color,sort) VALUES ('production','Производство','#db2777',5);
 INSERT INTO deal_stages(id,name,color,sort) VALUES ('install','Монтаж','#0d9488',6);
 INSERT INTO deal_stages(id,name,color,sort) VALUES ('done','Выполнено','#16a34a',7);
-INSERT INTO prod_stages(id,name,sort) VALUES ('queue','Очередь',0);
-INSERT INTO prod_stages(id,name,sort) VALUES ('cutting','Резка профиля',1);
-INSERT INTO prod_stages(id,name,sort) VALUES ('glass','Стеклопакет',2);
-INSERT INTO prod_stages(id,name,sort) VALUES ('assembly','Сборка',3);
-INSERT INTO prod_stages(id,name,sort) VALUES ('ready','Готово к монтажу',4);
-INSERT INTO prod_stages(id,name,sort) VALUES ('installing','Монтаж',5);
+INSERT INTO prod_stages(id,name,color,sort) VALUES ('queue','Очередь','#64748b',0);
+INSERT INTO prod_stages(id,name,color,sort) VALUES ('cutting','Резка профиля','#0891b2',1);
+INSERT INTO prod_stages(id,name,color,sort) VALUES ('glass','Стеклопакет','#7c3aed',2);
+INSERT INTO prod_stages(id,name,color,sort) VALUES ('assembly','Сборка','#d97706',3);
+INSERT INTO prod_stages(id,name,color,sort) VALUES ('ready','Готово к монтажу','#0d9488',4);
+INSERT INTO prod_stages(id,name,color,sort) VALUES ('installing','Монтаж','#db2777',5);
 INSERT INTO material_types(id,name) VALUES ('pvc','ПВХ'),('aluminum','Алюминий');
 INSERT INTO material_series(id,name,sort) VALUES ('economy','Эконом',0),('medium','Средняя',1),('premium','Премиум',2);
 INSERT INTO glass_types(id,name,rate,sort) VALUES ('g1','Однокамерный 24мм',3500,0),('g2','Двухкамерный 32мм',5200,1),('g3','Энергосбер. мультифункц. 40мм',7800,2);

@@ -268,27 +268,41 @@ function renderWarehouse(){
 
 /* ============ PRODUCTION ============ */
 function renderProduction(){
+  const dir = state.user && state.user.role==='director';
+  const editing = dir && state.prodEdit;
   const orders=DB.deals.filter(d=>['production','install'].includes(d.stage));
   const cols=PROD_STAGES.map(ps=>{
+    const col=ps.color||'#db2777';
     const arr=orders.filter(d=>(d.prodStage||'queue')===ps.id);
     const cards=arr.map(d=>{const cl=clientById(d.clientId);
       const spec=(d.items||[]).map(c=>`${matById(c.profileId)?.type||''} ${c.w}×${c.h}`).slice(0,3).join(' · ');
       const winCount=(d.items||[]).reduce((s,c)=>s+(c.qty||1),0);
-      return `<div class="kcard" draggable="true" data-pcard="${d.id}" data-act="open-prod" data-id="${d.id}" style="border-left-color:#db2777">
+      return `<div class="kcard" draggable="true" data-pcard="${d.id}" data-act="open-prod" data-id="${d.id}" style="border-left-color:${col}">
         <div class="kc-client">${cl.name}</div>
         <div class="kc-addr">${icon('box','sm')} ${winCount} констр.</div>
         <div class="muted2" style="font-size:11.5px;margin-top:8px">${spec||'—'}</div>
         <div class="kc-meta"><span class="tag" style="font-size:10.5px">${stageById(d.stage).name}</span><span class="kc-days">${icon('pin','sm')} ${cl.address.split(',')[0]}</span></div>
       </div>`;}).join('')||`<div class="muted2" style="font-size:12px;text-align:center;padding:14px 0">пусто</div>`;
-    return `<div class="kcol" style="flex-basis:250px"><div class="kcol-h"><span class="kc-name">${ps.name}</span><span class="kc-count">${arr.length}</span></div><div class="kcol-b" data-pdrop="${ps.id}">${cards}</div></div>`;
-  }).join('');
+    const locked=SYSTEM_PROD_IDS.includes(ps.id);
+    const head = editing
+      ? `<span class="dot-i" style="background:${col}"></span><span class="kc-name">${ps.name}</span>
+         <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
+           <button class="x" style="width:26px;height:26px" data-act="prod-stage-edit" data-id="${ps.id}" title="Изменить этап">${icon('edit','sm')}</button>
+           ${locked
+             ? `<span class="muted2" style="display:inline-grid;place-items:center;width:26px;height:26px" title="Системный этап: списание материалов / переход на монтаж — удалить нельзя">${icon('lock','sm')}</span>`
+             : `<button class="x" style="width:26px;height:26px" data-act="prod-stage-del" data-id="${ps.id}" title="Удалить этап">${icon('trash','sm')}</button>`}</span>`
+      : `<span class="dot-i" style="background:${col}"></span><span class="kc-name">${ps.name}</span><span class="kc-count">${arr.length}</span>`;
+    return `<div class="kcol" style="flex-basis:250px"><div class="kcol-h">${head}</div><div class="kcol-b" data-pdrop="${ps.id}">${cards}</div></div>`;
+  }).join('') + (editing ? `<div class="kcol" style="flex-basis:200px;border-style:dashed;display:grid;place-items:center;min-height:120px"><button class="btn sm" data-act="prod-stage-add">${icon('plus','sm')} Этап</button></div>` : '');
   return `
-  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
     <div class="tag violet">${icon('production','sm')} ${orders.length} заказов на линии</div>
     ${!seesMoney()?'<div class="tag">режим производства — финансы скрыты</div>':''}
+    ${dir?`<button class="btn sm ${editing?'primary':''}" style="margin-left:auto" data-act="prod-stage-edit-toggle">${icon('edit','sm')} ${editing?'Готово':'Этапы'}</button>`:''}
   </div>
+  ${editing?`<div class="muted2" style="font-size:12px;margin-bottom:12px;padding:9px 12px;background:var(--accent-soft);border-radius:9px">Режим редактирования этапов цеха: измените название и цвет, добавьте или удалите этап. При удалении укажете, куда перенести заказы. Системные этапы (списание материалов и переход на монтаж) защищены.</div>`:''}
   <div class="kanban">${cols}</div>
-  <div class="muted2" style="font-size:12px;margin-top:12px">Перетаскивайте заказы по этапам: резка профиля → стеклопакет → сборка → готово → монтаж.</div>`;
+  <div class="muted2" style="font-size:12px;margin-top:12px">Перетаскивайте заказы по этапам цеха.</div>`;
 }
 function openProd(id){
   const d=dealById(id); if(!d) return; const cl=clientById(d.clientId);

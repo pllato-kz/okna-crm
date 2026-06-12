@@ -931,6 +931,74 @@ function stageDelConfirm(id){
   closeModal(); render(); toast('Стадия удалена');
 }
 
+/* ============ ЭТАПЫ ЦЕХА (производство): добавить / изменить / удалить + цвет ============ */
+function prodStageEditModal(id){
+  if(!isDirector()) return; const s=prodStageById(id); if(!s) return;
+  openModal(`<div class="modal-h">${icon('production')}<h3>Изменить этап цеха</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">
+      <div class="fld"><label>Название</label><input id="ps-name" value="${escA(s.name)}" autocomplete="off"></div>
+      <div class="fld"><label>Цвет</label><input id="ps-color" type="color" value="${s.color||'#64748b'}" style="height:42px;padding:4px;cursor:pointer"></div>
+    </div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="prod-stage-save" data-id="${id}">${icon('check','sm')} Сохранить</button></div>`);
+}
+function prodStageAddModal(){
+  if(!isDirector()) return;
+  openModal(`<div class="modal-h">${icon('production')}<h3>Новый этап цеха</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">
+      <div class="fld"><label>Название</label><input id="ps-name" placeholder="напр. Упаковка" autocomplete="off"></div>
+      <div class="fld"><label>Цвет</label><input id="ps-color" type="color" value="#2563eb" style="height:42px;padding:4px;cursor:pointer"></div>
+    </div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="prod-stage-save">${icon('check','sm')} Добавить</button></div>`);
+  const el=document.getElementById('ps-name'); if(el) el.focus();
+}
+function prodStageSave(id){
+  if(!isDirector()) return;
+  const v=i=>{const el=document.getElementById(i);return el?el.value.trim():'';};
+  const name=v('ps-name'); const color=v('ps-color')||'#2563eb';
+  if(!name){ toast('Укажите название','warn'); return; }
+  if(id){ const s=prodStageById(id); if(!s) return; s.name=name; s.color=color;
+    if(apiOn()) persist(API.fetch('prod_stages/'+id,{method:'PUT',body:{name,color}})); }
+  else {
+    const ns={id:uid('ps'), name, color, sort:PROD_STAGES.length};
+    const instIdx=PROD_STAGES.findIndex(s=>s.id==='installing');
+    if(instIdx>=0) PROD_STAGES.splice(instIdx,0,ns); else PROD_STAGES.push(ns);
+    PROD_STAGES.forEach((s,i)=>s.sort=i);
+    if(apiOn()) persist(API.fetch('prod_stages',{method:'POST',body:{id:ns.id,name,color,sort:ns.sort}}));
+  }
+  saveProdStages(); closeModal(); render(); toast(id?'Этап изменён':'Этап добавлен');
+}
+function prodStageDelModal(id){
+  if(!isDirector()) return; const s=prodStageById(id); if(!s) return;
+  if(SYSTEM_PROD_IDS.includes(id)){ toast('Системный этап (очередь/резка/стеклопакет/сборка/монтаж) удалить нельзя — на нём завязано списание материалов и переход на монтаж. Можно переименовать и сменить цвет','warn'); return; }
+  if(PROD_STAGES.length<=1){ toast('Должен остаться хотя бы один этап','warn'); return; }
+  const dealsIn=DB.deals.filter(d=>['production','install'].includes(d.stage) && (d.prodStage||'queue')===id);
+  const others=PROD_STAGES.filter(x=>x.id!==id);
+  const moveSel = dealsIn.length
+    ? `<div class="fld full" style="margin-top:10px"><label>Перенести заказы (${dealsIn.length}) на этап</label><select id="ps-move">${others.map(o=>`<option value="${o.id}">${escA(o.name)}</option>`).join('')}</select></div>`
+    : `<p class="muted2" style="margin:8px 0 0;font-size:12.5px">На этом этапе нет заказов.</p>`;
+  openModal(`<div class="modal-h">${icon('trash')}<h3>Удалить этап?</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><p style="margin:0;color:var(--muted);line-height:1.5">Этап «${escA(s.name)}» будет удалён.</p>${moveSel}</div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="prod-stage-del-confirm" data-id="${id}">${icon('trash','sm')} Удалить</button></div>`);
+}
+function prodStageDelConfirm(id){
+  if(!isDirector()) return; const s=prodStageById(id); if(!s) return;
+  if(SYSTEM_PROD_IDS.includes(id)){ toast('Системный этап удалить нельзя','warn'); return; }
+  if(PROD_STAGES.length<=1){ toast('Должен остаться хотя бы один этап','warn'); return; }
+  const dealsIn=DB.deals.filter(d=>['production','install'].includes(d.stage) && (d.prodStage||'queue')===id);
+  if(dealsIn.length){ const sel=document.getElementById('ps-move'); const target=sel?sel.value:null;
+    if(!target){ toast('Выберите этап для переноса','warn'); return; }
+    dealsIn.forEach(d=>{ d.prodStage=target; }); }
+  const i=PROD_STAGES.findIndex(x=>x.id===id); if(i>=0) PROD_STAGES.splice(i,1);
+  PROD_STAGES.forEach((s2,ix)=>s2.sort=ix);
+  saveProdStages(); saveDB();
+  if(apiOn()){
+    Promise.all(dealsIn.map(d=>API.persist.saveDeal(d)))
+      .then(()=>API.fetch('prod_stages/'+id,{method:'DELETE'}))
+      .catch(e=>toast('Сервер: '+((e&&e.message)||''),'warn'));
+  }
+  closeModal(); render(); toast('Этап удалён');
+}
+
 /* ============ WHATSAPP (Green API) ============ */
 function waPreset(cl, d){
   const tpls=waTemplatesFor(d);
@@ -1414,6 +1482,12 @@ document.addEventListener('click', e=>{
     case 'stage-save': stageSave(t.dataset.id||null); break;
     case 'stage-del': stageDelModal(id); break;
     case 'stage-del-confirm': stageDelConfirm(id); break;
+    case 'prod-stage-edit-toggle': state.prodEdit=!state.prodEdit; renderModule(); break;
+    case 'prod-stage-add': prodStageAddModal(); break;
+    case 'prod-stage-edit': prodStageEditModal(id); break;
+    case 'prod-stage-save': prodStageSave(t.dataset.id||null); break;
+    case 'prod-stage-del': prodStageDelModal(id); break;
+    case 'prod-stage-del-confirm': prodStageDelConfirm(id); break;
     case 'goto-deal': gotoDeal(id); break;
     case 'search-open-deal': searchOpenDeal(id); break;
     case 'search-open-client': searchOpenClient(id); break;
