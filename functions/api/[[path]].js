@@ -188,9 +188,23 @@ async function handleWaWebhook(env, body) {
     || (md.extendedTextMessageData && md.extendedTextMessageData.text)
     || (md.typeMessage && md.typeMessage !== 'textMessage' ? '[' + md.typeMessage + ']' : '');
   if (type === 'incomingMessageReceived') {
-    const clientId = await waResolveClient(env, chatId);
+    let clientId = await waResolveClient(env, chatId);
+    const waName = (sd.senderName || sd.chatName || '').trim();
+    // новый номер → заводим клиента с именем из карточки WhatsApp
+    if (!clientId) {
+      const digits = waDigits(String(chatId).split('@')[0]);
+      if (digits) {
+        clientId = uid('cl');
+        const name = waName || ('+' + digits);
+        const city = (await env.DB.prepare(`SELECT city FROM company WHERE id = 'main'`).first())?.city || '';
+        await env.DB.prepare(`INSERT INTO clients (id, name, phone, address, type_id, created_at) VALUES (?, ?, ?, ?, 'individual', ?)`)
+          .bind(clientId, name, '+' + digits, city, new Date().toISOString()).run();
+        await env.DB.prepare(`INSERT INTO activity (id, user_id, text, kind_id, at, created_at) VALUES (?, NULL, ?, NULL, ?, ?)`)
+          .bind(uid('a'), 'Новый лид из WhatsApp — ' + name, new Date().toISOString(), new Date().toISOString()).run();
+      }
+    }
     await waStoreMessage(env, { id: idMessage, chat_id: chatId, client_id: clientId, direction: 'in',
-      text, sender_name: sd.senderName || sd.chatName || '', ts: body.timestamp, at: body.timestamp ? new Date(body.timestamp * 1000).toISOString() : null });
+      text, sender_name: waName, ts: body.timestamp, at: body.timestamp ? new Date(body.timestamp * 1000).toISOString() : null });
   } else if (type === 'outgoingMessageReceived' || type === 'outgoingAPIMessageReceived') {
     const clientId = await waResolveClient(env, chatId);
     await waStoreMessage(env, { id: idMessage, chat_id: chatId, client_id: clientId, direction: 'out',
