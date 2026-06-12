@@ -112,14 +112,16 @@ function renderFunnel(){
   const deals=DB.deals.filter(matchMS);
   const totalSum=deals.filter(d=>d.stage!=='done').reduce((s,d)=>s+(d.sum||0),0);
   const stagesShown = (editing || fStage==='all') ? STAGES : STAGES.filter(s=>s.id===fStage);
-  const cols=stagesShown.map(s=>{
+  const cols=stagesShown.map((s,idx)=>{
     const arr=deals.filter(d=>d.stage===s.id);
     const sum=arr.reduce((a,d)=>a+(d.sum||0),0);
     const cards=arr.map(d=>funnelCard(d)).join('') || `<div class="muted2" style="font-size:12px;text-align:center;padding:14px 0">пусто</div>`;
     const locked = SYSTEM_STAGE_IDS.includes(s.id);
     const head = editing
       ? `<span class="dot-i" style="background:${s.color}"></span><span class="kc-name">${s.name}</span>
-         <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
+         <span style="margin-left:auto;display:flex;gap:2px;align-items:center">
+           <button class="x" data-act="stage-move" data-id="${s.id}" data-dir="left" title="Левее" style="width:22px;height:26px;font-size:16px${idx===0?';opacity:.25;pointer-events:none':''}">‹</button>
+           <button class="x" data-act="stage-move" data-id="${s.id}" data-dir="right" title="Правее" style="width:22px;height:26px;font-size:16px${idx===STAGES.length-1?';opacity:.25;pointer-events:none':''}">›</button>
            <button class="x" style="width:26px;height:26px" data-act="stage-edit" data-id="${s.id}" title="Изменить стадию">${icon('edit','sm')}</button>
            ${locked
              ? `<span class="muted2" style="display:inline-grid;place-items:center;width:26px;height:26px" title="Системная стадия: используется разделами «Замер» и «Производство» — удалить нельзя">${icon('lock','sm')}</span>`
@@ -146,7 +148,7 @@ function renderFunnel(){
       ${dir?`<button class="btn sm ${editing?'primary':''}" data-act="stage-edit-toggle">${icon('edit','sm')} ${editing?'Готово':'Стадии'}</button>`:''}
       <button class="btn primary" data-act="new-deal">${icon('plus','sm')} Новая сделка</button></div>
   </div>
-  ${editing?`<div class="muted2" style="font-size:12px;margin-bottom:12px;padding:9px 12px;background:var(--accent-soft);border-radius:9px">Режим редактирования стадий: измените название и цвет, добавьте или удалите стадию. При удалении укажете, куда перенести её сделки.</div>`:''}
+  ${editing?`<div class="muted2" style="font-size:12px;margin-bottom:12px;padding:9px 12px;background:var(--accent-soft);border-radius:9px">Режим редактирования стадий: стрелками ‹ › меняйте порядок, ✎ — название и цвет, добавьте или удалите стадию. При удалении укажете, куда перенести её сделки.</div>`:''}
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
     <span class="muted2" style="font-size:11.5px">Фильтры:</span>
     <select data-act="funnel-mgr" style="${selSt}">${mgrOpts}</select>

@@ -271,7 +271,7 @@ function renderProduction(){
   const dir = state.user && state.user.role==='director';
   const editing = dir && state.prodEdit;
   const orders=DB.deals.filter(d=>['production','install'].includes(d.stage));
-  const cols=PROD_STAGES.map(ps=>{
+  const cols=PROD_STAGES.map((ps,idx)=>{
     const col=ps.color||'#db2777';
     const arr=orders.filter(d=>(d.prodStage||'queue')===ps.id);
     const cards=arr.map(d=>{const cl=clientById(d.clientId);
@@ -286,7 +286,9 @@ function renderProduction(){
     const locked=SYSTEM_PROD_IDS.includes(ps.id);
     const head = editing
       ? `<span class="dot-i" style="background:${col}"></span><span class="kc-name">${ps.name}</span>
-         <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
+         <span style="margin-left:auto;display:flex;gap:2px;align-items:center">
+           <button class="x" data-act="prod-stage-move" data-id="${ps.id}" data-dir="left" title="Левее" style="width:22px;height:26px;font-size:16px${idx===0?';opacity:.25;pointer-events:none':''}">‹</button>
+           <button class="x" data-act="prod-stage-move" data-id="${ps.id}" data-dir="right" title="Правее" style="width:22px;height:26px;font-size:16px${idx===PROD_STAGES.length-1?';opacity:.25;pointer-events:none':''}">›</button>
            <button class="x" style="width:26px;height:26px" data-act="prod-stage-edit" data-id="${ps.id}" title="Изменить этап">${icon('edit','sm')}</button>
            ${locked
              ? `<span class="muted2" style="display:inline-grid;place-items:center;width:26px;height:26px" title="Системный этап: списание материалов / переход на монтаж — удалить нельзя">${icon('lock','sm')}</span>`
@@ -300,7 +302,7 @@ function renderProduction(){
     ${!seesMoney()?'<div class="tag">режим производства — финансы скрыты</div>':''}
     ${dir?`<button class="btn sm ${editing?'primary':''}" style="margin-left:auto" data-act="prod-stage-edit-toggle">${icon('edit','sm')} ${editing?'Готово':'Этапы'}</button>`:''}
   </div>
-  ${editing?`<div class="muted2" style="font-size:12px;margin-bottom:12px;padding:9px 12px;background:var(--accent-soft);border-radius:9px">Режим редактирования этапов цеха: измените название и цвет, добавьте или удалите этап. При удалении укажете, куда перенести заказы. Системные этапы (списание материалов и переход на монтаж) защищены.</div>`:''}
+  ${editing?`<div class="muted2" style="font-size:12px;margin-bottom:12px;padding:9px 12px;background:var(--accent-soft);border-radius:9px">Режим редактирования этапов цеха: стрелками ‹ › меняйте порядок, ✎ — название и цвет, добавьте или удалите этап. При удалении укажете, куда перенести заказы. Системные этапы (списание материалов и переход на монтаж) защищены.</div>`:''}
   <div class="kanban">${cols}</div>
   <div class="muted2" style="font-size:12px;margin-top:12px">Перетаскивайте заказы по этапам цеха.</div>`;
 }
