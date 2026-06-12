@@ -1141,21 +1141,72 @@ function searchOpenClient(id){
   flashEl(`tr[data-act="open-client"][data-id="${id}"]`);
   openClient(id);
 }
+// из поиска: сделка на замере → раздел «Замер и КП» с выбранной заявкой
+function searchOpenMeasureDeal(id){
+  const d=dealById(id); if(!d){ openDeal(id); return; }
+  clearSearch();
+  if(canSee('funnel')) return searchOpenDeal(id);
+  if(!canSee('measure')){ openDeal(id); return; }
+  state.measureDealId=id; state.module='measure'; state.sideOpen=false;
+  render();
+  flashEl(`[data-act="m-pick"][data-id="${id}"]`);
+}
+// из поиска: сделка в цеху → раздел «Производство», прокрутка к карточке + модалка
+function searchOpenProdDeal(id){
+  const d=dealById(id); if(!d){ openDeal(id); return; }
+  clearSearch();
+  if(canSee('funnel')) return searchOpenDeal(id);
+  if(!canSee('production')){ openDeal(id); return; }
+  state.module='production'; state.sideOpen=false;
+  render();
+  flashEl(`.kcard[data-pcard="${id}"]`);
+  if(typeof openProd==='function') openProd(id);
+}
+// из поиска: позиция склада → раздел «Склад», нужная вкладка, прокрутка к строке
+function searchOpenWhItem(id, kind){
+  clearSearch();
+  if(!canSee('warehouse')) return;
+  state.module='warehouse'; state.sideOpen=false;
+  state.whTab = kind==='mat' ? 'profile' : 'comp';
+  render();
+  flashEl(`tr[data-wh-row="${id}"]`);
+}
 function globalSearch(q){
   const dd=document.getElementById('search-dd'); if(!dd) return;
   q=(q||'').trim().toLowerCase();
   if(q.length<2){ dd.classList.remove('open'); dd.innerHTML=''; return; }
   const has=s=>(s||'').toLowerCase().includes(q);
+  const dealMatch=d=>{ const cl=clientById(d.clientId); return has(cl&&cl.name)||has(d.note); };
+  const dealItem=(d,act)=>{ const cl=clientById(d.clientId); const st=stageById(d.stage);
+    return `<button class="sd-item" data-act="${act}" data-id="${d.id}"><span class="dot-i" style="background:${st.color}"></span><span class="sd-main">${cl?cl.name:'—'}</span><span class="sd-sub">${st.name}${d.sum&&seesMoney()?' · '+moneyK(d.sum):''}</span></button>`; };
   let html='';
+  // поиск показывает только то, к чему у роли есть доступ
   if(canSee('clients')){
     const cls=DB.clients.filter(c=>has(c.name)||has(c.phone)||has(c.address)).slice(0,5);
     if(cls.length) html+=`<div class="sd-group">Клиенты</div>`+cls.map(c=>
       `<button class="sd-item" data-act="search-open-client" data-id="${c.id}">${avatarXs(c.name,c.id)}<span class="sd-main">${c.name}</span><span class="sd-sub">${c.phone}</span></button>`).join('');
   }
   if(canSee('funnel')){
-    const dls=DB.deals.filter(d=>{const cl=clientById(d.clientId); return has(cl&&cl.name)||has(d.note);}).slice(0,6);
-    if(dls.length) html+=`<div class="sd-group">Сделки</div>`+dls.map(d=>{const cl=clientById(d.clientId);const st=stageById(d.stage);
-      return `<button class="sd-item" data-act="search-open-deal" data-id="${d.id}"><span class="dot-i" style="background:${st.color}"></span><span class="sd-main">${cl.name}</span><span class="sd-sub">${st.name}${d.sum?' · '+moneyK(d.sum):''}</span></button>`;}).join('');
+    const dls=DB.deals.filter(dealMatch).slice(0,6);
+    if(dls.length) html+=`<div class="sd-group">Сделки</div>`+dls.map(d=>dealItem(d,'search-open-deal')).join('');
+  } else {
+    if(canSee('measure')){
+      const dls=DB.deals.filter(d=>d.stage==='measure'&&dealMatch(d)).slice(0,6);
+      if(dls.length) html+=`<div class="sd-group">Замер</div>`+dls.map(d=>dealItem(d,'search-open-measure')).join('');
+    }
+    if(canSee('production')){
+      const dls=DB.deals.filter(d=>['production','install'].includes(d.stage)&&dealMatch(d)).slice(0,6);
+      if(dls.length) html+=`<div class="sd-group">Производство</div>`+dls.map(d=>dealItem(d,'search-open-prod')).join('');
+    }
+  }
+  if(canSee('warehouse')){
+    const mats=DB.materials.filter(m=>has(m.name)||has(m.supplier)||has(m.series)).slice(0,4);
+    const comps=DB.components.filter(c=>has(c.name)).slice(0,4);
+    if(mats.length||comps.length){
+      html+=`<div class="sd-group">Склад</div>`
+        + mats.map(m=>`<button class="sd-item" data-act="search-open-wh" data-id="${m.id}" data-kind="mat">${icon('box','sm')}<span class="sd-main">${m.name}</span><span class="sd-sub">профиль · ${m.stock} ${m.unit}</span></button>`).join('')
+        + comps.map(c=>`<button class="sd-item" data-act="search-open-wh" data-id="${c.id}" data-kind="comp">${icon('box','sm')}<span class="sd-main">${c.name}</span><span class="sd-sub">остаток · ${c.stock} ${c.unit}</span></button>`).join('');
+    }
   }
   if(!html) html=`<div class="sd-empty">Ничего не найдено</div>`;
   dd.innerHTML=html; dd.classList.add('open');
@@ -1197,6 +1248,9 @@ document.addEventListener('click', e=>{
     case 'open-deal': openDeal(id); clearSearch(); break;
     case 'search-open-deal': searchOpenDeal(id); break;
     case 'search-open-client': searchOpenClient(id); break;
+    case 'search-open-measure': searchOpenMeasureDeal(id); break;
+    case 'search-open-prod': searchOpenProdDeal(id); break;
+    case 'search-open-wh': searchOpenWhItem(id, t.dataset.kind); break;
     case 'move-stage': moveStage(id, t.dataset.stage); break;
     case 'wa-move-stage': waMoveStage(id, t.dataset.stage); break;
     case 'new-deal': newDealModal(); break;
