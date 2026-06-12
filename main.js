@@ -139,7 +139,7 @@ function applyPrepay(id){
 }
 function addPaymentModal(id){
   const d=dealById(id); const debt=dealDebt(d); const cl=clientById(d.clientId);
-  openModal(`<div class="modal-h">${icon('money')}<div><h3>Принять оплату</h3><div class="mh-sub">${cl.name} · остаток ${money(debt)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+  openModal(`<div class="modal-h">${icon('money')}<div><h3>Принять оплату</h3><div class="mh-sub">${escA(cl.name)} · остаток ${money(debt)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="fld full"><label>Сумма оплаты, сом</label><input id="pay-amt" type="number" value="${debt}" style="background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:11px;color:var(--txt);font-size:16px;font-weight:700"></div>
     <div class="muted2" style="font-size:12px;margin-top:8px">Платёж зачислится по сделке и обновит дебиторку.</div></div>
     <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn green" data-act="confirm-payment" data-id="${id}">${icon('check','sm')} Зачислить</button></div>`);
@@ -154,7 +154,7 @@ function confirmPayment(id){
   closeModal(); render(); toast(`Оплата ${money(amt)} зачислена`);
 }
 function newDealModal(){
-  const opts=DB.clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  const opts=DB.clients.map(c=>`<option value="${c.id}">${escA(c.name)}</option>`).join('');
   const inp='background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--txt)';
   openModal(`<div class="modal-h">${icon('funnel')}<h3>Новая сделка</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b">
@@ -188,7 +188,7 @@ function createDeal(){
 function editDealModal(id){
   const d=dealById(id); if(!d) return;
   const mgrs=DB.users.filter(u=>['director','manager'].includes(u.role)||u.id===d.manager);
-  const mgrOpts=mgrs.map(u=>`<option value="${u.id}"${u.id===d.manager?' selected':''}>${u.name} · ${roleRu(u.role)}</option>`).join('');
+  const mgrOpts=mgrs.map(u=>`<option value="${u.id}"${u.id===d.manager?' selected':''}>${escA(u.name)} · ${roleRu(u.role)}</option>`).join('');
   const srcOpts=SOURCES.map(s=>`<option${s===d.source?' selected':''}>${s}</option>`).join('');
   const money$=seesMoney();
   const moneyFields=money$?`
@@ -382,7 +382,7 @@ function taskRefresh(dealId){ if(dealId && document.getElementById('deal-tasks')
 function addTaskModal(dealId){
   const d=dealById(dealId);
   const users=DB.users.filter(u=>['director','manager','surveyor','production'].includes(u.role));
-  const opts=users.map(u=>`<option value="${u.id}"${u.id===(d&&d.manager)?' selected':''}>${u.name}</option>`).join('');
+  const opts=users.map(u=>`<option value="${u.id}"${u.id===(d&&d.manager)?' selected':''}>${escA(u.name)}</option>`).join('');
   openModal(`<div class="modal-h">${icon('clock')}<h3>Новая задача</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="constr-body" style="padding:0">
       <div class="fld full"><label>Что сделать</label><input id="tk-title" placeholder="напр. Перезвонить клиенту"></div>
@@ -637,11 +637,11 @@ function catDelConfirm(type,id){
 function whReceiveModal(id, kind){
   const it = kind==='mat' ? matById(id) : compById(id);
   if(!it) return;
-  const costRow = (kind==='mat' && seesMoney()) ? `<div class="fld"><label>Цена прихода, сом/${it.unit}</label><input type="number" id="wr-rate" value="${it.rate||0}"></div>` : '';
-  const supRow = it.supplier ? `<div class="fld full"><label>Поставщик</label><input id="wr-sup" value="${it.supplier}"></div>` : '';
-  openModal(`<div class="modal-h">${icon('box')}<div><h3>Приход на склад</h3><div class="mh-sub">${it.name} · сейчас ${it.stock} ${it.unit}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+  const costRow = (kind==='mat' && seesMoney()) ? `<div class="fld"><label>Цена прихода, сом/${escA(it.unit)}</label><input type="number" id="wr-rate" value="${it.rate||0}"></div>` : '';
+  const supRow = it.supplier ? `<div class="fld full"><label>Поставщик</label><input id="wr-sup" value="${escA(it.supplier)}"></div>` : '';
+  openModal(`<div class="modal-h">${icon('box')}<div><h3>Приход на склад</h3><div class="mh-sub">${escA(it.name)} · сейчас ${it.stock} ${escA(it.unit)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="constr-body" style="padding:0">
-      <div class="fld"><label>Количество, ${it.unit}</label><input type="number" min="1" id="wr-qty" value="${Math.max(it.min, Math.round((it.min*2-it.stock)>0?(it.min*2-it.stock):it.min))}" autofocus></div>
+      <div class="fld"><label>Количество, ${escA(it.unit)}</label><input type="number" min="1" id="wr-qty" value="${Math.max(it.min, Math.round((it.min*2-it.stock)>0?(it.min*2-it.stock):it.min))}" autofocus></div>
       ${costRow}${supRow}
     </div></div>
     <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn green" data-act="wh-confirm-receive" data-id="${id}" data-kind="${kind}">${icon('check','sm')} Оприходовать</button></div>`);
@@ -668,9 +668,9 @@ function whWriteoffModal(id, kind){
   const it = kind==='mat' ? matById(id) : compById(id);
   if(!it) return;
   const opts = WRITEOFF_TYPES.map(t=>`<option value="${t}">${MOVE_TYPES[t].label}</option>`).join('');
-  openModal(`<div class="modal-h">${icon('minus')}<div><h3>Расход со склада</h3><div class="mh-sub">${it.name} · остаток ${it.stock} ${it.unit}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+  openModal(`<div class="modal-h">${icon('minus')}<div><h3>Расход со склада</h3><div class="mh-sub">${escA(it.name)} · остаток ${it.stock} ${escA(it.unit)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="constr-body" style="padding:0">
-      <div class="fld"><label>Количество, ${it.unit}</label><input type="number" min="0" step="0.1" max="${it.stock}" id="wo-qty" placeholder="0" autofocus></div>
+      <div class="fld"><label>Количество, ${escA(it.unit)}</label><input type="number" min="0" step="0.1" max="${it.stock}" id="wo-qty" placeholder="0" autofocus></div>
       <div class="fld"><label>Тип расхода</label><select id="wo-type">${opts}</select></div>
       <div class="fld full"><label>Причина / комментарий</label><input id="wo-reason" placeholder="напр. брак при резке"></div>
     </div></div>
@@ -1120,7 +1120,7 @@ function waSendModal(clientId, dealId){
   } else if(!(waConfig && waConfig.enabled && waConfig.configured)){
     notice = `<div class="muted2" style="font-size:11.5px;margin-top:10px;line-height:1.5;color:#fbbf24">WhatsApp не подключён. Директор может подключить инстанс в Настройки → WhatsApp · Green API.</div>`;
   }
-  openModal(`<div class="modal-h">${icon('wa')}<div><h3>Сообщение в WhatsApp</h3><div class="mh-sub">${cl.name} · ${cl.phone}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+  openModal(`<div class="modal-h">${icon('wa')}<div><h3>Сообщение в WhatsApp</h3><div class="mh-sub">${escA(cl.name)} · ${escA(cl.phone)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b">
       ${tplChips}
       <div class="fld full"><label>Текст сообщения</label><textarea id="wa-msg" rows="5" style="background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--txt);font-family:inherit;font-size:13.5px;resize:vertical">${escA(preset)}</textarea></div>
@@ -1134,7 +1134,7 @@ function waTplModal(id){
   if(!isDirector()) return;
   const t = id ? WA_TEMPLATES.find(x=>x.id===id) : null;
   const stageOpts = [`<option value="any"${(!t||t.stage==='any')?' selected':''}>Любой этап</option>`]
-    .concat(STAGES.map(s=>`<option value="${s.id}"${t&&t.stage===s.id?' selected':''}>${s.name}</option>`)).join('');
+    .concat(STAGES.map(s=>`<option value="${s.id}"${t&&t.stage===s.id?' selected':''}>${escA(s.name)}</option>`)).join('');
   const taSt='background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--txt);font-family:inherit;font-size:13.5px;resize:vertical;width:100%';
   openModal(`<div class="modal-h">${icon('wa')}<h3>${t?'Изменить шаблон':'Новый шаблон'}</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="constr-body" style="padding:0">
@@ -1189,7 +1189,7 @@ function waChatModal(clientId){
   const cl=clientById(clientId); if(!cl){ toast('Клиент не найден','warn'); return; }
   const canSend = !apiOn() || (waConfig && waConfig.enabled && waConfig.configured);
   const hint = (apiOn() && !canSend) ? `<div class="muted2" style="text-align:center;font-size:11px;padding:6px 14px;color:#fbbf24">WhatsApp не подключён — отправка недоступна (Настройки → WhatsApp)</div>` : '';
-  openModal(`<div class="modal-h">${icon('wa')}<div><h3>WhatsApp · ${cl.name}</h3><div class="mh-sub">${cl.phone}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+  openModal(`<div class="modal-h">${icon('wa')}<div><h3>WhatsApp · ${escA(cl.name)}</h3><div class="mh-sub">${escA(cl.phone)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b" style="padding:0;display:flex;flex-direction:column">
       <div id="wa-chat-msgs" class="wa-chat" data-cid="${clientId}"><div class="muted2" style="text-align:center;padding:24px">Загрузка…</div></div>
       ${hint}
@@ -1208,7 +1208,7 @@ function waDealChatModal(dealId){
   const st=stageById(d.stage); const sum=d.sum||dealItemsSum(d); const paid=dealPaid(d); const debt=Math.max(0,sum-paid);
   const money$=seesMoney();
   const items=(d.items||[]).map(c=>{ const mt=matById(c.profileId);
-    return `<div class="stat-line"><span>${mt?mt.type:''} ${c.w}×${c.h}${(c.qty||1)>1?' ·'+c.qty+'шт':''}</span><span class="muted">${openById(c.openId)?.name||''}</span></div>`; }).join('')
+    return `<div class="stat-line"><span>${escA(mt?mt.type:'')} ${c.w}×${c.h}${(c.qty||1)>1?' ·'+c.qty+'шт':''}</span><span class="muted">${escA(openById(c.openId)?.name||'')}</span></div>`; }).join('')
     || '<div class="muted2" style="font-size:12px">Конструкции не добавлены</div>';
   const moneyBlock = money$ ? `
       <div class="stat-line"><span>Сумма заказа</span><span style="font-weight:700">${money(sum)}</span></div>
@@ -1218,13 +1218,13 @@ function waDealChatModal(dealId){
     <div class="wa-deal-info">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
         <span class="av" style="width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:${colorFor(cl.id)};color:#fff;font-weight:700">${initials(cl.name)}</span>
-        <div><div style="font-weight:700">${cl.name} ${d.hot?icon('flame','sm'):''}</div><div class="muted2" style="font-size:11.5px">${cl.phone}</div></div>
+        <div><div style="font-weight:700">${escA(cl.name)} ${d.hot?icon('flame','sm'):''}</div><div class="muted2" style="font-size:11.5px">${escA(cl.phone)}</div></div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
-        <span class="tag">${icon('layers','sm')} ${d.source}</span>
+        <span class="tag">${icon('layers','sm')} ${escA(d.source)}</span>
         <span class="tag">${icon('user','sm')} ${(userById(d.manager)||{}).name||'—'}</span>
       </div>
-      <div class="stat-line"><span>${icon('pin','sm')} Адрес</span><span class="muted" style="text-align:right;max-width:60%">${cl.address}</span></div>
+      <div class="stat-line"><span>${icon('pin','sm')} Адрес</span><span class="muted" style="text-align:right;max-width:60%">${escA(cl.address)}</span></div>
       ${moneyBlock}
       <div class="muted2" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 4px">Конструкции (${(d.items||[]).length})</div>
       ${items}
@@ -1235,8 +1235,8 @@ function waDealChatModal(dealId){
       </div>
     </div>`;
   const hint = (apiOn() && !canSend) ? `<div class="muted2" style="text-align:center;font-size:11px;padding:6px 14px;color:#fbbf24">WhatsApp не подключён — отправка недоступна (Настройки → WhatsApp)</div>` : '';
-  const stageBar = STAGES.map(s=>`<button class="chip ${s.id===d.stage?'on':''}" data-act="wa-move-stage" data-id="${d.id}" data-stage="${s.id}">${s.name}</button>`).join('');
-  openModal(`<div class="modal-h">${icon('wa')}<div><h3>Сделка и чат · ${cl.name}</h3><div class="mh-sub">${cl.phone} · ${st.name}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+  const stageBar = STAGES.map(s=>`<button class="chip ${s.id===d.stage?'on':''}" data-act="wa-move-stage" data-id="${d.id}" data-stage="${s.id}">${escA(s.name)}</button>`).join('');
+  openModal(`<div class="modal-h">${icon('wa')}<div><h3>Сделка и чат · ${escA(cl.name)}</h3><div class="mh-sub">${escA(cl.phone)} · ${escA(st.name)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b" style="padding:0">
       <div class="wa-stagebar"><span class="muted2" style="font-size:11px;margin-right:4px">Стадия:</span>${stageBar}</div>
       <div class="wa-split">
@@ -1551,13 +1551,13 @@ function globalSearch(q){
   const has=s=>(s||'').toLowerCase().includes(q);
   const dealMatch=d=>{ const cl=clientById(d.clientId); return has(cl&&cl.name)||has(d.note); };
   const dealItem=(d,act)=>{ const cl=clientById(d.clientId); const st=stageById(d.stage);
-    return `<button class="sd-item" data-act="${act}" data-id="${d.id}"><span class="dot-i" style="background:${st.color}"></span><span class="sd-main">${cl?cl.name:'—'}</span><span class="sd-sub">${st.name}${d.sum&&seesMoney()?' · '+moneyK(d.sum):''}</span></button>`; };
+    return `<button class="sd-item" data-act="${act}" data-id="${d.id}"><span class="dot-i" style="background:${st.color}"></span><span class="sd-main">${cl?cl.name:'—'}</span><span class="sd-sub">${escA(st.name)}${d.sum&&seesMoney()?' · '+moneyK(d.sum):''}</span></button>`; };
   let html='';
   // поиск показывает только то, к чему у роли есть доступ
   if(canSee('clients')){
     const cls=DB.clients.filter(c=>has(c.name)||has(c.phone)||has(c.address)).slice(0,5);
     if(cls.length) html+=`<div class="sd-group">Клиенты</div>`+cls.map(c=>
-      `<button class="sd-item" data-act="search-open-client" data-id="${c.id}">${avatarXs(c.name,c.id)}<span class="sd-main">${c.name}</span><span class="sd-sub">${c.phone}</span></button>`).join('');
+      `<button class="sd-item" data-act="search-open-client" data-id="${c.id}">${avatarXs(c.name,c.id)}<span class="sd-main">${escA(c.name)}</span><span class="sd-sub">${c.phone}</span></button>`).join('');
   }
   if(canSee('funnel')){
     const dls=DB.deals.filter(dealMatch).slice(0,6);
@@ -1577,8 +1577,8 @@ function globalSearch(q){
     const comps=DB.components.filter(c=>has(c.name)).slice(0,4);
     if(mats.length||comps.length){
       html+=`<div class="sd-group">Склад</div>`
-        + mats.map(m=>`<button class="sd-item" data-act="search-open-wh" data-id="${m.id}" data-kind="mat">${icon('box','sm')}<span class="sd-main">${m.name}</span><span class="sd-sub">профиль · ${m.stock} ${m.unit}</span></button>`).join('')
-        + comps.map(c=>`<button class="sd-item" data-act="search-open-wh" data-id="${c.id}" data-kind="comp">${icon('box','sm')}<span class="sd-main">${c.name}</span><span class="sd-sub">остаток · ${c.stock} ${c.unit}</span></button>`).join('');
+        + mats.map(m=>`<button class="sd-item" data-act="search-open-wh" data-id="${m.id}" data-kind="mat">${icon('box','sm')}<span class="sd-main">${escA(m.name)}</span><span class="sd-sub">профиль · ${m.stock} ${escA(m.unit)}</span></button>`).join('')
+        + comps.map(c=>`<button class="sd-item" data-act="search-open-wh" data-id="${c.id}" data-kind="comp">${icon('box','sm')}<span class="sd-main">${escA(c.name)}</span><span class="sd-sub">остаток · ${c.stock} ${escA(c.unit)}</span></button>`).join('');
     }
   }
   if(!html) html=`<div class="sd-empty">Ничего не найдено</div>`;

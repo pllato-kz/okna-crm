@@ -197,7 +197,8 @@ async function handleWaWebhook(env, body) {
     || (md.typeMessage && md.typeMessage !== 'textMessage' ? '[' + md.typeMessage + ']' : '');
   if (type === 'incomingMessageReceived') {
     let clientId = await waResolveClient(env, chatId);
-    const waName = (sd.senderName || sd.chatName || '').trim();
+    // имя из карточки WhatsApp; убираем угловые скобки (защита от внедрения HTML) и ограничиваем длину
+    const waName = (sd.senderName || sd.chatName || '').replace(/[<>]/g, '').trim().slice(0, 80);
     // новый номер → заводим клиента с именем из карточки WhatsApp
     if (!clientId) {
       const digits = waDigits(String(chatId).split('@')[0]);

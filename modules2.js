@@ -22,7 +22,7 @@ function renderMeasure(){
   const queueCards=queue.map(q=>{const qc=clientById(q.clientId);
     return `<button class="acct" style="padding:11px;min-width:230px;${q.id===d.id?'border-color:var(--accent2);background:var(--accent-soft)':''}" data-act="m-pick" data-id="${q.id}">
       <span class="av" style="width:38px;height:38px;background:${colorFor(qc.id)}">${initials(qc.name)}</span>
-      <span class="ai"><span class="an" style="font-size:13.5px">${qc.name}</span><span class="at">${qc.address.split(',').slice(1,2).join('')||qc.address}</span></span>
+      <span class="ai"><span class="an" style="font-size:13.5px">${escA(qc.name)}</span><span class="at">${escA(qc.address.split(',').slice(1,2).join('')||qc.address)}</span></span>
     </button>`;}).join('');
 
   const calc=computeMeasure(d);
@@ -35,10 +35,10 @@ function renderMeasure(){
   </div>
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)">
     <span class="av" style="width:44px;height:44px;border-radius:11px;display:grid;place-items:center;background:${colorFor(cl.id)};color:#fff;font-weight:700">${initials(cl.name)}</span>
-    <div><div style="font-weight:700;font-size:15px">${cl.name}</div><div class="muted" style="font-size:12.5px">${icon('pin','sm')} ${cl.address}</div></div>
+    <div><div style="font-weight:700;font-size:15px">${escA(cl.name)}</div><div class="muted" style="font-size:12.5px">${icon('pin','sm')} ${escA(cl.address)}</div></div>
     <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
       ${canWa()?`<button class="btn green sm" data-act="wa-deal-chat" data-id="${d.id}">${icon('wa','sm')} Чат WhatsApp</button>`:''}
-      <a class="btn sm" href="tel:${cl.phone.replace(/\s/g,'')}">${icon('phone','sm')} ${cl.phone}</a>
+      <a class="btn sm" href="tel:${escA(cl.phone.replace(/\s/g,''))}">${icon('phone','sm')} ${escA(cl.phone)}</a>
     </div>
   </div>
   <div class="measure-grid">
@@ -75,16 +75,16 @@ function openSymbol(openId, flip){
 }
 function constrCard(c,i){
   const m=matById(c.profileId);
-  const profOpts=DB.materials.map(o=>`<option value="${o.id}" ${o.id===c.profileId?'selected':''}>${o.name} · ${o.series}</option>`).join('');
-  const glassOpts=GLASS.map(g=>`<option value="${g.id}" ${g.id===c.glassId?'selected':''}>${g.name}</option>`).join('');
-  const openChips=OPENINGS.map(o=>`<button class="chip ${o.id===c.openId?'on':''}" data-act="m-open" data-cid="${c.id}" data-v="${o.id}">${o.name}</button>`).join('');
-  const extras=EXTRAS.map(e=>`<button class="ex-toggle ${(c.extras||[]).includes(e.id)?'on':''}" data-act="m-extra" data-cid="${c.id}" data-v="${e.id}">${(c.extras||[]).includes(e.id)?icon('check','sm'):icon('plus','sm')} ${e.name}</button>`).join('');
+  const profOpts=DB.materials.map(o=>`<option value="${o.id}" ${o.id===c.profileId?'selected':''}>${escA(o.name)} · ${escA(o.series)}</option>`).join('');
+  const glassOpts=GLASS.map(g=>`<option value="${g.id}" ${g.id===c.glassId?'selected':''}>${escA(g.name)}</option>`).join('');
+  const openChips=OPENINGS.map(o=>`<button class="chip ${o.id===c.openId?'on':''}" data-act="m-open" data-cid="${c.id}" data-v="${o.id}">${escA(o.name)}</button>`).join('');
+  const extras=EXTRAS.map(e=>`<button class="ex-toggle ${(c.extras||[]).includes(e.id)?'on':''}" data-act="m-extra" data-cid="${c.id}" data-v="${e.id}">${(c.extras||[]).includes(e.id)?icon('check','sm'):icon('plus','sm')} ${escA(e.name)}</button>`).join('');
   const cnt=c.sashes||1; const sashes=[];
   for(let s=0;s<cnt;s++){ const flip = s>=Math.ceil(cnt/2); sashes.push(`<div class="win-sash">${openSymbol(c.openId, flip)}</div>`); }
   return `<div class="constr" data-cid="${c.id}">
     <div class="constr-h">
       <span class="ci">${icon('ruler','sm')}</span>
-      <span class="cn">Конструкция ${i+1} · ${m?m.type:''}</span>
+      <span class="cn">Конструкция ${i+1} · ${escA(m?m.type:'')}</span>
       <span class="cp" id="cprice-${c.id}">${money(constrPrice(c))}</span>
       <button class="x" style="width:30px;height:30px" data-act="m-del" data-cid="${c.id}">${icon('x','sm')}</button>
     </div>
@@ -147,11 +147,11 @@ function initMeasureBindings(){
 function kpDocHtml(d){
   const cl=clientById(d.clientId); const k=computeMeasure(d);
   const rows=(d.items||[]).map((c,i)=>{const m=matById(c.profileId);
-    return `<tr><td>${i+1}</td><td>${m.name} (${m.series})<br><span style="color:#64748b">${c.w}×${c.h}мм, ${openById(c.openId).name}, ${c.sashes} ств., ${glassById(c.glassId).name}</span></td><td style="text-align:center">${c.qty||1}</td><td style="text-align:right">${money(constrPrice(c))}</td></tr>`;}).join('');
+    return `<tr><td>${i+1}</td><td>${escA(m.name)} (${escA(m.series)})<br><span style="color:#64748b">${c.w}×${c.h}мм, ${escA(openById(c.openId).name)}, ${c.sashes} ств., ${escA(glassById(c.glassId).name)}</span></td><td style="text-align:center">${c.qty||1}</td><td style="text-align:right">${money(constrPrice(c))}</td></tr>`;}).join('');
   return `<div class="kp-doc">
-        <div class="kp-co"><div><h2>${DB.company.name}</h2><div style="color:#64748b;font-size:12px">${DB.company.legal} · ${DB.company.city}<br>${DB.company.phone}</div></div>
+        <div class="kp-co"><div><h2>${escA(DB.company.name)}</h2><div style="color:#64748b;font-size:12px">${escA(DB.company.legal)} · ${escA(DB.company.city)}<br>${escA(DB.company.phone)}</div></div>
           <div style="text-align:right;font-size:12px;color:#64748b">КП №${d.id.replace('d','')}-${new Date().getFullYear()}<br>${dateFull(SEED_NOW)}</div></div>
-        <div style="font-size:13px;margin-bottom:6px">Заказчик: <b>${cl.name}</b>, ${cl.address}</div>
+        <div style="font-size:13px;margin-bottom:6px">Заказчик: <b>${escA(cl.name)}</b>, ${escA(cl.address)}</div>
         <table><thead><tr><th>№</th><th>Наименование</th><th style="text-align:center">Кол-во</th><th style="text-align:right">Стоимость</th></tr></thead><tbody>${rows}</tbody></table>
         <div style="text-align:right;color:#64748b;font-size:12.5px">Сумма: ${money(k.subtotal)}${k.discount?` · Скидка: −${money(k.discount)}`:''}</div>
         <div class="kp-tot">Итого к оплате: ${money(k.total)}</div>
@@ -161,7 +161,7 @@ function kpDocHtml(d){
 function openKp(id){
   const d=dealById(id); if(!d) return; const cl=clientById(d.clientId); const k=computeMeasure(d);
   openModal(`
-    <div class="modal-h">${icon('doc')}<div><h3>Коммерческое предложение</h3><div class="mh-sub">${cl.name} · сформировано ${dateFull(SEED_NOW)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-h">${icon('doc')}<div><h3>Коммерческое предложение</h3><div class="mh-sub">${escA(cl.name)} · сформировано ${dateFull(SEED_NOW)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b">
       ${kpDocHtml(d)}
     </div>
@@ -188,7 +188,7 @@ function printKp(id){
     .kp-doc .kp-tot{text-align:right;font-size:16px;font-weight:800;color:#0b1220;margin-top:6px}
     .kp-doc .kp-pre{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 14px;margin-top:14px;color:#1e3a8a}
     @page{margin:14mm}`;
-  w.document.write(`<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><title>КП — ${cl.name}</title><style>${css}</style></head><body><div class="wrap">${kpDocHtml(d)}</div><script>window.onload=function(){window.focus();window.print();};<\/script></body></html>`);
+  w.document.write(`<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><title>КП — ${escA(cl.name)}</title><style>${css}</style></head><body><div class="wrap">${kpDocHtml(d)}</div><script>window.onload=function(){window.focus();window.print();};<\/script></body></html>`);
   w.document.close();
 }
 
@@ -215,19 +215,19 @@ function renderWarehouse(){
   if(tab==='profile'){
     const list=DB.materials.filter(m=>(!q||[m.name,m.supplier,m.series].some(v=>(v||'').toLowerCase().includes(q)))&&(!lowOnly||m.stock<m.min));
     const rows=list.map(m=>{const low=m.stock<m.min; const pct=Math.min(100,m.stock/(m.min*2)*100);
-      return `<tr data-wh-row="${m.id}"><td><div style="font-weight:600">${m.name}</div><div class="muted2" style="font-size:11.5px">${m.supplier}</div></td>
-        <td><span class="tag ${m.type==='ПВХ'?'cyan':'violet'}">${m.type}</span></td>
-        <td><span class="tag ${m.series==='Премиум'?'amber':m.series==='Средняя'?'blue':''}">${m.series}</span></td>
+      return `<tr data-wh-row="${m.id}"><td><div style="font-weight:600">${escA(m.name)}</div><div class="muted2" style="font-size:11.5px">${escA(m.supplier)}</div></td>
+        <td><span class="tag ${m.type==='ПВХ'?'cyan':'violet'}">${escA(m.type)}</span></td>
+        <td><span class="tag ${m.series==='Премиум'?'amber':m.series==='Средняя'?'blue':''}">${escA(m.series)}</span></td>
         ${showCost?`<td class="num">${money(m.rate)}/м²</td>`:''}
-        <td style="min-width:160px"><div style="display:flex;align-items:center;gap:10px"><div class="mini-bar"><i style="width:${pct}%;background:${low?'var(--red)':'var(--green)'}"></i></div><span style="font-weight:700;white-space:nowrap">${m.stock} ${m.unit}</span></div></td>
+        <td style="min-width:160px"><div style="display:flex;align-items:center;gap:10px"><div class="mini-bar"><i style="width:${pct}%;background:${low?'var(--red)':'var(--green)'}"></i></div><span style="font-weight:700;white-space:nowrap">${m.stock} ${escA(m.unit)}</span></div></td>
         <td>${low?`<span class="tag red">${icon('alert','sm')} мало</span>`:'<span class="tag green">в норме</span>'}</td>
         ${actCell(m.id,'mat')}</tr>`;}).join('') || `<tr><td colspan="${showCost?7:6}" class="muted" style="text-align:center;padding:24px">Ничего не найдено</td></tr>`;
     body=whFilterBar+`<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Профиль</th><th>Тип</th><th>Серия</th>${showCost?'<th class="num">Цена</th>':''}<th>Остаток</th><th>Статус</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
   } else if(tab==='comp'){
     const list=DB.components.filter(c=>(!q||(c.name||'').toLowerCase().includes(q))&&(!lowOnly||c.stock<c.min));
     const rows=list.map(c=>{const low=c.stock<c.min; const pct=Math.min(100,c.stock/(c.min*2)*100);
-      return `<tr data-wh-row="${c.id}"><td style="font-weight:600">${c.name}</td>
-        <td style="min-width:200px"><div style="display:flex;align-items:center;gap:10px"><div class="mini-bar"><i style="width:${pct}%;background:${low?'var(--red)':'var(--green)'}"></i></div><span style="font-weight:700;white-space:nowrap">${c.stock} ${c.unit}</span></div></td>
+      return `<tr data-wh-row="${c.id}"><td style="font-weight:600">${escA(c.name)}</td>
+        <td style="min-width:200px"><div style="display:flex;align-items:center;gap:10px"><div class="mini-bar"><i style="width:${pct}%;background:${low?'var(--red)':'var(--green)'}"></i></div><span style="font-weight:700;white-space:nowrap">${c.stock} ${escA(c.unit)}</span></div></td>
         <td class="muted">мин. ${c.min}</td>
         <td>${low?`<span class="tag red">${icon('alert','sm')} дозаказать</span>`:'<span class="tag green">в норме</span>'}</td>
         ${actCell(c.id,'comp')}</tr>`;}).join('') || `<tr><td colspan="5" class="muted" style="text-align:center;padding:24px">Ничего не найдено</td></tr>`;
@@ -254,14 +254,14 @@ function renderWarehouse(){
       <input type="date" data-act="wh-mv-to" value="${state.whMoveTo||''}" style="${dInpSt}${fp==='date'?';border-color:var(--accent2)':''}">`;
     const rows=list.map(m=>{const mt=moveType(m.type); const u=userById(m.who);
       const qcell=m.dir==='in'
-        ? `<span style="color:#4ade80;font-weight:700;white-space:nowrap">+${m.qty} ${m.unit||''}</span>`
-        : `<span style="color:#f87171;font-weight:700;white-space:nowrap">−${m.qty} ${m.unit||''}</span>`;
+        ? `<span style="color:#4ade80;font-weight:700;white-space:nowrap">+${m.qty} ${escA(m.unit||'')}</span>`
+        : `<span style="color:#f87171;font-weight:700;white-space:nowrap">−${m.qty} ${escA(m.unit||'')}</span>`;
       return `<tr><td class="muted" style="white-space:nowrap">${dateStr(m.at)}</td>
-        <td style="font-weight:600">${m.name||m.itemId}</td>
+        <td style="font-weight:600">${escA(m.name||m.itemId)}</td>
         <td><span class="tag ${mt.color}">${mt.dir==='in'?icon('arrow','sm'):icon('trash','sm')} ${mt.label}</span></td>
-        <td class="muted">${m.reason||'—'}</td>
+        <td class="muted">${escA(m.reason||'—')}</td>
         <td class="num">${qcell}</td>
-        <td class="muted" style="white-space:nowrap">${u?u.name:'—'}</td></tr>`;}).join('');
+        <td class="muted" style="white-space:nowrap">${escA(u?u.name:'—')}</td></tr>`;}).join('');
     const inSum=filtered.filter(m=>m.dir==='in').length, outSum=filtered.filter(m=>m.dir==='out').length;
     body=`<div style="padding:14px 18px;border-bottom:1px solid var(--line)">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><span class="muted2" style="font-size:11.5px;min-width:64px">Операция</span><div class="chips">${typeChips}</div></div>
@@ -283,7 +283,7 @@ function renderWarehouse(){
     ${tab==='comp'?`<button class="btn primary sm" data-act="wh-item-add" data-kind="comp">${icon('plus','sm')} Комплектующее</button>`:''}
     ${(seesMoney()&&(tab==='profile'||tab==='comp'))?`<button class="btn sm" style="margin-left:auto" data-act="import-wh" data-kind="${tab==='profile'?'mat':'comp'}">${icon('arrow','sm')} Импорт</button>`:''}
     <button class="btn sm" ${(seesMoney()&&(tab==='profile'||tab==='comp'))?'':'style="margin-left:auto"'} data-act="export" data-what="warehouse">${icon('doc','sm')} Экспорт</button></div>
-  <div class="panel"><div class="panel-h">${icon('warehouse')}<h3>${tab==='moves'?'Журнал движений':'Остатки на складе'}</h3><span class="ph-sub">${DB.company.city}</span></div>${body}</div>`;
+  <div class="panel"><div class="panel-h">${icon('warehouse')}<h3>${tab==='moves'?'Журнал движений':'Остатки на складе'}</h3><span class="ph-sub">${escA(DB.company.city)}</span></div>${body}</div>`;
 }
 
 /* ============ PRODUCTION ============ */
@@ -298,14 +298,14 @@ function renderProduction(){
       const spec=(d.items||[]).map(c=>`${matById(c.profileId)?.type||''} ${c.w}×${c.h}`).slice(0,3).join(' · ');
       const winCount=(d.items||[]).reduce((s,c)=>s+(c.qty||1),0);
       return `<div class="kcard" draggable="true" data-pcard="${d.id}" data-act="open-prod" data-id="${d.id}" style="border-left-color:${col}">
-        <div class="kc-client">${cl.name}</div>
+        <div class="kc-client">${escA(cl.name)}</div>
         <div class="kc-addr">${icon('box','sm')} ${winCount} констр.</div>
         <div class="muted2" style="font-size:11.5px;margin-top:8px">${spec||'—'}</div>
-        <div class="kc-meta"><span class="tag" style="font-size:10.5px">${stageById(d.stage).name}</span><span class="kc-days">${icon('pin','sm')} ${cl.address.split(',')[0]}</span></div>
+        <div class="kc-meta"><span class="tag" style="font-size:10.5px">${escA(stageById(d.stage).name)}</span><span class="kc-days">${icon('pin','sm')} ${escA(cl.address.split(',')[0])}</span></div>
       </div>`;}).join('')||`<div class="muted2" style="font-size:12px;text-align:center;padding:14px 0">пусто</div>`;
     const locked=SYSTEM_PROD_IDS.includes(ps.id);
     const head = editing
-      ? `<span class="dot-i" style="background:${col}"></span><span class="kc-name">${ps.name}</span>
+      ? `<span class="dot-i" style="background:${col}"></span><span class="kc-name">${escA(ps.name)}</span>
          <span style="margin-left:auto;display:flex;gap:2px;align-items:center">
            <button class="x" data-act="prod-stage-move" data-id="${ps.id}" data-dir="left" title="Левее" style="width:22px;height:26px;font-size:16px${idx===0?';opacity:.25;pointer-events:none':''}">‹</button>
            <button class="x" data-act="prod-stage-move" data-id="${ps.id}" data-dir="right" title="Правее" style="width:22px;height:26px;font-size:16px${idx===PROD_STAGES.length-1?';opacity:.25;pointer-events:none':''}">›</button>
@@ -313,7 +313,7 @@ function renderProduction(){
            ${locked
              ? `<span class="muted2" style="display:inline-grid;place-items:center;width:26px;height:26px" title="Системный этап: списание материалов / переход на монтаж — удалить нельзя">${icon('lock','sm')}</span>`
              : `<button class="x" style="width:26px;height:26px" data-act="prod-stage-del" data-id="${ps.id}" title="Удалить этап">${icon('trash','sm')}</button>`}</span>`
-      : `<span class="dot-i" style="background:${col}"></span><span class="kc-name">${ps.name}</span><span class="kc-count">${arr.length}</span>`;
+      : `<span class="dot-i" style="background:${col}"></span><span class="kc-name">${escA(ps.name)}</span><span class="kc-count">${arr.length}</span>`;
     return `<div class="kcol" style="flex-basis:250px"><div class="kcol-h">${head}</div><div class="kcol-b" data-pdrop="${ps.id}">${cards}</div></div>`;
   }).join('') + (editing ? `<div class="kcol" style="flex-basis:200px;border-style:dashed;display:grid;place-items:center;min-height:120px"><button class="btn sm" data-act="prod-stage-add">${icon('plus','sm')} Этап</button></div>` : '');
   return `
@@ -329,10 +329,10 @@ function renderProduction(){
 function openProd(id){
   const d=dealById(id); if(!d) return; const cl=clientById(d.clientId);
   const items=(d.items||[]).map((c,i)=>{const m=matById(c.profileId);
-    return `<tr><td>${i+1}</td><td>${m.name}</td><td>${c.w}×${c.h}мм</td><td>${glassById(c.glassId).name}</td><td>${openById(c.openId).name}, ${c.sashes}ств</td><td style="text-align:center">${c.qty||1}</td></tr>`;}).join('');
-  const stageOpts=PROD_STAGES.map(s=>`<button class="chip ${s.id===(d.prodStage||'queue')?'on':''}" data-act="move-prod" data-id="${d.id}" data-stage="${s.id}">${s.name}</button>`).join('');
+    return `<tr><td>${i+1}</td><td>${escA(m.name)}</td><td>${c.w}×${c.h}мм</td><td>${escA(glassById(c.glassId).name)}</td><td>${escA(openById(c.openId).name)}, ${c.sashes}ств</td><td style="text-align:center">${c.qty||1}</td></tr>`;}).join('');
+  const stageOpts=PROD_STAGES.map(s=>`<button class="chip ${s.id===(d.prodStage||'queue')?'on':''}" data-act="move-prod" data-id="${d.id}" data-stage="${s.id}">${escA(s.name)}</button>`).join('');
   openModal(`
-    <div class="modal-h">${icon('production')}<div><h3>Заказ · ${cl.name}</h3><div class="mh-sub">${icon('pin','sm')} ${cl.address}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-h">${icon('production')}<div><h3>Заказ · ${escA(cl.name)}</h3><div class="mh-sub">${icon('pin','sm')} ${escA(cl.address)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b">
       <div class="fld full" style="margin-bottom:16px"><label>Этап производства — нажмите, чтобы переключить</label><div class="chips oneline">${stageOpts}</div></div>
       <div class="panel"><div class="panel-h" style="padding:12px 14px">${icon('ruler','sm')}<h3 style="font-size:13.5px">Спецификация (для цеха)</h3></div>
@@ -356,8 +356,8 @@ function renderFinance(){
   if(tab==='recv'){
     const rows=debtors.map(d=>{const cl=clientById(d.clientId); const debt=dealDebt(d); const paid=dealPaid(d);
       const overdue=['done'].includes(d.stage);
-      return `<tr><td><div class="cell-name">${avatarXs(cl.name,cl.id)}<span style="font-weight:600">${cl.name}</span></div></td>
-        <td class="muted">${stageById(d.stage).name}</td>
+      return `<tr><td><div class="cell-name">${avatarXs(cl.name,cl.id)}<span style="font-weight:600">${escA(cl.name)}</span></div></td>
+        <td class="muted">${escA(stageById(d.stage).name)}</td>
         <td class="num">${money(d.sum)}</td><td class="num" style="color:#4ade80">${money(paid)}</td>
         <td class="num" style="color:#fbbf24;font-weight:700">${money(debt)}</td>
         <td>${overdue?'<span class="tag red">требует оплаты</span>':'<span class="tag amber">в графике</span>'}</td>
@@ -366,7 +366,7 @@ function renderFinance(){
   } else if(tab==='pay'){
     const rows=DB.payables.map(p=>{
       const stt=p.status==='оплачено'?'<span class="tag green">оплачено</span>':(p.status==='просрочено'?'<span class="tag red">просрочено</span>':'<span class="tag amber">ожидает</span>');
-      return `<tr style="${p.status==='оплачено'?'opacity:.6':''}"><td style="font-weight:600">${p.supplier}</td><td class="muted">${p.forWhat||''}</td>
+      return `<tr style="${p.status==='оплачено'?'opacity:.6':''}"><td style="font-weight:600">${escA(p.supplier)}</td><td class="muted">${escA(p.forWhat||'')}</td>
       <td class="num" style="font-weight:700">${money(p.amount)}</td><td class="muted">${p.due?dateFull(p.due):'—'}</td>
       <td>${stt}</td>
       <td class="row-acts" style="white-space:nowrap;text-align:right">
@@ -438,7 +438,7 @@ function renderFinance(){
 function catTable(type){
   const cfg=CATALOGS_EDIT[type]; if(!cfg) return '';
   const perOf=p=>({'шт':'за штуку','м':'за пог.м','периметр':'по периметру'})[p]||p;
-  const rows=cfg.arr().map(x=>`<tr><td style="font-weight:600">${x.name}</td>
+  const rows=cfg.arr().map(x=>`<tr><td style="font-weight:600">${escA(x.name)}</td>
     <td class="num"><span style="display:flex;justify-content:flex-end;white-space:nowrap"><span>${money(x[cfg.priceKey])}</span><span class="muted2" style="flex:0 0 64px;text-align:left;font-weight:400;padding-left:3px">${cfg.suffix||''}</span></span></td>
     <td class="muted">${cfg.hasPer?perOf(x.per):''}</td>
     <td class="row-acts" style="text-align:right;white-space:nowrap">
@@ -498,8 +498,8 @@ function renderSettings(){
       <button class="btn sm ghost" data-act="edit-user" data-id="${u.id}" title="Изменить">${icon('edit','sm')}</button>
       <button class="btn sm ghost" data-act="user-pass" data-id="${u.id}" title="Сменить пароль">${icon('lock','sm')}</button>
       ${self?'':`<button class="btn sm ghost" data-act="del-user" data-id="${u.id}" title="Удалить">${icon('trash','sm')}</button>`}</td>` : '';
-    return `<tr><td><div class="cell-name">${avatarXs(u.name,u.id)}<span style="font-weight:600">${u.name}</span></div></td>
-      <td><span class="tag blue">${roleRu(u.role)}</span></td><td class="muted">${u.title}</td>${acts}</tr>`;
+    return `<tr><td><div class="cell-name">${avatarXs(u.name,u.id)}<span style="font-weight:600">${escA(u.name)}</span></div></td>
+      <td><span class="tag blue">${roleRu(u.role)}</span></td><td class="muted">${escA(u.title)}</td>${acts}</tr>`;
   }).join('');
   const mods=Object.keys(MODULE_META);
   const permHead=`<tr><th>Модуль</th>${ROLES.map(r=>`<th style="text-align:center;white-space:nowrap">${escA(r.name)}${dir&&!r.sys?`<button class="x" style="width:19px;height:19px;display:inline-grid;vertical-align:middle;margin-left:5px" data-act="del-role" data-id="${r.id}" title="Удалить роль «${escA(r.name)}»">${icon('x','sm')}</button>`:''}</th>`).join('')}</tr>`;
@@ -535,11 +535,11 @@ function renderSettings(){
   return `
   <div class="grid-2b">
     <div class="panel"><div class="panel-h">${icon('settings')}<h3>Компания</h3>${coEdit}</div><div class="panel-b">
-      <div class="stat-line"><span>Название</span><span style="font-weight:600">${DB.company.legal}</span></div>
-      <div class="stat-line"><span>Город</span><span>${DB.company.city}</span></div>
-      <div class="stat-line"><span>Телефон</span><span>${DB.company.phone}</span></div>
-      <div class="stat-line"><span>Производство</span><span style="text-align:right">${DB.company.workshop}</span></div>
-      <div class="stat-line"><span>Оборот</span><span>${DB.company.revenueYear}</span></div>
+      <div class="stat-line"><span>Название</span><span style="font-weight:600">${escA(DB.company.legal)}</span></div>
+      <div class="stat-line"><span>Город</span><span>${escA(DB.company.city)}</span></div>
+      <div class="stat-line"><span>Телефон</span><span>${escA(DB.company.phone)}</span></div>
+      <div class="stat-line"><span>Производство</span><span style="text-align:right">${escA(DB.company.workshop)}</span></div>
+      <div class="stat-line"><span>Оборот</span><span>${escA(DB.company.revenueYear)}</span></div>
     </div></div>
     <div class="panel"><div class="panel-h">${icon('clients')}<h3>Сотрудники</h3><span class="ph-sub">${DB.users.length}</span>${usAdd}</div>
       <div class="tbl-scroll"><table class="tbl"><tbody>${emps}</tbody></table></div></div>
