@@ -1111,6 +1111,36 @@ function clearSearch(){
   const dd=document.getElementById('search-dd'); if(dd){ dd.classList.remove('open'); dd.innerHTML=''; }
   const si=document.getElementById('global-search'); if(si) si.value='';
 }
+// подсветить и прокрутить элемент к центру (после перерисовки)
+function flashEl(sel){
+  requestAnimationFrame(()=>setTimeout(()=>{
+    const el=document.querySelector(sel); if(!el) return;
+    try{ el.scrollIntoView({behavior:'smooth', block:'center', inline:'center'}); }catch(e){ el.scrollIntoView(); }
+    el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'), 1900);
+  }, 70));
+}
+// из поиска: открыть Воронку, прокрутить к нужной стадии/карточке и открыть сделку
+function searchOpenDeal(id){
+  const d=dealById(id); if(!d){ openDeal(id); return; }
+  clearSearch();
+  if(!canSee('funnel')){ openDeal(id); return; }
+  state.module='funnel'; state.sideOpen=false;
+  state.funnelMgr='all'; state.funnelStage='all'; state.funnelSrc='all'; // снять фильтры, чтобы карточка была видна
+  render();
+  flashEl(`.kcard[data-card="${id}"]`);
+  openDeal(id);
+}
+// из поиска: открыть Клиентов, прокрутить к строке клиента и открыть карточку
+function searchOpenClient(id){
+  const cl=clientById(id); if(!cl){ openClient(id); return; }
+  clearSearch();
+  if(!canSee('clients')){ openClient(id); return; }
+  state.module='clients'; state.sideOpen=false;
+  state.clientType='all'; state.clientDebt='all'; state.clientSearch=''; // снять фильтры, чтобы строка была видна
+  render();
+  flashEl(`tr[data-act="open-client"][data-id="${id}"]`);
+  openClient(id);
+}
 function globalSearch(q){
   const dd=document.getElementById('search-dd'); if(!dd) return;
   q=(q||'').trim().toLowerCase();
@@ -1120,12 +1150,12 @@ function globalSearch(q){
   if(canSee('clients')){
     const cls=DB.clients.filter(c=>has(c.name)||has(c.phone)||has(c.address)).slice(0,5);
     if(cls.length) html+=`<div class="sd-group">Клиенты</div>`+cls.map(c=>
-      `<button class="sd-item" data-act="open-client" data-id="${c.id}">${avatarXs(c.name,c.id)}<span class="sd-main">${c.name}</span><span class="sd-sub">${c.phone}</span></button>`).join('');
+      `<button class="sd-item" data-act="search-open-client" data-id="${c.id}">${avatarXs(c.name,c.id)}<span class="sd-main">${c.name}</span><span class="sd-sub">${c.phone}</span></button>`).join('');
   }
   if(canSee('funnel')){
     const dls=DB.deals.filter(d=>{const cl=clientById(d.clientId); return has(cl&&cl.name)||has(d.note);}).slice(0,6);
     if(dls.length) html+=`<div class="sd-group">Сделки</div>`+dls.map(d=>{const cl=clientById(d.clientId);const st=stageById(d.stage);
-      return `<button class="sd-item" data-act="open-deal" data-id="${d.id}"><span class="dot-i" style="background:${st.color}"></span><span class="sd-main">${cl.name}</span><span class="sd-sub">${st.name}${d.sum?' · '+moneyK(d.sum):''}</span></button>`;}).join('');
+      return `<button class="sd-item" data-act="search-open-deal" data-id="${d.id}"><span class="dot-i" style="background:${st.color}"></span><span class="sd-main">${cl.name}</span><span class="sd-sub">${st.name}${d.sum?' · '+moneyK(d.sum):''}</span></button>`;}).join('');
   }
   if(!html) html=`<div class="sd-empty">Ничего не найдено</div>`;
   dd.innerHTML=html; dd.classList.add('open');
@@ -1165,6 +1195,8 @@ document.addEventListener('click', e=>{
     case 'kpi-nav': { const mod=t.dataset.mod; if(!canSee(mod)){ toast('Нет доступа к разделу','warn'); break; } state.module=mod; state.sideOpen=false; if(mod==='finance'&&t.dataset.tab) state.financeTab=t.dataset.tab; render(); } break;
     case 'go-measure-deal': state.measureDealId=id; state.module='measure'; closeModal(); render(); break;
     case 'open-deal': openDeal(id); clearSearch(); break;
+    case 'search-open-deal': searchOpenDeal(id); break;
+    case 'search-open-client': searchOpenClient(id); break;
     case 'move-stage': moveStage(id, t.dataset.stage); break;
     case 'wa-move-stage': waMoveStage(id, t.dataset.stage); break;
     case 'new-deal': newDealModal(); break;
