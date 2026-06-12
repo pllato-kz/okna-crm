@@ -264,7 +264,7 @@ function buildNotifs(){
 }
 function notifModal(){
   const list=buildNotifs();
-  const items=list.map(n=>`<div class="tl-item" ${n.dealId?`data-act="open-deal" data-id="${n.dealId}" style="cursor:pointer"`:''}>
+  const items=list.map(n=>`<div class="tl-item" ${n.dealId?`data-act="goto-deal" data-id="${n.dealId}" style="cursor:pointer"`:''}>
       <div class="tl-dot" style="background:${n.color}24;color:${n.color}">${icon(n.icon,'sm')}</div>
       <div class="tl-c"><div class="tl-t">${n.title}</div><div class="tl-d">${n.sub}</div></div></div>`).join('')
     || '<div class="muted" style="padding:18px;text-align:center">Новых уведомлений нет 🎉</div>';

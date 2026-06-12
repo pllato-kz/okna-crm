@@ -1199,6 +1199,16 @@ function searchOpenProdDeal(id){
   flashEl(`.kcard[data-pcard="${id}"]`);
   if(typeof openProd==='function') openProd(id);
 }
+// из задач/уведомлений: открыть раздел сделки по правам роли + карточку с прокруткой
+function gotoDeal(id){
+  const d=dealById(id); if(!d){ openDeal(id); return; }
+  if(canSee('funnel')) return searchOpenDeal(id);
+  if(d.stage==='measure' && canSee('measure')) return searchOpenMeasureDeal(id);
+  if(['production','install'].includes(d.stage) && canSee('production')) return searchOpenProdDeal(id);
+  if(canSee('production')) return searchOpenProdDeal(id);
+  if(canSee('measure')) return searchOpenMeasureDeal(id);
+  openDeal(id);
+}
 // из поиска: позиция склада → раздел «Склад», нужная вкладка, прокрутка к строке
 function searchOpenWhItem(id, kind){
   clearSearch();
@@ -1291,6 +1301,7 @@ document.addEventListener('click', e=>{
     case 'kpi-nav': { const mod=t.dataset.mod; if(!canSee(mod)){ toast('Нет доступа к разделу','warn'); break; } state.module=mod; state.sideOpen=false; if(mod==='finance'&&t.dataset.tab) state.financeTab=t.dataset.tab; render(); } break;
     case 'go-measure-deal': state.measureDealId=id; state.module='measure'; closeModal(); render(); break;
     case 'open-deal': openDeal(id); clearSearch(); break;
+    case 'goto-deal': gotoDeal(id); break;
     case 'search-open-deal': searchOpenDeal(id); break;
     case 'search-open-client': searchOpenClient(id); break;
     case 'search-open-measure': searchOpenMeasureDeal(id); break;
