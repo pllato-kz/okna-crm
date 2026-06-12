@@ -54,16 +54,16 @@ function renderDashboard(){
 
   return `
   <div class="cards-row">
-    ${kpi({icon:'money',label:'Выручка за месяц',value:moneyK(monthRevenue),color:'#16a34a',soft:'var(--green-soft)',sub:'<span class="up">▲ 18%</span> к апрелю',subClass:''})}
-    ${kpi({icon:'trend',label:'Эффективность продаж',value:conv+'%',color:'#2563eb',sub:`${won.length} из ${deals.length} сделок выиграно`})}
-    ${kpi({icon:'wallet',label:'Дебиторка (нам должны)',value:moneyK(debt),color:'#d97706',soft:'var(--amber-soft)',sub:'Открыть отчёт →',act:'go-finance'})}
-    ${kpi({icon:'doc',label:'Кредиторка (мы должны)',value:moneyK(payable),color:'#dc2626',soft:'var(--red-soft)',sub:`${DB.payables.length} поставщиков`})}
+    ${kpi({icon:'money',label:'Выручка за месяц',value:moneyK(monthRevenue),color:'#16a34a',soft:'var(--green-soft)',sub:'<span class="up">▲ 18%</span> к апрелю',subClass:'',nav:'finance',tab:'pl'})}
+    ${kpi({icon:'trend',label:'Эффективность продаж',value:conv+'%',color:'#2563eb',sub:`${won.length} из ${deals.length} сделок выиграно`,nav:'funnel'})}
+    ${kpi({icon:'wallet',label:'Дебиторка (нам должны)',value:moneyK(debt),color:'#d97706',soft:'var(--amber-soft)',sub:'Открыть отчёт →',nav:'finance',tab:'recv'})}
+    ${kpi({icon:'doc',label:'Кредиторка (мы должны)',value:moneyK(payable),color:'#dc2626',soft:'var(--red-soft)',sub:`${DB.payables.length} поставщиков`,nav:'finance',tab:'pay'})}
   </div>
   <div class="cards-row section-gap">
-    ${kpi({icon:'funnel',label:'Активные сделки',value:activeLeads,color:'#7c3aed',sub:'в работе сейчас'})}
-    ${kpi({icon:'money',label:'Средний чек',value:moneyK(avg),color:'#0891b2'})}
-    ${kpi({icon:'production',label:'В производстве',value:inProd,color:'#db2777',sub:'заказов на линии',act:'go-prod'})}
-    ${kpi({icon:'money',label:'Всего получено',value:moneyK(revenue),color:'#16a34a'})}
+    ${kpi({icon:'funnel',label:'Активные сделки',value:activeLeads,color:'#7c3aed',sub:'в работе сейчас',nav:'funnel'})}
+    ${kpi({icon:'money',label:'Средний чек',value:moneyK(avg),color:'#0891b2',nav:'finance',tab:'pl'})}
+    ${kpi({icon:'production',label:'В производстве',value:inProd,color:'#db2777',sub:'заказов на линии',nav:'production'})}
+    ${kpi({icon:'money',label:'Всего получено',value:moneyK(revenue),color:'#16a34a',nav:'finance',tab:'pl'})}
   </div>
 
   <div class="grid-2 section-gap">
