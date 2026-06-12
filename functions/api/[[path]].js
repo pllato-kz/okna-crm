@@ -65,6 +65,54 @@ const ADMIN_WRITE = new Set(['users','company','module_roles','roles','modules',
   'payable_statuses','activity_kinds']);
 const isWrite = (m) => m === 'POST' || m === 'PUT' || m === 'PATCH' || m === 'DELETE';
 
+/* ============ РОЛЕВОЙ ДОСТУП К ДАННЫМ (RBAC) ============ */
+// Зеркалит матрицу прав фронта (MODULE_ROLES). Раньше права жили только в UI —
+// бэкенд пускал любого авторизованного к деньгам и чужим данным. Теперь гейтим тут.
+const FINANCE_ROLES   = new Set(['director', 'manager']);                          // видят/правят деньги (finance, clients)
+const DEAL_WRITE_ROLES = new Set(['director', 'manager', 'surveyor']);            // позиции замера и задачи
+const DEAL_OPS_ROLES  = new Set(['director', 'manager', 'surveyor', 'production', 'warehouse']); // сама сделка: стадии цеха двигают цех и склад
+const WAREHOUSE_ROLES = new Set(['director', 'manager', 'warehouse', 'production']); // правят склад
+const isFinance = (role) => FINANCE_ROLES.has(role);
+
+// Политика по ресурсам: read/write/del — наборы ролей; null = любой авторизованный.
+// Денежные ресурсы (payments/payables) и денежные поля сделки — только finance-роли.
+const RESOURCE_POLICY = {
+  clients:             { read: null,          write: FINANCE_ROLES,    del: FINANCE_ROLES },
+  deals:               { read: null,          write: DEAL_OPS_ROLES,   del: FINANCE_ROLES },
+  deal_items:          { read: null,          write: DEAL_WRITE_ROLES },
+  deal_item_extras:    { read: null,          write: DEAL_WRITE_ROLES },
+  tasks:               { read: null,          write: DEAL_WRITE_ROLES },
+  activity:            { read: null,          write: null },
+  materials:           { read: null,          write: WAREHOUSE_ROLES, del: FINANCE_ROLES },
+  components:          { read: null,          write: WAREHOUSE_ROLES, del: FINANCE_ROLES },
+  warehouse_movements: { read: null,          write: WAREHOUSE_ROLES },
+  payments:            { read: FINANCE_ROLES, write: FINANCE_ROLES, money: true },
+  payables:            { read: FINANCE_ROLES, write: FINANCE_ROLES, money: true },
+};
+// Денежные поля сделки: не отдаём и не принимаем от не-finance ролей (иначе сборщик
+// и склад видят/затирают суммы; редактируя стадию производства, обнулили бы sum).
+const MONEY_DEAL_FIELDS = ['sum', 'discount', 'prepay_pct'];
+function redactDealMoney(d) {
+  if (!d) return d;
+  for (const f of MONEY_DEAL_FIELDS) delete d[f];
+  if ('payments' in d) d.payments = [];
+  return d;
+}
+// Проверка политики для generic-ресурса; возвращает текст ошибки или null (ок).
+function policyDeny(resource, method, role) {
+  const pol = RESOURCE_POLICY[resource];
+  if (!pol) return null;
+  if (method === 'GET') {
+    if (pol.read && !pol.read.has(role)) return 'Нет доступа к этим данным';
+  } else if (method === 'DELETE') {
+    const set = pol.del || pol.write;
+    if (set && !set.has(role)) return 'Недостаточно прав для удаления';
+  } else if (isWrite(method)) {
+    if (pol.write && !pol.write.has(role)) return 'Недостаточно прав для изменения';
+  }
+  return null;
+}
+
 const uid = (p = 'id') => `${p}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
 
 /* ============ DB-ХЕЛПЕРЫ (generic) ============ */
@@ -113,8 +161,8 @@ async function getCatalogs(env) {
   for (const name of CATALOGS) out[name] = await listRows(env, TABLES[name]);
   return out;
 }
-// Сделка целиком: позиции (+опции) и оплаты
-async function getDealFull(env, id) {
+// Сделка целиком: позиции (+опции) и оплаты. auth — для редакции денег.
+async function getDealFull(env, id, auth) {
   const deal = await getRow(env, TABLES.deals, id);
   if (!deal) return null;
   const items = (await env.DB.prepare(`SELECT * FROM deal_items WHERE deal_id = ? ORDER BY sort`).bind(id).all()).results || [];
@@ -125,10 +173,13 @@ async function getDealFull(env, id) {
   const payments = (await env.DB.prepare(`SELECT * FROM payments WHERE deal_id = ? ORDER BY date`).bind(id).all()).results || [];
   deal.items = items;
   deal.payments = payments;
+  if (auth && !isFinance(auth.role)) redactDealMoney(deal);
   return deal;
 }
-// Полный снимок для фронта (заменит buildSeed/localStorage на Слое 4)
-async function getBootstrap(env) {
+// Полный снимок для фронта (заменит buildSeed/localStorage на Слое 4).
+// auth — текущий пользователь; не-finance роли не получают деньги (payables,
+// оплаты, денежные поля сделок).
+async function getBootstrap(env, auth) {
   const company = await env.DB.prepare(`SELECT * FROM company LIMIT 1`).first();
   const [users, clients, materials, components, payables, activity, dealsRaw, movements, tasks] = await Promise.all([
     listRows(env, TABLES.users),
@@ -154,7 +205,11 @@ async function getBootstrap(env) {
   const paymentsByDeal = {};
   for (const p of allPayments) (paymentsByDeal[p.deal_id] ||= []).push(p);
   const deals = dealsRaw.map(d => ({ ...d, items: itemsByDeal[d.id] || [], payments: paymentsByDeal[d.id] || [] }));
-  return { company, catalogs: await getCatalogs(env), users, clients, materials, components, deals, payables, activity, movements, tasks };
+  // редакция денег для не-finance ролей
+  const finance = !auth || isFinance(auth.role);
+  const dealsOut = finance ? deals : deals.map(d => redactDealMoney({ ...d }));
+  const payablesOut = finance ? payables : [];
+  return { company, catalogs: await getCatalogs(env), users, clients, materials, components, deals: dealsOut, payables: payablesOut, activity, movements, tasks };
 }
 
 /* ============ WHATSAPP ============ */
@@ -316,8 +371,8 @@ export async function onRequest(context) {
       return u ? ok(u) : ok({ id: context.auth.sub, role_id: context.auth.role, name: context.auth.name, email: context.auth.email });
     }
 
-    // полный снимок данных
-    if (segs[0] === 'bootstrap') return ok(await getBootstrap(env));
+    // полный снимок данных (с редакцией денег по роли)
+    if (segs[0] === 'bootstrap') return ok(await getBootstrap(env, context.auth));
 
     // все справочники
     if (segs[0] === 'catalogs') return ok(await getCatalogs(env));
@@ -332,7 +387,7 @@ export async function onRequest(context) {
     // сделка целиком
     if (segs[0] === 'deals' && segs[1] && segs[2] === 'full') {
       if (method !== 'GET') return fail(405, 'Только GET');
-      const d = await getDealFull(env, segs[1]);
+      const d = await getDealFull(env, segs[1], context.auth);
       return d ? ok(d) : fail(404, 'Сделка не найдена');
     }
 
@@ -450,6 +505,10 @@ export async function onRequest(context) {
     if (!def) return fail(404, `Неизвестный ресурс: ${resource}`);
     const id = segs[1];
 
+    // ---- РОЛЕВОЙ ГЕЙТ по ресурсу (до спец-обработчиков и generic CRUD) ----
+    const deny = policyDeny(resource, method, context.auth.role);
+    if (deny) return fail(403, deny);
+
     // удаление профиля: блок, если используется в позициях сделок (FK)
     if (resource === 'materials' && method === 'DELETE' && id) {
       const cnt = await env.DB.prepare(`SELECT COUNT(*) AS n FROM deal_items WHERE profile_id = ?`).bind(id).first();
@@ -525,18 +584,25 @@ export async function onRequest(context) {
       return fail(405, 'Метод не поддерживается');
     }
 
+    // для не-finance ролей денежные поля сделки не отдаём и не принимаем
+    const redactMoney = resource === 'deals' && !isFinance(context.auth.role);
     if (method === 'GET') {
-      if (id) { const row = await getRow(env, def, id); return row ? ok(row) : fail(404, 'Не найдено'); }
-      return ok(await listRows(env, def));
+      if (id) { const row = await getRow(env, def, id); if (redactMoney) redactDealMoney(row); return row ? ok(row) : fail(404, 'Не найдено'); }
+      const rows = await listRows(env, def);
+      if (redactMoney) rows.forEach(redactDealMoney);
+      return ok(rows);
     }
     if (method === 'POST') {
       const body = await readBody(request);
+      if (redactMoney) for (const f of MONEY_DEAL_FIELDS) delete body[f];
       return created(await insertRow(env, def, body));
     }
     if (method === 'PUT' || method === 'PATCH') {
       if (!id) return fail(400, 'Нужен id в пути');
       const body = await readBody(request);
+      if (redactMoney) for (const f of MONEY_DEAL_FIELDS) delete body[f];
       const row = await updateRow(env, def, id, body);
+      if (redactMoney) redactDealMoney(row);
       return row ? ok(row) : fail(404, 'Не найдено');
     }
     if (method === 'DELETE') {

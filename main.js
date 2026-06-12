@@ -759,18 +759,21 @@ function whItemDelConfirm(kind, id){
 }
 
 /* measure mutations */
+// Сумма сделки = расчёт по позициям. Держим d.sum в синхроне при изменении
+// состава (единый источник правды — позиции, а не «момент печати документа»).
+function syncDealSum(d){ if(!d) return; d.sum=computeMeasure(d).total; if(apiOn()) persist(API.persist.saveDeal(d)); }
 function mAdd(){ const d=currentMeasureDeal(); if(!d) return; d.items=d.items||[];
   const nit={id:uid('cn'),profileId:'m4',w:1300,h:1400,glassId:'g2',openId:'tilt',sashes:2,qty:1,extras:['sill','slopes']};
   d.items.push(nit);
-  saveDB();
   if(apiOn()){ persist(API.persist.createItem(d.id, nit).then(()=>{ (nit.extras||[]).forEach(ex=>persist(API.persist.setItemExtra(nit.id, ex, true))); })); }
+  syncDealSum(d); saveDB();
   renderModule(); }
-function mDel(cid){ const d=currentMeasureDeal(); d.items=d.items.filter(c=>c.id!==cid); saveDB(); if(apiOn()) persist(API.persist.deleteItem(cid)); renderModule(); }
+function mDel(cid){ const d=currentMeasureDeal(); d.items=d.items.filter(c=>c.id!==cid); if(apiOn()) persist(API.persist.deleteItem(cid)); syncDealSum(d); saveDB(); renderModule(); }
 function mSet(cid,field,val){ const d=currentMeasureDeal(); const c=d.items.find(x=>x.id===cid); if(!c)return;
   if(field==='extras'){ c.extras=c.extras||[]; const i=c.extras.indexOf(val); if(i>=0)c.extras.splice(i,1); else c.extras.push(val); }
   else c[field]=val;
-  saveDB();
   if(apiOn()){ if(field==='extras') persist(API.persist.setItemExtra(cid, val, c.extras.includes(val))); else persist(API.persist.saveItem(c)); }
+  syncDealSum(d); saveDB();
   renderModule(); }
 
 /* ============ НАСТРОЙКИ: компания / сотрудники / права (только директор) ============ */
@@ -1743,13 +1746,15 @@ document.addEventListener('click', e=>{
     case 'm-del': mDel(t.dataset.cid); break;
     case 'm-open': mSet(t.dataset.cid,'openId',t.dataset.v); break;
     case 'm-extra': mSet(t.dataset.cid,'extras',t.dataset.v); break;
-    case 'gen-kp': { const d=dealById(id); d.sum=computeMeasure(d).total; saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); openKp(id); } break;
+    // Открытие/печать документов — операция только для чтения: НЕ трогаем d.sum
+    // (раньше генерация КП/счёта/договора затирала сумму сделки расчётом по позициям).
+    case 'gen-kp': openKp(id); break;
     case 'print-kp': printKp(id); break;
-    case 'gen-invoice': { const d=dealById(id); if(d){ d.sum=computeMeasure(d).total; saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); openInvoice(id); } } break;
+    case 'gen-invoice': openInvoice(id); break;
     case 'print-invoice': printInvoice(id); break;
-    case 'gen-contract': { const d=dealById(id); if(d){ d.sum=computeMeasure(d).total;
-        if(!d.contractNo){ d.contractNo=nextContractNo(); d.contractDate=SEED_NOW.toISOString().slice(0,10); }
-        saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); openContract(id); } } break;
+    case 'gen-contract': { const d=dealById(id); if(d){
+        if(!d.contractNo){ d.contractNo=nextContractNo(); d.contractDate=SEED_NOW.toISOString().slice(0,10); saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); }
+        openContract(id); } } break;
     case 'print-contract': printContract(id); break;
     case 'quick-prepay': applyPrepay(id); break;
     case 'confirm-prepay': applyPrepay(id); break;
