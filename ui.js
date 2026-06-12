@@ -1,11 +1,18 @@
 'use strict';
 /* ============ ROOT RENDER ============ */
+/* ============ HASH-РОУТИНГ (#/funnel, #/clients …) ============ */
+function hashModule(){ return (location.hash||'').replace(/^#\/?/,'').split(/[\/?]/)[0]; }
+// применить модуль из URL к состоянию (с учётом прав); true — если применили
+function applyHashToState(){ const m=hashModule(); if(m && MODULE_META[m] && canSee(m)){ state.module=m; return true; } return false; }
+// синхронизировать URL с текущим модулем (новая запись истории при смене модуля)
+function syncUrl(){ if(!state.user || !state.module) return; const h='#/'+state.module; if(location.hash!==h) history.pushState(null,'',h); }
 function render(){
   const app=document.getElementById('app');
   // Демо-гейт отключён: доступ контролирует вход (/api/login). gateStatus/renderGate оставлены для совместимости.
   if(!state.user){ app.innerHTML=renderLogin(); return; }
   app.innerHTML=renderShell();
   renderModule();
+  syncUrl();
 }
 
 /* ============ ШЛЮЗ ДОСТУПА ПО ССЫЛКЕ ============ */
