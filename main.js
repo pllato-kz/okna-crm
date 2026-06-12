@@ -1122,6 +1122,7 @@ document.addEventListener('click', e=>{
     case 'confirm-prepay': applyPrepay(id); break;
     case 'wh-tab': state.whTab=t.dataset.v; renderModule(); break;
     case 'funnel-reset': state.funnelMgr='all'; state.funnelStage='all'; state.funnelSrc='all'; renderModule(); break;
+    case 'clients-reset': state.clientType='all'; state.clientDebt='all'; state.clientSearch=''; renderModule(); break;
     case 'wh-mv-type': state.whMoveType=t.dataset.v; renderModule(); break;
     case 'wh-mv-period': state.whMovePeriod=t.dataset.v; renderModule(); break;
     case 'wh-receive': whReceiveModal(id, t.dataset.kind); break;
@@ -1152,12 +1153,15 @@ document.addEventListener('change', e=>{
   if(t.dataset.act==='funnel-mgr'){ state.funnelMgr=t.value; renderModule(); }
   if(t.dataset.act==='funnel-stage'){ state.funnelStage=t.value; renderModule(); }
   if(t.dataset.act==='funnel-src'){ state.funnelSrc=t.value; renderModule(); }
+  if(t.dataset.act==='cl-type'){ state.clientType=t.value; renderModule(); }
+  if(t.dataset.act==='cl-debt'){ state.clientDebt=t.value; renderModule(); }
   if(t.dataset.act==='fin-date'){ state.financeFrom=t.value||null; state.financePeriod=(state.financeFrom||state.financeTo)?'date':'all'; renderModule(); }
   if(t.dataset.act==='fin-date-to'){ state.financeTo=t.value||null; state.financePeriod=(state.financeFrom||state.financeTo)?'date':'all'; renderModule(); }
 });
 document.addEventListener('input', e=>{
   const t=e.target.closest('[data-act]'); if(!t) return;
   if(t.dataset.act==='search'){ globalSearch(t.value); return; }
+  if(t.dataset.act==='cl-search'){ state.clientSearch=t.value; renderModule(); const si=document.getElementById('cl-search'); if(si){ si.focus(); const v=si.value; si.setSelectionRange(v.length,v.length); } return; }
   if(t.dataset.act==='m-discount'){ const d=dealById(t.dataset.id); d.discount=Math.max(0,Math.min(30,parseFloat(t.value)||0)); saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); patchMeasure(); }
   if(t.dataset.act==='m-prepay'){ const d=dealById(t.dataset.id); d.prepayPct=Math.max(0,Math.min(100,parseFloat(t.value)||0)); saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); patchMeasure(); }
 });
