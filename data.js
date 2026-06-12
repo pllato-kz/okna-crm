@@ -87,6 +87,9 @@ function uid(p){ return (p||'id')+'_'+Math.random().toString(36).slice(2,8); }
 /* экранирование для подстановки в value="" / разметку (формы настроек) */
 function escA(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 const SEED_NOW = new Date('2026-05-29T11:00:00');
+// «Сейчас» для расчёта просрочки сроков: в демо (localStorage) — SEED_NOW, чтобы
+// сид-данные выглядели свежими; в боевом API-режиме — реальное время.
+function nowRef(){ try{ return (typeof apiOn==='function' && apiOn()) ? new Date() : SEED_NOW; }catch(e){ return SEED_NOW; } }
 
 /* ============ STATIC CATALOG ============ */
 // Стадии воронки. Редактируемые (добавить/удалить/изменить/цвет), хранятся

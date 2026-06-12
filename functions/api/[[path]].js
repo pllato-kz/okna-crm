@@ -121,6 +121,37 @@ function policyDeny(resource, method, role) {
   return null;
 }
 
+// Серверная валидация записи (бэкстоп к фронту: защита от мусора/переполнения/
+// отрицательных значений). Проверяем только присутствующие поля (PUT частичный).
+// Возвращает текст ошибки или null.
+function validateWrite(resource, body) {
+  const n = (v) => (v === undefined || v === null || v === '') ? null : Number(v);
+  const isNum = (v) => v !== null && Number.isFinite(v);
+  if (resource === 'deal_items') {
+    const w = n(body.w), h = n(body.h), s = n(body.sashes), q = n(body.qty);
+    if (w !== null && (!isNum(w) || w < 0 || w > 20000)) return 'Ширина: 0–20000 мм';
+    if (h !== null && (!isNum(h) || h < 0 || h > 20000)) return 'Высота: 0–20000 мм';
+    if (s !== null && (!isNum(s) || s < 1 || s > 5)) return 'Створок: 1–5';
+    if (q !== null && (!isNum(q) || q < 1 || q > 10000)) return 'Количество: 1–10000';
+  } else if (resource === 'deals') {
+    const disc = n(body.discount), pp = n(body.prepay_pct);
+    if (disc !== null && (!isNum(disc) || disc < 0 || disc > 30)) return 'Скидка: 0–30%';
+    if (pp !== null && (!isNum(pp) || pp < 0 || pp > 100)) return 'Предоплата: 0–100%';
+  } else if (resource === 'payments') {
+    const amt = n(body.amount);
+    if (!isNum(amt) || amt <= 0 || amt > 1e12) return 'Сумма оплаты должна быть больше 0';
+  } else if (resource === 'payables') {
+    const amt = n(body.amount);
+    if (amt !== null && (!isNum(amt) || amt < 0 || amt > 1e12)) return 'Некорректная сумма';
+  } else if (resource === 'materials' || resource === 'components') {
+    for (const f of ['rate', 'stock', 'min_stock']) {
+      const v = n(body[f]);
+      if (v !== null && (!isNum(v) || v < 0 || v > 1e9)) return `Некорректное значение поля «${f}»`;
+    }
+  }
+  return null;
+}
+
 const uid = (p = 'id') => `${p}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
 
 /* ============ DB-ХЕЛПЕРЫ (generic) ============ */
@@ -359,7 +390,9 @@ export async function onRequest(context) {
     if (segs[0] === 'wa' && segs[1] === 'webhook') {
       if (method !== 'POST') return ok({ ok: true }); // Green API проверяет URL и GET-ом
       const cfg = await env.DB.prepare(`SELECT * FROM wa_config WHERE id = 'main'`).first();
-      const key = url.searchParams.get('key') || bearerToken(request);
+      // секрет приходит в заголовке Authorization (webhookUrlToken у Green API);
+      // ?key= оставлен как запасной вариант для совместимости
+      const key = bearerToken(request) || url.searchParams.get('key');
       if (!cfg || !cfg.webhook_secret || key !== cfg.webhook_secret) return fail(401, 'bad webhook key');
       const body = await readBody(request);
       try { await handleWaWebhook(env, body); } catch (e) { /* не роняем вебхук — Green API иначе зашлёт ретраи */ }
@@ -438,7 +471,7 @@ export async function onRequest(context) {
         const out = { idInstance: (c && c.id_instance) || '', enabled: !!(c && c.enabled), configured: !!(c && c.id_instance && c.api_token) };
         // URL вебхука показываем только директору (содержит секрет)
         if (context.auth.role === 'director' && c && c.webhook_secret) {
-          out.webhookUrl = url.origin + '/api/wa/webhook?key=' + c.webhook_secret;
+          out.webhookUrl = url.origin + '/api/wa/webhook'; // секрет идёт в заголовке, не в URL
         }
         return ok(out);
       }
@@ -454,7 +487,7 @@ export async function onRequest(context) {
         await env.DB.prepare(`INSERT INTO wa_config (id, id_instance, api_token, enabled, webhook_secret, updated_at) VALUES ('main', ?, ?, ?, ?, datetime('now'))
           ON CONFLICT(id) DO UPDATE SET id_instance = excluded.id_instance, api_token = excluded.api_token, enabled = excluded.enabled, webhook_secret = excluded.webhook_secret, updated_at = excluded.updated_at`)
           .bind(idInstance, token, enabled, secret).run();
-        return ok({ idInstance, enabled: !!enabled, configured: !!(idInstance && token), webhookUrl: url.origin + '/api/wa/webhook?key=' + secret });
+        return ok({ idInstance, enabled: !!enabled, configured: !!(idInstance && token), webhookUrl: url.origin + '/api/wa/webhook' });
       }
       // GET /api/wa/messages?clientId=|chatId= — история чата (любой авторизованный)
       if (segs[1] === 'messages' && method === 'GET') {
@@ -481,7 +514,7 @@ export async function onRequest(context) {
         if (!c || !c.id_instance || !c.api_token) return fail(400, 'Сначала задайте инстанс');
         let secret = c.webhook_secret;
         if (!secret) { secret = (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '') : uid('wh')); await env.DB.prepare(`UPDATE wa_config SET webhook_secret = ? WHERE id = 'main'`).bind(secret).run(); }
-        const webhookUrl = url.origin + '/api/wa/webhook?key=' + secret;
+        const webhookUrl = url.origin + '/api/wa/webhook'; // секрет передаётся как webhookUrlToken (заголовок)
         try {
           const r = await fetch(`https://api.green-api.com/waInstance${c.id_instance}/setSettings/${c.api_token}`, {
             method: 'POST', headers: { 'content-type': 'application/json' },
@@ -636,12 +669,16 @@ export async function onRequest(context) {
     if (method === 'POST') {
       const body = await readBody(request);
       if (redactMoney) for (const f of PROTECTED_DEAL_WRITE_FIELDS) delete body[f];
+      const vErr = validateWrite(resource, body);
+      if (vErr) return fail(400, vErr);
       return created(await insertRow(env, def, body));
     }
     if (method === 'PUT' || method === 'PATCH') {
       if (!id) return fail(400, 'Нужен id в пути');
       const body = await readBody(request);
       if (redactMoney) for (const f of PROTECTED_DEAL_WRITE_FIELDS) delete body[f];
+      const vErr = validateWrite(resource, body);
+      if (vErr) return fail(400, vErr);
       const row = await updateRow(env, def, id, body);
       if (redactMoney) redactDealMoney(row);
       if (resource === 'users') stripSecrets(row);
@@ -654,6 +691,8 @@ export async function onRequest(context) {
     }
     return fail(405, `Метод ${method} не поддерживается`);
   } catch (e) {
-    return fail(500, e && e.message ? e.message : 'Внутренняя ошибка');
+    // не светим внутренности (SQL/стек) наружу — пишем в лог, отдаём общий текст
+    try { console.error('API error:', e && e.stack ? e.stack : e); } catch (_) {}
+    return fail(500, 'Внутренняя ошибка сервера');
   }
 }
