@@ -280,6 +280,80 @@ function renderImpPreview(){
     <div class="tbl-scroll"><table class="tbl"><thead><tr><th>Имя</th><th>Телефон</th><th>Адрес</th><th>Тип</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   if(btn) btn.disabled=false;
 }
+/* ====== ИМПОРТ СКЛАДА (профиль / комплектующие) ====== */
+let __impWhKind='mat';
+function mapWhRows(rows, kind){
+  if(!rows.length) return [];
+  const head=rows[0].map(h=>String(h).toLowerCase().trim());
+  const find=(...keys)=>head.findIndex(h=>keys.some(k=>h.includes(k)));
+  const numOf=s=>{ const n=parseFloat(String(s||'').replace(/\s/g,'').replace(/[^\d.,-]/g,'').replace(',','.')); return isFinite(n)?n:0; };
+  if(kind==='mat'){
+    const iName=find('профиль','наимен','назв','матери'), iType=find('тип'), iSer=find('серия'), iRate=find('цена','rate'), iStock=find('остаток','кол','stock'), iMin=find('миним','мин'), iUnit=find('ед'), iSup=find('поставщ');
+    let data, idx;
+    if(iName>=0||iStock>=0){ data=rows.slice(1); idx={name:iName>=0?iName:0,type:iType,series:iSer,rate:iRate,stock:iStock,min:iMin,unit:iUnit,sup:iSup}; }
+    else { data=rows; idx={name:0,type:1,series:2,rate:3,stock:4,unit:5,min:6,sup:7}; }
+    return data.map(r=>{ const g=i=>(i>=0&&i<r.length)?String(r[i]).trim():''; const name=g(idx.name); if(!name) return null;
+      return { name, type:g(idx.type)||'ПВХ', series:g(idx.series)||'Эконом', rate:Math.round(numOf(g(idx.rate))), stock:numOf(g(idx.stock)), min:numOf(g(idx.min)), unit:g(idx.unit)||'пог.м', supplier:g(idx.sup)||'' }; }).filter(Boolean);
+  }
+  const iName=find('наимен','назв','компл'), iStock=find('остаток','кол','stock'), iMin=find('миним','мин'), iUnit=find('ед');
+  let data, idx;
+  if(iName>=0||iStock>=0){ data=rows.slice(1); idx={name:iName>=0?iName:0,stock:iStock,unit:iUnit,min:iMin}; }
+  else { data=rows; idx={name:0,stock:1,unit:2,min:3}; }
+  return data.map(r=>{ const g=i=>(i>=0&&i<r.length)?String(r[i]).trim():''; const name=g(idx.name); if(!name) return null;
+    return { name, stock:numOf(g(idx.stock)), min:numOf(g(idx.min)), unit:g(idx.unit)||'шт' }; }).filter(Boolean);
+}
+function importWhModal(kind){
+  if(!seesMoney()) return; __impWhKind=kind==='comp'?'comp':'mat'; __impRows=[];
+  const isMat=__impWhKind==='mat';
+  const cols=isMat?'<b>Профиль</b>, <b>Тип</b>, <b>Серия</b>, <b>Цена</b>, <b>Остаток</b>, <b>Ед.</b>, <b>Минимум</b>, <b>Поставщик</b>':'<b>Наименование</b>, <b>Остаток</b>, <b>Ед.</b>, <b>Минимум</b>';
+  openModal(`<div class="modal-h">${icon('box')}<h3>Импорт — ${isMat?'профиль':'стеклопакеты и фурнитура'}</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b">
+      <div class="muted2" style="font-size:12px;line-height:1.5;margin-bottom:12px">Загрузите CSV. Колонки по заголовкам: ${cols} (либо в таком порядке без заголовков — как в кнопке «Экспорт»). Совпадение по наименованию обновляет позицию, новые — добавляются.</div>
+      <input type="file" id="imp-file" accept=".csv,text/csv,text/plain" style="margin-bottom:12px;width:100%">
+      <div id="imp-preview" class="muted2" style="font-size:12px">Файл не выбран</div>
+    </div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" id="imp-run" data-act="import-wh-run" disabled>${icon('check','sm')} Импортировать</button></div>`);
+  const f=document.getElementById('imp-file');
+  if(f) f.addEventListener('change', e=>{ const file=e.target.files&&e.target.files[0]; if(!file) return;
+    const rd=new FileReader();
+    rd.onload=()=>{ try{ __impRows=mapWhRows(parseCSV(String(rd.result)), __impWhKind); }catch(err){ __impRows=[]; } renderImpWhPreview(); };
+    rd.onerror=()=>{ __impRows=[]; renderImpWhPreview(); };
+    rd.readAsText(file,'utf-8'); });
+}
+function renderImpWhPreview(){
+  const box=document.getElementById('imp-preview'); const btn=document.getElementById('imp-run'); if(!box) return;
+  if(!__impRows.length){ box.innerHTML='Не найдено строк для импорта — проверьте файл.'; if(btn) btn.disabled=true; return; }
+  const isMat=__impWhKind==='mat';
+  const head=isMat?'<th>Профиль</th><th>Тип</th><th>Серия</th><th class="num">Остаток</th><th>Ед.</th>':'<th>Наименование</th><th class="num">Остаток</th><th>Ед.</th>';
+  const rows=__impRows.slice(0,5).map(x=>isMat
+    ?`<tr><td>${escA(x.name)}</td><td>${escA(x.type)}</td><td>${escA(x.series)}</td><td class="num">${x.stock}</td><td>${escA(x.unit)}</td></tr>`
+    :`<tr><td>${escA(x.name)}</td><td class="num">${x.stock}</td><td>${escA(x.unit)}</td></tr>`).join('');
+  box.innerHTML=`<div style="margin-bottom:8px">Найдено позиций: <b>${__impRows.length}</b>${__impRows.length>5?' (показаны первые 5)':''}</div>
+    <div class="tbl-scroll"><table class="tbl"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  if(btn) btn.disabled=false;
+}
+function importWhRun(){
+  if(!__impRows.length || !seesMoney()) return;
+  const isMat=__impWhKind==='mat'; let added=0, updated=0;
+  const norm=s=>String(s||'').toLowerCase().trim();
+  __impRows.forEach(x=>{
+    if(isMat){
+      const ex=DB.materials.find(m=>norm(m.name)===norm(x.name));
+      if(ex){ ex.type=x.type; ex.series=x.series; if(x.rate) ex.rate=x.rate; ex.stock=x.stock; ex.min=x.min; ex.unit=x.unit; if(x.supplier) ex.supplier=x.supplier; updated++;
+        if(apiOn()){ persist(API.persist.saveMaterialCard(ex)); persist(API.persist.saveMaterial(ex)); } }
+      else { const nm={id:uid('m'),name:x.name,type:x.type,series:x.series,rate:x.rate,stock:x.stock,min:x.min,unit:x.unit,supplier:x.supplier}; DB.materials.push(nm); added++;
+        if(apiOn()) persist(API.persist.createMaterial(nm)); }
+    } else {
+      const ex=DB.components.find(c=>norm(c.name)===norm(x.name));
+      if(ex){ ex.stock=x.stock; ex.min=x.min; ex.unit=x.unit; updated++;
+        if(apiOn()){ persist(API.persist.saveComponentCard(ex)); persist(API.persist.saveComponent(ex)); } }
+      else { const nc={id:uid('c'),name:x.name,stock:x.stock,min:x.min,unit:x.unit}; DB.components.push(nc); added++;
+        if(apiOn()) persist(API.persist.createComponent(nc)); }
+    }
+  });
+  saveDB(); closeModal(); renderModule();
+  toast(`Импорт: добавлено ${added}${updated?` · обновлено ${updated}`:''}`);
+}
 function importClientsRun(){
   if(!__impRows.length) return;
   let added=0, skipped=0;
@@ -1558,6 +1632,8 @@ document.addEventListener('click', e=>{
     case 'save-client': saveClient(t.dataset.id); break;
     case 'import-clients': importClientsModal(); break;
     case 'import-clients-run': importClientsRun(); break;
+    case 'import-wh': importWhModal(t.dataset.kind); break;
+    case 'import-wh-run': importWhRun(); break;
     case 'wa-deal': if(!canWa()){ toast('Нет доступа к WhatsApp','warn'); break; } waSendModal(null, id); break;
     case 'wa-client': if(!canWa()){ toast('Нет доступа к WhatsApp','warn'); break; } waSendModal(id, null); break;
     case 'wa-send': if(!canWa()){ toast('Нет доступа к WhatsApp','warn'); break; } waDoSend(t.dataset.id||null, t.dataset.deal||null); break;

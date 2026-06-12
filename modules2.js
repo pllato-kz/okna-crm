@@ -281,7 +281,8 @@ function renderWarehouse(){
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">${tabs}
     ${tab==='profile'?`<button class="btn primary sm" data-act="wh-item-add" data-kind="mat">${icon('plus','sm')} Профиль</button>`:''}
     ${tab==='comp'?`<button class="btn primary sm" data-act="wh-item-add" data-kind="comp">${icon('plus','sm')} Комплектующее</button>`:''}
-    <button class="btn sm" style="margin-left:auto" data-act="export" data-what="warehouse">${icon('doc','sm')} Экспорт</button></div>
+    ${(seesMoney()&&(tab==='profile'||tab==='comp'))?`<button class="btn sm" style="margin-left:auto" data-act="import-wh" data-kind="${tab==='profile'?'mat':'comp'}">${icon('arrow','sm')} Импорт</button>`:''}
+    <button class="btn sm" ${(seesMoney()&&(tab==='profile'||tab==='comp'))?'':'style="margin-left:auto"'} data-act="export" data-what="warehouse">${icon('doc','sm')} Экспорт</button></div>
   <div class="panel"><div class="panel-h">${icon('warehouse')}<h3>${tab==='moves'?'Журнал движений':'Остатки на складе'}</h3><span class="ph-sub">${DB.company.city}</span></div>${body}</div>`;
 }
 
