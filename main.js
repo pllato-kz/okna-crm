@@ -1064,6 +1064,7 @@ document.addEventListener('click', e=>{
     case 'noop': break;
     case 'go-finance': state.module='finance'; state.financeTab='recv'; render(); break;
     case 'go-prod': state.module='production'; render(); break;
+    case 'kpi-nav': { const mod=t.dataset.mod; if(!canSee(mod)){ toast('Нет доступа к разделу','warn'); break; } state.module=mod; state.sideOpen=false; if(mod==='finance'&&t.dataset.tab) state.financeTab=t.dataset.tab; render(); } break;
     case 'go-measure-deal': state.measureDealId=id; state.module='measure'; closeModal(); render(); break;
     case 'open-deal': openDeal(id); clearSearch(); break;
     case 'move-stage': moveStage(id, t.dataset.stage); break;

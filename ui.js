@@ -197,7 +197,9 @@ function toast(text, kind){
 /* ============ SMALL UI HELPERS ============ */
 function kpi(o){
   const c=o.color||'var(--accent)';
-  return `<div class="kpi ${o.act?'clickable':''}" ${o.act?`data-act="${o.act}"`:''}>
+  const clickable=o.act||o.nav;
+  const attrs = o.nav ? `data-act="kpi-nav" data-mod="${o.nav}"${o.tab?` data-tab="${o.tab}"`:''}` : (o.act?`data-act="${o.act}"`:'');
+  return `<div class="kpi ${clickable?'clickable':''}" ${attrs}>
     <div class="k-ic" style="background:${o.soft||'var(--accent-soft)'};color:${c}">${icon(o.icon)}</div>
     <div class="k-lbl">${o.label}</div>
     <div class="k-val">${o.value}</div>
