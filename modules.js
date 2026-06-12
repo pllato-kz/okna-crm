@@ -116,11 +116,14 @@ function renderFunnel(){
     const arr=deals.filter(d=>d.stage===s.id);
     const sum=arr.reduce((a,d)=>a+(d.sum||0),0);
     const cards=arr.map(d=>funnelCard(d)).join('') || `<div class="muted2" style="font-size:12px;text-align:center;padding:14px 0">пусто</div>`;
+    const locked = SYSTEM_STAGE_IDS.includes(s.id);
     const head = editing
       ? `<span class="dot-i" style="background:${s.color}"></span><span class="kc-name">${s.name}</span>
-         <span style="margin-left:auto;display:flex;gap:4px">
+         <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
            <button class="x" style="width:26px;height:26px" data-act="stage-edit" data-id="${s.id}" title="Изменить стадию">${icon('edit','sm')}</button>
-           <button class="x" style="width:26px;height:26px" data-act="stage-del" data-id="${s.id}" title="Удалить стадию">${icon('trash','sm')}</button></span>`
+           ${locked
+             ? `<span class="muted2" style="display:inline-grid;place-items:center;width:26px;height:26px" title="Системная стадия: используется разделами «Замер» и «Производство» — удалить нельзя">${icon('lock','sm')}</span>`
+             : `<button class="x" style="width:26px;height:26px" data-act="stage-del" data-id="${s.id}" title="Удалить стадию">${icon('trash','sm')}</button>`}</span>`
       : `<span class="dot-i" style="background:${s.color}"></span><span class="kc-name">${s.name}</span><span class="kc-count">${arr.length}</span><span class="kc-sum">${sum?moneyK(sum):''}</span>`;
     return `<div class="kcol" data-stage="${s.id}">
       <div class="kcol-h">${head}</div>
