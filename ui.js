@@ -181,7 +181,13 @@ function openModal(html, wide){
   const root=document.getElementById('modal-root');
   root.innerHTML=`<div class="modal-bg" data-act="modal-bg"><div class="modal ${wide?'wide':''}">${html}</div></div>`;
 }
-function closeModal(){ document.getElementById('modal-root').innerHTML=''; }
+// карточка, к которой надо вернуться после под-действия (изменить / сообщение / чат)
+let __cardReturn=null;
+function closeModal(){
+  const r=__cardReturn; __cardReturn=null;
+  document.getElementById('modal-root').innerHTML='';
+  if(r){ try{ r(); }catch(e){} }
+}
 
 /* ============ TOAST ============ */
 function toast(text, kind){
