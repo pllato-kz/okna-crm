@@ -102,9 +102,16 @@ function renderDashboard(){
 
 /* ============ FUNNEL ============ */
 function renderFunnel(){
-  const totalSum=DB.deals.filter(d=>d.stage!=='done').reduce((s,d)=>s+(d.sum||0),0);
-  const cols=STAGES.map(s=>{
-    const arr=DB.deals.filter(d=>d.stage===s.id);
+  const fMgr=state.funnelMgr||'all', fStage=state.funnelStage||'all', fSrc=state.funnelSrc||'all';
+  const anyFilter = fMgr!=='all'||fStage!=='all'||fSrc!=='all';
+  // фильтры по ответственному и источнику применяем к набору сделок,
+  // фильтр по стадии — прячет лишние колонки канбана
+  const matchMS=d=> (fMgr==='all'||d.manager===fMgr) && (fSrc==='all'||d.source===fSrc);
+  const deals=DB.deals.filter(matchMS);
+  const totalSum=deals.filter(d=>d.stage!=='done').reduce((s,d)=>s+(d.sum||0),0);
+  const stagesShown = fStage==='all' ? STAGES : STAGES.filter(s=>s.id===fStage);
+  const cols=stagesShown.map(s=>{
+    const arr=deals.filter(d=>d.stage===s.id);
     const sum=arr.reduce((a,d)=>a+(d.sum||0),0);
     const cards=arr.map(d=>funnelCard(d)).join('') || `<div class="muted2" style="font-size:12px;text-align:center;padding:14px 0">пусто</div>`;
     return `<div class="kcol" data-stage="${s.id}">
@@ -112,11 +119,25 @@ function renderFunnel(){
       <div class="kcol-b" data-drop="${s.id}">${cards}</div>
     </div>`;
   }).join('');
+  // селекты фильтров
+  const selSt='background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:7px 10px;color:var(--txt);font-size:13px;outline:none;cursor:pointer';
+  const mgrs=DB.users.filter(u=>['director','manager'].includes(u.role)||DB.deals.some(d=>d.manager===u.id));
+  const mgrOpts=`<option value="all">Все ответственные</option>`+mgrs.map(u=>`<option value="${u.id}"${fMgr===u.id?' selected':''}>${u.name}</option>`).join('');
+  const stageOpts=`<option value="all">Все стадии</option>`+STAGES.map(s=>`<option value="${s.id}"${fStage===s.id?' selected':''}>${s.name}</option>`).join('');
+  const srcVals=[...new Set([...SOURCES,...DB.deals.map(d=>d.source).filter(Boolean)])];
+  const srcOpts=`<option value="all">Все источники</option>`+srcVals.map(v=>`<option value="${escA(v)}"${fSrc===v?' selected':''}>${v}</option>`).join('');
   return `
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-    <div class="tag blue">${icon('funnel','sm')} ${DB.deals.length} сделок</div>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+    <div class="tag blue">${icon('funnel','sm')} ${deals.length}${anyFilter?` из ${DB.deals.length}`:''} сделок</div>
     <div class="tag">в работе: ${moneyK(totalSum)}</div>
     <div style="margin-left:auto;display:flex;gap:8px"><button class="btn sm" data-act="export" data-what="deals">${icon('doc','sm')} Экспорт</button><button class="btn primary" data-act="new-deal">${icon('plus','sm')} Новая сделка</button></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <span class="muted2" style="font-size:11.5px">Фильтры:</span>
+    <select data-act="funnel-mgr" style="${selSt}">${mgrOpts}</select>
+    <select data-act="funnel-stage" style="${selSt}">${stageOpts}</select>
+    <select data-act="funnel-src" style="${selSt}">${srcOpts}</select>
+    ${anyFilter?`<button class="btn sm" data-act="funnel-reset">${icon('x','sm')} Сбросить</button>`:''}
   </div>
   <div class="kanban">${cols}</div>
   <div class="muted2" style="font-size:12px;margin-top:12px">Перетащите карточку между колонками мышью, либо откройте сделку и смените стадию.</div>`;
