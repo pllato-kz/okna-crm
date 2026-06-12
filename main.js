@@ -1,6 +1,6 @@
 'use strict';
 /* ============ ACTIONS ============ */
-function login(id){ state.user=userById(id); state.module=defaultModule(state.user.role); state.measureDealId=null; render(); }
+function login(id){ state.user=userById(id); state.module=defaultModule(state.user.role); state.measureDealId=null; applyHashToState(); render(); }
 function logout(){ try{ if(window.API){ API.logout(); API.enabled=false; } }catch(e){} state.user=null; render(); }
 
 /* ====== ВХОД ЧЕРЕЗ API (Слой 4) ====== */
@@ -1836,5 +1836,13 @@ document.addEventListener('drop', e=>{
       state.module=defaultModule(state.user.role);
     }
   }catch(e){ try{ API.logout(); }catch(_){ } }
+  applyHashToState(); // учесть deep-link из URL
   render();
 })();
+/* навигация назад/вперёд браузера и ручная правка #-адреса */
+window.addEventListener('hashchange', ()=>{
+  if(!state.user) return;
+  const m=hashModule();
+  if(m && MODULE_META[m] && canSee(m)){ if(m!==state.module){ state.module=m; state.sideOpen=false; render(); } }
+  else if(location.hash!=='#/'+state.module){ history.replaceState(null,'','#/'+state.module); } // некорректный/недоступный — вернуть
+});
