@@ -933,7 +933,28 @@ function stageDelConfirm(id){
   closeModal(); render(); toast('Стадия удалена');
 }
 
+function stageMove(id, dir){
+  if(!isDirector()) return;
+  const i=STAGES.findIndex(s=>s.id===id); if(i<0) return;
+  const j = dir==='left' ? i-1 : i+1; if(j<0 || j>=STAGES.length) return;
+  const t=STAGES[i]; STAGES[i]=STAGES[j]; STAGES[j]=t;
+  STAGES.forEach((s,ix)=>s.sort=ix);
+  saveStages();
+  if(apiOn()){ persist(API.fetch('deal_stages/'+STAGES[i].id,{method:'PUT',body:{sort:STAGES[i].sort}})); persist(API.fetch('deal_stages/'+STAGES[j].id,{method:'PUT',body:{sort:STAGES[j].sort}})); }
+  renderModule();
+}
+
 /* ============ ЭТАПЫ ЦЕХА (производство): добавить / изменить / удалить + цвет ============ */
+function prodStageMove(id, dir){
+  if(!isDirector()) return;
+  const i=PROD_STAGES.findIndex(s=>s.id===id); if(i<0) return;
+  const j = dir==='left' ? i-1 : i+1; if(j<0 || j>=PROD_STAGES.length) return;
+  const t=PROD_STAGES[i]; PROD_STAGES[i]=PROD_STAGES[j]; PROD_STAGES[j]=t;
+  PROD_STAGES.forEach((s,ix)=>s.sort=ix);
+  saveProdStages();
+  if(apiOn()){ persist(API.fetch('prod_stages/'+PROD_STAGES[i].id,{method:'PUT',body:{sort:PROD_STAGES[i].sort}})); persist(API.fetch('prod_stages/'+PROD_STAGES[j].id,{method:'PUT',body:{sort:PROD_STAGES[j].sort}})); }
+  renderModule();
+}
 function prodStageEditModal(id){
   if(!isDirector()) return; const s=prodStageById(id); if(!s) return;
   openModal(`<div class="modal-h">${icon('production')}<h3>Изменить этап цеха</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
@@ -1485,6 +1506,8 @@ document.addEventListener('click', e=>{
     case 'stage-save': stageSave(t.dataset.id||null); break;
     case 'stage-del': stageDelModal(id); break;
     case 'stage-del-confirm': stageDelConfirm(id); break;
+    case 'stage-move': stageMove(id, t.dataset.dir); break;
+    case 'prod-stage-move': prodStageMove(id, t.dataset.dir); break;
     case 'prod-stage-edit-toggle': state.prodEdit=!state.prodEdit; renderModule(); break;
     case 'prod-stage-add': prodStageAddModal(); break;
     case 'prod-stage-edit': prodStageEditModal(id); break;
