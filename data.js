@@ -307,7 +307,7 @@ function trashMsLeft(rec){
 const THEME_KEY = 'okna_crm_theme';
 function loadTheme(){ try{ return localStorage.getItem(THEME_KEY) || 'light'; }catch(e){ return 'light'; } }
 function applyTheme(t){ document.documentElement.setAttribute('data-theme', t); }
-const state = { user:null, module:null, measureDealId:null, financeTab:'recv', financePeriod:'all', financeFrom:null, financeTo:null, whTab:'profile', whMoveType:'all', whMovePeriod:'all', whSearch:'', whLow:false, funnelMgr:'all', funnelStage:'all', funnelSrc:'all', clientType:'all', clientDebt:'all', clientSearch:'', stageEdit:false, prodEdit:false, sideOpen:false, theme:loadTheme() };
+const state = { user:null, module:null, measureDealId:null, financeTab:'recv', financePeriod:'all', financeFrom:null, financeTo:null, whTab:'profile', whMoveType:'all', whMovePeriod:'all', whMoveFrom:null, whMoveTo:null, whSearch:'', whLow:false, funnelMgr:'all', funnelStage:'all', funnelSrc:'all', clientType:'all', clientDebt:'all', clientSearch:'', stageEdit:false, prodEdit:false, sideOpen:false, theme:loadTheme() };
 /* настройки WhatsApp (Green API); заполняется при входе в API-режиме, токен наружу не приходит */
 let waConfig = { configured:false, enabled:false, idInstance:'' };
 applyTheme(state.theme);
