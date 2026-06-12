@@ -280,7 +280,9 @@ async function handleWaWebhook(env, body) {
 
 /* ============ R2-ФАЙЛЫ ============ */
 async function putFile(env, request, name) {
-  const key = `${uid('f')}${name ? '-' + name.replace(/[^\w.\-]+/g, '_') : ''}`;
+  // ключ — криптослучайный (не угадать перебором), не Math.random
+  const rand = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID().replace(/-/g, '') : uid('f');
+  const key = `${rand}${name ? '-' + name.replace(/[^\w.\-]+/g, '_') : ''}`;
   const body = await request.arrayBuffer();
   await env.BUCKET.put(key, body, {
     httpMetadata: { contentType: request.headers.get('content-type') || 'application/octet-stream' },
@@ -354,11 +356,13 @@ export async function onRequest(context) {
       return ok({ received: true });
     }
 
-    // ---- GUARD: всё остальное требует валидный JWT ----
-    // Исключение: GET /api/files/:key открыт (чтобы файлы можно было встраивать как ресурсы).
-    const publicFileGet = (segs[0] === 'files' && method === 'GET');
-    if (!publicFileGet) {
-      if (!env.JWT_SECRET) return fail(500, 'JWT_SECRET не задан (wrangler secret put JWT_SECRET)');
+    // ---- GUARD: всё остальное требует валидный JWT (включая файлы) ----
+    // Раньше GET /api/files/:key был публичным «чтобы встраивать как ресурсы» —
+    // но это давало неавторизованный доступ к загруженным файлам. UI файлы как
+    // <img src> не встраивает, поэтому просто требуем токен. Понадобится встраивание —
+    // делать через подписанные URL (HMAC ключа+exp), а не открытый доступ.
+    if (!env.JWT_SECRET) return fail(500, 'JWT_SECRET не задан (wrangler secret put JWT_SECRET)');
+    {
       const auth = await verifyJWT(bearerToken(request), env.JWT_SECRET);
       if (!auth) return fail(401, 'Требуется авторизация');
       context.auth = auth;
@@ -389,6 +393,29 @@ export async function onRequest(context) {
       if (method !== 'GET') return fail(405, 'Только GET');
       const d = await getDealFull(env, segs[1], context.auth);
       return d ? ok(d) : fail(404, 'Сделка не найдена');
+    }
+
+    // атомная выдача номера договора: POST /api/deals/:id/contract-number
+    // (раньше номер считался в браузере → гонка/дубли при многопользовательской работе)
+    if (segs[0] === 'deals' && segs[1] && segs[2] === 'contract-number') {
+      if (method !== 'POST') return fail(405, 'Только POST');
+      if (!FINANCE_ROLES.has(context.auth.role)) return fail(403, 'Недостаточно прав');
+      const dealId = segs[1];
+      const deal = await env.DB.prepare(`SELECT id, contract_no, contract_date FROM deals WHERE id = ?`).bind(dealId).first();
+      if (!deal) return fail(404, 'Сделка не найдена');
+      if (deal.contract_no) return ok({ contractNo: deal.contract_no, contractDate: deal.contract_date }); // идемпотентно
+      const year = new Date().getFullYear();
+      // атомарный инкремент счётчика года (RETURNING поддерживается D1)
+      const row = await env.DB.prepare(
+        `INSERT INTO counters (name, val) VALUES (?, 1) ON CONFLICT(name) DO UPDATE SET val = val + 1 RETURNING val`
+      ).bind('contract-' + year).first();
+      const no = 'Д-' + year + '-' + String(row.val).padStart(3, '0');
+      const date = new Date().toISOString().slice(0, 10);
+      // присваиваем только если ещё не присвоено — защита от гонки по одной сделке
+      await env.DB.prepare(`UPDATE deals SET contract_no = COALESCE(contract_no, ?), contract_date = COALESCE(contract_date, ?) WHERE id = ?`)
+        .bind(no, date, dealId).run();
+      const fresh = await env.DB.prepare(`SELECT contract_no, contract_date FROM deals WHERE id = ?`).bind(dealId).first();
+      return ok({ contractNo: fresh.contract_no, contractDate: fresh.contract_date });
     }
 
     // ---- WhatsApp / Green API ----

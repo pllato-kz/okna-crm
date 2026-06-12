@@ -160,6 +160,8 @@ const apiPersist = {
   }}),
   createDeal: (d) => apiFetch('deals', { method: 'POST', body: apiDealToServer(d, true) }),
   saveDeal:   (d) => apiFetch('deals/' + d.id, { method: 'PUT', body: apiDealToServer(d, false) }),
+  // атомная выдача номера договора на сервере (без гонок); идемпотентно
+  allocateContract: (dealId) => apiFetch('deals/' + dealId + '/contract-number', { method: 'POST' }),
   createItem: (dealId, it) => apiFetch('deal_items', { method: 'POST', body: {
     id: it.id, deal_id: dealId, profile_id: it.profileId, glass_id: it.glassId, opening_id: it.openId,
     w: it.w, h: it.h, sashes: it.sashes, qty: it.qty,
