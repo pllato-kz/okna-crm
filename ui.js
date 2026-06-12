@@ -144,7 +144,6 @@ function renderShell(){
           <div><div class="brand-name">Ocean Glass</div><div class="brand-sub">CRM · Ош</div></div>
         </div>
         <div class="company-pill">
-          <div class="cn">${DB.company.name}</div>
           <div class="cc">${icon('pin','sm')} ${DB.company.city} · ${DB.company.workshop.split(' · ')[0]}</div>
         </div>
       </div>
