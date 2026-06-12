@@ -1327,6 +1327,55 @@ function exportCSV(name, rows){
   toast('Выгружено: '+name);
 }
 function expStamp(){ return new Date().toISOString().slice(0,10); }
+/* ====== РЕЗЕРВНАЯ КОПИЯ (экспорт/импорт всех локальных данных) ====== */
+let __backupObj=null;
+function collectBackup(){
+  return { app:'okna-crm', version:1, exportedAt:new Date().toISOString(),
+    db:DB, stages:STAGES, prodStages:PROD_STAGES, waTemplates:WA_TEMPLATES, notifRead:[...notifRead] };
+}
+function exportBackup(){
+  if(!isDirector()) return;
+  const json=JSON.stringify(collectBackup(), null, 2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download=`okna-crm_backup_${expStamp()}.json`; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  toast('Резервная копия выгружена');
+}
+function importBackupModal(){
+  if(!isDirector()) return; __backupObj=null;
+  openModal(`<div class="modal-h">${icon('refresh')}<h3>Восстановить из резервной копии</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b">
+      <div class="muted2" style="font-size:12px;line-height:1.5;margin-bottom:12px">Загрузите JSON-файл резервной копии (кнопка «Экспорт всех данных»). <b style="color:#fbbf24">Текущие данные будут заменены.</b> В подключённом (серверном) режиме это восстанавливает локальные данные браузера.</div>
+      <input type="file" id="bk-file" accept=".json,application/json" style="margin-bottom:12px;width:100%">
+      <div id="bk-preview" class="muted2" style="font-size:12px">Файл не выбран</div>
+    </div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" id="bk-run" data-act="backup-restore" disabled>${icon('refresh','sm')} Восстановить</button></div>`);
+  const f=document.getElementById('bk-file');
+  if(f) f.addEventListener('change', e=>{ const file=e.target.files&&e.target.files[0]; if(!file) return;
+    const rd=new FileReader();
+    rd.onload=()=>{ try{ const o=JSON.parse(String(rd.result)); __backupObj=(o&&o.db)?o:null; }catch(err){ __backupObj=null; }
+      const box=document.getElementById('bk-preview'); const btn=document.getElementById('bk-run');
+      if(!__backupObj){ if(box) box.innerHTML='Файл не похож на резервную копию.'; if(btn) btn.disabled=true; return; }
+      const d=__backupObj.db||{};
+      if(box) box.innerHTML=`<div>Копия от <b>${__backupObj.exportedAt?dateFull(__backupObj.exportedAt):'—'}</b></div>
+        <div style="margin-top:6px">Сделок: <b>${(d.deals||[]).length}</b> · Клиентов: <b>${(d.clients||[]).length}</b> · Профиль: <b>${(d.materials||[]).length}</b> · Комплектующих: <b>${(d.components||[]).length}</b> · Движений: <b>${(d.movements||[]).length}</b></div>`;
+      if(btn) btn.disabled=false; };
+    rd.onerror=()=>{ __backupObj=null; const box=document.getElementById('bk-preview'); if(box) box.innerHTML='Не удалось прочитать файл.'; };
+    rd.readAsText(file,'utf-8'); });
+}
+function backupRestore(){
+  if(!isDirector() || !__backupObj || !__backupObj.db) return;
+  try{
+    localStorage.setItem(DB_KEY, JSON.stringify(__backupObj.db));
+    if(__backupObj.stages) localStorage.setItem(STAGES_KEY, JSON.stringify(__backupObj.stages));
+    if(__backupObj.prodStages) localStorage.setItem(PROD_STAGES_KEY, JSON.stringify(__backupObj.prodStages));
+    if(__backupObj.waTemplates) localStorage.setItem(WA_TPL_KEY, JSON.stringify(__backupObj.waTemplates));
+    if(__backupObj.notifRead) localStorage.setItem(NOTIF_READ_KEY, JSON.stringify(__backupObj.notifRead));
+    toast('Данные восстановлены — перезагрузка…');
+    setTimeout(()=>location.reload(), 700);
+  }catch(e){ toast('Ошибка восстановления: '+((e&&e.message)||''),'warn'); }
+}
 function doExport(what){
   const money$=seesMoney();
   if(what==='clients'){
@@ -1349,8 +1398,15 @@ function doExport(what){
       return exportCSV(`склад_комплектующие_${expStamp()}.csv`, rows);
     }
     if(tab==='moves'){
+      // экспорт учитывает активные фильтры журнала (тип + период/диапазон дат)
+      const ft=state.whMoveType||'all', fp=state.whMovePeriod||'all';
+      let lo=-Infinity, hi=Infinity;
+      if(fp==='date'){ if(state.whMoveFrom) lo=new Date(state.whMoveFrom+'T00:00:00').getTime(); if(state.whMoveTo) hi=new Date(state.whMoveTo+'T23:59:59').getTime(); }
+      else if(fp!=='all'){ lo=SEED_NOW.getTime()-parseInt(fp,10)*86400000; }
+      const byType=m=> ft==='all'?true:(ft==='out'?moveType(m.type).dir==='out':m.type===ft);
+      const byPeriod=m=>{ const t=new Date(m.at).getTime(); return t>=lo&&t<=hi; };
       const rows=[['Дата','Позиция','Операция','Направление','Количество','Ед.','Причина','Сотрудник']];
-      (DB.movements||[]).slice().sort((a,b)=>String(b.at||'').localeCompare(String(a.at||''))).forEach(m=>{
+      (DB.movements||[]).filter(m=>byType(m)&&byPeriod(m)).slice().sort((a,b)=>String(b.at||'').localeCompare(String(a.at||''))).forEach(m=>{
         const u=userById(m.who); rows.push([m.at?dateFull(m.at):'', m.name||m.itemId, moveType(m.type).label, m.dir==='in'?'приход':'расход', m.qty, m.unit||'', m.reason||'', u?u.name:'']); });
       return exportCSV(`склад_движения_${expStamp()}.csv`, rows);
     }
@@ -1634,6 +1690,9 @@ document.addEventListener('click', e=>{
     case 'import-clients-run': importClientsRun(); break;
     case 'import-wh': importWhModal(t.dataset.kind); break;
     case 'import-wh-run': importWhRun(); break;
+    case 'backup-export': exportBackup(); break;
+    case 'backup-import': importBackupModal(); break;
+    case 'backup-restore': backupRestore(); break;
     case 'wa-deal': if(!canWa()){ toast('Нет доступа к WhatsApp','warn'); break; } waSendModal(null, id); break;
     case 'wa-client': if(!canWa()){ toast('Нет доступа к WhatsApp','warn'); break; } waSendModal(id, null); break;
     case 'wa-send': if(!canWa()){ toast('Нет доступа к WhatsApp','warn'); break; } waDoSend(t.dataset.id||null, t.dataset.deal||null); break;

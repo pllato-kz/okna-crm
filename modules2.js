@@ -549,6 +549,10 @@ function renderSettings(){
   ${waPanel}
   ${dir?waTplPanelHtml():''}
   ${dir?`<div class="section-gap"><div class="panel-h" style="border:none;padding:6px 0"><h3 style="font-size:15px">Каталоги и прайс</h3><span class="ph-sub">цены сразу применяются в расчёте КП</span></div>${catTable('glass')}${catTable('opening')}${catTable('extra')}</div>`:''}
+  ${dir?`<div class="panel section-gap"><div class="panel-h">${icon('doc')}<h3>Резервная копия</h3></div><div class="panel-b">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><span class="muted" style="font-size:13px">Выгрузить все данные в файл (JSON) или восстановить из резервной копии.</span>
+    <button class="btn" data-act="backup-export">${icon('doc','sm')} Экспорт всех данных</button>
+    <button class="btn" data-act="backup-import">${icon('arrow','sm')} Восстановить из файла</button></div></div></div>`:''}
   <div class="panel section-gap"><div class="panel-h">${icon('refresh')}<h3>Демо-данные</h3></div><div class="panel-b">
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><span class="muted" style="font-size:13px">Сбросить все изменения и вернуть исходные демо-данные.</span>
     <button class="btn danger" data-act="reset">${icon('refresh','sm')} Сбросить демо</button></div></div></div>`;
