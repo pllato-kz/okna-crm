@@ -168,6 +168,14 @@ async function waResolveClient(env, chatId) {
   for (const c of rows) if (waDigits(c.phone) === target) return c.id;
   return null;
 }
+// может ли роль писать в WhatsApp (право 'wa' в матрице; директор — всегда;
+// если право не сконфигурировано — не ломаем, разрешаем)
+async function waRoleAllowed(env, role) {
+  if (role === 'director') return true;
+  const rows = (await env.DB.prepare(`SELECT role_id FROM module_roles WHERE module_id = 'wa'`).all()).results || [];
+  if (!rows.length) return true;
+  return rows.some(r => r.role_id === role);
+}
 // сохранить сообщение (идемпотентно по id)
 async function waStoreMessage(env, m) {
   await env.DB.prepare(`INSERT INTO wa_messages (id, chat_id, client_id, direction, text, sender_name, status, ts, at)
@@ -341,6 +349,7 @@ export async function onRequest(context) {
       }
       // GET /api/wa/messages?clientId=|chatId= — история чата (любой авторизованный)
       if (segs[1] === 'messages' && method === 'GET') {
+        if (!(await waRoleAllowed(env, context.auth.role))) return fail(403, 'Нет доступа к WhatsApp');
         const clientId = url.searchParams.get('clientId');
         let chatId = url.searchParams.get('chatId');
         let rows;
@@ -386,6 +395,7 @@ export async function onRequest(context) {
       }
       // POST /api/wa/send — отправка сообщения (любой авторизованный)
       if (segs[1] === 'send' && method === 'POST') {
+        if (!(await waRoleAllowed(env, context.auth.role))) return fail(403, 'Нет доступа к WhatsApp');
         const c = await getCfg();
         if (!c || !c.enabled) return fail(400, 'WhatsApp-интеграция выключена');
         if (!c.id_instance || !c.api_token) return fail(400, 'Не заданы данные инстанса Green API');

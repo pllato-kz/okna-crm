@@ -120,6 +120,7 @@ const MODULE_META = {
   production:{name:'Производство',icon:'production',sub:'Резка, стеклопакет, сборка, монтаж'},
   finance:  {name:'Финансы',  icon:'finance',   sub:'Дебиторка, оплаты, отчётность'},
   trash:    {name:'Корзина',  icon:'trash',     sub:'Удалённые записи — восстановление'},
+  wa:       {name:'WhatsApp', icon:'wa',        sub:'Право писать клиентам в WhatsApp'},
   settings: {name:'Настройки',icon:'settings',  sub:'Сотрудники и права доступа'},
 };
 function renderShell(){

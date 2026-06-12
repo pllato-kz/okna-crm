@@ -164,7 +164,7 @@ function openKp(id){
     </div>
     <div class="modal-f">
       <button class="btn" data-act="print-kp" data-id="${d.id}">${icon('doc','sm')} Печать / PDF</button>
-      <button class="btn green" data-act="wa-deal" data-id="${d.id}">${icon('wa','sm')} Отправить в WhatsApp</button>
+      ${canWa()?`<button class="btn green" data-act="wa-deal" data-id="${d.id}">${icon('wa','sm')} Отправить в WhatsApp</button>`:''}
       <button class="btn primary" data-act="confirm-prepay" data-id="${d.id}">${icon('money','sm')} Принять предоплату ${money(k.prepay)}</button>
     </div>
   `, true);

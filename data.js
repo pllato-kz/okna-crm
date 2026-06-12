@@ -498,12 +498,16 @@ const MODULE_ROLES = {
   production:['director','production','warehouse','surveyor'],
   finance:  ['director','manager'],
   trash:    ['director','manager'],
+  wa:       ['director','manager','surveyor'],
   settings: ['director'],
 };
 function canSee(mod){ return state.user && MODULE_ROLES[mod] && MODULE_ROLES[mod].includes(state.user.role); }
 // деньги видит директор всегда + любая роль с доступом к финансам
 function seesMoney(){ if(!state.user) return false; if(state.user.role==='director') return true;
   return !!(MODULE_ROLES['finance'] && MODULE_ROLES['finance'].includes(state.user.role)); }
+// может ли роль писать в WhatsApp (настраивается в матрице прав)
+function canWa(){ if(!state.user) return false; if(state.user.role==='director') return true;
+  return !!(MODULE_ROLES['wa'] && MODULE_ROLES['wa'].includes(state.user.role)); }
 function defaultModule(role){
   if(role==='surveyor') return 'measure';
   if(role==='production') return 'production';
