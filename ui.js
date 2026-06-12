@@ -1,18 +1,41 @@
 'use strict';
 /* ============ ROOT RENDER ============ */
-/* ============ HASH-РОУТИНГ (#/funnel, #/clients …) ============ */
-function hashModule(){ return (location.hash||'').replace(/^#\/?/,'').split(/[\/?]/)[0]; }
-// применить модуль из URL к состоянию (с учётом прав); true — если применили
-function applyHashToState(){ const m=hashModule(); if(m && MODULE_META[m] && canSee(m)){ state.module=m; return true; } return false; }
-// синхронизировать URL с текущим модулем (новая запись истории при смене модуля)
-function syncUrl(){ if(!state.user || !state.module) return; const h='#/'+state.module; if(location.hash!==h) history.pushState(null,'',h); }
+/* ============ HASH-РОУТИНГ (#/funnel, #/finance/pl, #/funnel?deal=…) ============ */
+const FIN_TABS=['recv','pay','pl'], WH_TABS=['profile','comp','moves'];
+let __pendingHashOpen=null; // отложенное открытие карточки из URL (?deal=/?client=)
+function parseHash(){
+  const raw=(location.hash||'').replace(/^#\/?/,'');
+  const [path,query]=raw.split('?');
+  const segs=path.split('/').filter(Boolean);
+  const q={}; (query||'').split('&').forEach(kv=>{ const i=kv.indexOf('='); if(i>0) q[decodeURIComponent(kv.slice(0,i))]=decodeURIComponent(kv.slice(i+1)); });
+  return { mod:segs[0]||'', tab:segs[1]||'', deal:q.deal||'', client:q.client||'' };
+}
+// применить модуль/вкладку/карточку из URL к состоянию (с учётом прав); true — если применили модуль
+function applyHashToState(){
+  const h=parseHash();
+  if(!(h.mod && MODULE_META[h.mod] && canSee(h.mod))) return false;
+  state.module=h.mod;
+  if(h.mod==='finance' && FIN_TABS.includes(h.tab)) state.financeTab=h.tab;
+  if(h.mod==='warehouse' && WH_TABS.includes(h.tab)) state.whTab=h.tab;
+  __pendingHashOpen = (h.deal||h.client) ? {deal:h.deal, client:h.client} : null;
+  return true;
+}
+// канонический URL для текущего состояния (модуль + активная вкладка)
+function currentHash(){
+  if(!state.user || !state.module) return location.hash;
+  let h='#/'+state.module;
+  if(state.module==='finance') h+='/'+(state.financeTab||'recv');
+  else if(state.module==='warehouse') h+='/'+(state.whTab||'profile');
+  return h;
+}
+// синхронизировать URL (новая запись истории при смене модуля/вкладки)
+function syncUrl(){ if(!state.user || !state.module) return; const h=currentHash(); if(location.hash!==h) history.pushState(null,'',h); }
 function render(){
   const app=document.getElementById('app');
   // Демо-гейт отключён: доступ контролирует вход (/api/login). gateStatus/renderGate оставлены для совместимости.
   if(!state.user){ app.innerHTML=renderLogin(); return; }
   app.innerHTML=renderShell();
   renderModule();
-  syncUrl();
 }
 
 /* ============ ШЛЮЗ ДОСТУПА ПО ССЫЛКЕ ============ */
@@ -61,6 +84,7 @@ function renderModule(){
   view.innerHTML=html;
   if(m==='measure') initMeasureBindings();
   view.scrollTop=0;
+  syncUrl();
 }
 
 /* ============ LOGIN ============ */
