@@ -312,6 +312,13 @@ const state = { user:null, module:null, measureDealId:null, financeTab:'recv', f
 let waConfig = { configured:false, enabled:false, idInstance:'' };
 applyTheme(state.theme);
 
+/* ============ ПРОЧИТАННЫЕ УВЕДОМЛЕНИЯ ============ */
+// id прочитанных уведомлений (badge считает только непрочитанные). localStorage.
+const NOTIF_READ_KEY = 'okna_crm_notif_read';
+function loadNotifRead(){ try{ const raw=localStorage.getItem(NOTIF_READ_KEY); if(raw){ const a=JSON.parse(raw); if(Array.isArray(a)) return new Set(a); } }catch(e){} return new Set(); }
+let notifRead = loadNotifRead();
+function saveNotifRead(){ try{ localStorage.setItem(NOTIF_READ_KEY, JSON.stringify([...notifRead])); }catch(e){} }
+
 /* ============ БЫСТРЫЕ СООБЩЕНИЯ WHATSAPP (шаблоны по этапам) ============ */
 // Шаблоны хранятся в localStorage (переживают перезагрузку в любом режиме).
 // Плейсхолдеры: {client} {company} {phone} {address} {stage} {manager} {total} {prepay} {debt}

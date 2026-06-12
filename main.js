@@ -1455,6 +1455,8 @@ function globalSearch(q){
 document.addEventListener('click', e=>{
   const t=e.target.closest('[data-act]'); if(!t) return;
   const a=t.dataset.act, id=t.dataset.id;
+  // клик по уведомлению — пометить прочитанным (badge учитывает только непрочитанные)
+  if(t.dataset.nid){ notifRead.add(t.dataset.nid); saveNotifRead(); }
   // под-действие из карточки (изменить / сообщение / чат / оплата) — вернуться к ней после закрытия
   if(t.dataset.back==='deal') __cardReturn=()=>openDeal(id);
   else if(t.dataset.back==='client') __cardReturn=()=>openClient(id);
@@ -1470,6 +1472,7 @@ document.addEventListener('click', e=>{
       break;
     case 'search-mobile': { const s=document.querySelector('.topbar .search'); if(s){ const open=s.classList.toggle('open'); if(open){ const i=document.getElementById('global-search'); if(i) i.focus(); } else { clearSearch(); } } } break;
     case 'notif': notifModal(); break;
+    case 'notif-read-all': buildNotifs().forEach(n=>notifRead.add(n.id)); saveNotifRead(); render(); notifModal(); break;
     case 'edit-company': editCompanyModal(); break;
     case 'save-company': saveCompany(); break;
     case 'add-user': userModal(null); break;

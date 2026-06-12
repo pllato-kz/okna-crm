@@ -125,7 +125,7 @@ const MODULE_META = {
 };
 function renderShell(){
   const u=state.user;
-  const notifN = (typeof buildNotifs==='function') ? buildNotifs().length : 0;
+  const notifN = (typeof buildNotifs==='function') ? buildNotifs().filter(n=>!notifRead.has(n.id)).length : 0;
   const measureCount = DB.deals.filter(d=>d.stage==='measure').length;
   const prodCount = DB.deals.filter(d=>['production','install'].includes(d.stage)).length;
   const nav = navGroups().map(g=>{
@@ -274,11 +274,14 @@ function buildNotifs(){
 }
 function notifModal(){
   const list=buildNotifs();
-  const items=list.map(n=>`<div class="tl-item" ${n.dealId?`data-act="goto-deal" data-id="${n.dealId}" style="cursor:pointer"`:''}>
+  const unread=list.filter(n=>!notifRead.has(n.id)).length;
+  const items=list.map(n=>{ const isRead=notifRead.has(n.id);
+    return `<div class="tl-item${isRead?' read':''}" data-nid="${n.id}" ${n.dealId?`data-act="goto-deal" data-id="${n.dealId}" style="cursor:pointer"`:''}>
       <div class="tl-dot" style="background:${n.color}24;color:${n.color}">${icon(n.icon,'sm')}</div>
-      <div class="tl-c"><div class="tl-t">${n.title}</div><div class="tl-d">${n.sub}</div></div></div>`).join('')
+      <div class="tl-c"><div class="tl-t">${n.title}</div><div class="tl-d">${n.sub}</div></div>
+      ${isRead?'':'<span class="tl-unread"></span>'}</div>`; }).join('')
     || '<div class="muted" style="padding:18px;text-align:center">Новых уведомлений нет 🎉</div>';
-  openModal(`<div class="modal-h">${icon('bell')}<div><h3>Уведомления</h3><div class="mh-sub">${list.length?'актуальных: '+list.length:'всё под контролем'}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+  openModal(`<div class="modal-h">${icon('bell')}<div><h3>Уведомления</h3><div class="mh-sub">${list.length?(unread?unread+' непрочит. из '+list.length:'все прочитаны'):'всё под контролем'}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="timeline">${items}</div></div>
-    <div class="modal-f"><button class="btn" data-act="close-modal">Закрыть</button></div>`);
+    <div class="modal-f">${unread?`<button class="btn" data-act="notif-read-all" style="margin-right:auto">${icon('check','sm')} Отметить все прочитанным</button>`:''}<button class="btn" data-act="close-modal">Закрыть</button></div>`);
 }
