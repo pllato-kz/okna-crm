@@ -19,7 +19,7 @@ function renderDashboard(){
     const cnt=arr.length;
     const conv2=i===0?100:Math.round(cnt/Math.max(1,fmax)*100);
     return `<div class="fv-row">
-      <span class="fv-lbl">${s.name}</span>
+      <span class="fv-lbl">${escA(s.name)}</span>
       <div class="fv-bar" style="width:${Math.max(8,cnt/Math.max(1,fmax)*100)}%;background:${s.color}">${cnt}<span style="opacity:.85;font-weight:600">${moneyK(arr.reduce((a,d)=>a+(d.sum||0),0))}</span></div>
     </div>`;
   }).join('');
@@ -40,7 +40,7 @@ function renderDashboard(){
   const feed=DB.activity.slice(0,5).map(a=>{
     const u=userById(a.who);
     return `<div class="tl-item"><div class="tl-dot" style="background:${colorFor(a.who)}33;color:${colorFor(a.who)}">${avatarXs(u.name,a.who)}</div>
-      <div class="tl-c"><div class="tl-t">${a.text}</div><div class="tl-d">${u.name} · ${dateStr(a.at)}</div></div></div>`;
+      <div class="tl-c"><div class="tl-t">${escA(a.text)}</div><div class="tl-d">${escA(u.name)} · ${dateStr(a.at)}</div></div></div>`;
   }).join('');
 
   // задачи и напоминания
@@ -48,8 +48,8 @@ function renderDashboard(){
   const taskWidget=openTasks.length?openTasks.map(t=>{const tc=taskClass(t); const td=dealById(t.dealId); const tcl=td?clientById(td.clientId):null; const tu=userById(t.assignee);
     return `<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 2px;border-bottom:1px solid var(--line);cursor:pointer" ${td?`data-act="goto-deal" data-id="${td.id}"`:''}>
       <input type="checkbox" data-act="task-toggle" data-id="${t.id}" style="width:auto;margin-top:2px;cursor:pointer">
-      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${t.title}</div>
-        <div class="muted2" style="font-size:11.5px;margin-top:2px">${tcl?tcl.name+' · ':''}<span style="color:${tc.color}">${dateStr(t.due)} · ${tc.txt}</span>${tu?' · '+tu.name.split(' ')[0]:''}</div></div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${escA(t.title)}</div>
+        <div class="muted2" style="font-size:11.5px;margin-top:2px">${escA(tcl?tcl.name+' · ':'')}<span style="color:${tc.color}">${dateStr(t.due)} · ${tc.txt}</span>${escA(tu?' · '+tu.name.split(' ')[0]:'')}</div></div>
     </div>`;}).join(''):'<div class="muted" style="padding:8px 0">Открытых задач нет 🎉</div>';
 
   return `
@@ -118,7 +118,7 @@ function renderFunnel(){
     const cards=arr.map(d=>funnelCard(d)).join('') || `<div class="muted2" style="font-size:12px;text-align:center;padding:14px 0">пусто</div>`;
     const locked = SYSTEM_STAGE_IDS.includes(s.id);
     const head = editing
-      ? `<span class="dot-i" style="background:${s.color}"></span><span class="kc-name">${s.name}</span>
+      ? `<span class="dot-i" style="background:${s.color}"></span><span class="kc-name">${escA(s.name)}</span>
          <span style="margin-left:auto;display:flex;gap:2px;align-items:center">
            <button class="x" data-act="stage-move" data-id="${s.id}" data-dir="left" title="Левее" style="width:22px;height:26px;font-size:16px${idx===0?';opacity:.25;pointer-events:none':''}">‹</button>
            <button class="x" data-act="stage-move" data-id="${s.id}" data-dir="right" title="Правее" style="width:22px;height:26px;font-size:16px${idx===STAGES.length-1?';opacity:.25;pointer-events:none':''}">›</button>
@@ -126,7 +126,7 @@ function renderFunnel(){
            ${locked
              ? `<span class="muted2" style="display:inline-grid;place-items:center;width:26px;height:26px" title="Системная стадия: используется разделами «Замер» и «Производство» — удалить нельзя">${icon('lock','sm')}</span>`
              : `<button class="x" style="width:26px;height:26px" data-act="stage-del" data-id="${s.id}" title="Удалить стадию">${icon('trash','sm')}</button>`}</span>`
-      : `<span class="dot-i" style="background:${s.color}"></span><span class="kc-name">${s.name}</span><span class="kc-count">${arr.length}</span><span class="kc-sum">${sum?moneyK(sum):''}</span>`;
+      : `<span class="dot-i" style="background:${s.color}"></span><span class="kc-name">${escA(s.name)}</span><span class="kc-count">${arr.length}</span><span class="kc-sum">${sum?moneyK(sum):''}</span>`;
     return `<div class="kcol" data-stage="${s.id}">
       <div class="kcol-h">${head}</div>
       <div class="kcol-b" data-drop="${s.id}">${cards}</div>
@@ -135,10 +135,10 @@ function renderFunnel(){
   // селекты фильтров
   const selSt='background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:7px 10px;color:var(--txt);font-size:13px;outline:none;cursor:pointer';
   const mgrs=DB.users.filter(u=>['director','manager'].includes(u.role)||DB.deals.some(d=>d.manager===u.id));
-  const mgrOpts=`<option value="all">Все ответственные</option>`+mgrs.map(u=>`<option value="${u.id}"${fMgr===u.id?' selected':''}>${u.name}</option>`).join('');
-  const stageOpts=`<option value="all">Все стадии</option>`+STAGES.map(s=>`<option value="${s.id}"${fStage===s.id?' selected':''}>${s.name}</option>`).join('');
+  const mgrOpts=`<option value="all">Все ответственные</option>`+mgrs.map(u=>`<option value="${u.id}"${fMgr===u.id?' selected':''}>${escA(u.name)}</option>`).join('');
+  const stageOpts=`<option value="all">Все стадии</option>`+STAGES.map(s=>`<option value="${s.id}"${fStage===s.id?' selected':''}>${escA(s.name)}</option>`).join('');
   const srcVals=[...new Set([...SOURCES,...DB.deals.map(d=>d.source).filter(Boolean)])];
-  const srcOpts=`<option value="all">Все источники</option>`+srcVals.map(v=>`<option value="${escA(v)}"${fSrc===v?' selected':''}>${v}</option>`).join('');
+  const srcOpts=`<option value="all">Все источники</option>`+srcVals.map(v=>`<option value="${escA(v)}"${fSrc===v?' selected':''}>${escA(v)}</option>`).join('');
   return `
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
     <div class="tag blue">${icon('funnel','sm')} ${deals.length}${anyFilter?` из ${DB.deals.length}`:''} сделок</div>
@@ -165,12 +165,12 @@ function funnelCard(d){
   const debt=dealDebt(d);
   return `<div class="kcard" draggable="true" data-card="${d.id}" data-act="open-deal" data-id="${d.id}" style="border-left-color:${st.color}">
     <div class="kc-top">
-      <div><div class="kc-client">${cl.name} ${d.hot?icon('flame','sm'):''}</div>
-        <div class="kc-addr">${icon('pin','sm')} ${cl.address.split(',').slice(1).join(',').trim()||cl.address}</div></div>
+      <div><div class="kc-client">${escA(cl.name)} ${d.hot?icon('flame','sm'):''}</div>
+        <div class="kc-addr">${icon('pin','sm')} ${escA(cl.address.split(',').slice(1).join(',').trim()||cl.address)}</div></div>
     </div>
-    ${d.sum?`<div class="kc-sum">${money(d.sum)}</div>`:`<div class="kc-sum muted2" style="font-size:12.5px;font-weight:600">${d.note||'—'}</div>`}
+    ${d.sum?`<div class="kc-sum">${money(d.sum)}</div>`:`<div class="kc-sum muted2" style="font-size:12.5px;font-weight:600">${escA(d.note||'—')}</div>`}
     ${d.sum&&debt>0&&['prepaid','production','install','done'].includes(d.stage)?`<div style="font-size:11.5px;margin-top:4px" class="tag amber">долг ${moneyK(debt)}</div>`:''}
-    <div class="kc-meta">${avatarXs(m.name,d.manager)}<span class="muted2" style="font-size:11.5px">${m.name.split(' ')[0]}</span>
+    <div class="kc-meta">${avatarXs(m.name,d.manager)}<span class="muted2" style="font-size:11.5px">${escA(m.name.split(' ')[0])}</span>
       <span class="kc-days">${icon('clock','sm')} ${days}д</span></div>
   </div>`;
 }
@@ -183,30 +183,30 @@ function openDeal(id){
   const sum=d.sum||dealItemsSum(d); const paid=dealPaid(d); const debt=Math.max(0,sum-paid);
   const items=(d.items||[]).map(c=>{
     const mat=matById(c.profileId);
-    return `<tr><td>${mat?mat.name:'—'} · ${c.w}×${c.h}мм</td><td class="muted">${openById(c.openId)?.name||''}, ${c.sashes} ств.</td><td class="num">${money(constrPrice(c))}</td></tr>`;
+    return `<tr><td>${escA(mat?mat.name:'—')} · ${c.w}×${c.h}мм</td><td class="muted">${escA(openById(c.openId)?.name||'')}, ${c.sashes} ств.</td><td class="num">${money(constrPrice(c))}</td></tr>`;
   }).join('');
-  const pays=(d.payments||[]).map(p=>`<div class="stat-line"><span>${p.type} · ${dateStr(p.date)}</span><span style="color:${p.amount<0?'#f87171':'#4ade80'};font-weight:700">${p.amount<0?'−':'+'}${money(Math.abs(p.amount))}</span></div>`).join('')||'<div class="muted" style="font-size:13px">Оплат пока нет</div>';
+  const pays=(d.payments||[]).map(p=>`<div class="stat-line"><span>${escA(p.type)} · ${dateStr(p.date)}</span><span style="color:${p.amount<0?'#f87171':'#4ade80'};font-weight:700">${p.amount<0?'−':'+'}${money(Math.abs(p.amount))}</span></div>`).join('')||'<div class="muted" style="font-size:13px">Оплат пока нет</div>';
   const tlist=tasksForDeal(d.id);
   const taskRows=tlist.length?tlist.map(t=>{const tc=taskClass(t); const tu=userById(t.assignee);
     return `<div class="stat-line"><span style="display:flex;align-items:center;gap:9px;min-width:0">
         <input type="checkbox" ${t.done?'checked':''} data-act="task-toggle" data-id="${t.id}" style="width:auto;cursor:pointer">
-        <span style="${t.done?'text-decoration:line-through;opacity:.55':''}">${t.title}</span></span>
-      <span style="display:flex;align-items:center;gap:8px;white-space:nowrap"><span class="muted2" style="font-size:11.5px;color:${tc.color}">${dateStr(t.due)} · ${tc.txt}${tu?' · '+tu.name.split(' ')[0]:''}</span>
+        <span style="${t.done?'text-decoration:line-through;opacity:.55':''}">${escA(t.title)}</span></span>
+      <span style="display:flex;align-items:center;gap:8px;white-space:nowrap"><span class="muted2" style="font-size:11.5px;color:${tc.color}">${dateStr(t.due)} · ${tc.txt}${escA(tu?' · '+tu.name.split(' ')[0]:'')}</span>
         <button class="x" style="width:26px;height:26px" data-act="task-del" data-id="${t.id}">${icon('x','sm')}</button></span></div>`;}).join('')
     :'<div class="muted2" style="font-size:12px">Задач нет — добавьте напоминание о следующем шаге</div>';
-  const stageOpts=STAGES.map(s=>`<button class="chip ${s.id===d.stage?'on':''}" data-act="move-stage" data-id="${d.id}" data-stage="${s.id}">${s.name}</button>`).join('');
+  const stageOpts=STAGES.map(s=>`<button class="chip ${s.id===d.stage?'on':''}" data-act="move-stage" data-id="${d.id}" data-stage="${s.id}">${escA(s.name)}</button>`).join('');
   const canMoney=seesMoney();
   openModal(`
     <div class="modal-h">
       <span class="av" style="width:42px;height:42px;border-radius:11px;display:grid;place-items:center;background:${colorFor(cl.id)};color:#fff;font-weight:700">${initials(cl.name)}</span>
-      <div><h3>${cl.name} ${d.hot?icon('flame','sm'):''}</h3><div class="mh-sub">${cl.phone} · ${cl.address}</div></div>
+      <div><h3>${escA(cl.name)} ${d.hot?icon('flame','sm'):''}</h3><div class="mh-sub">${escA(cl.phone)} · ${escA(cl.address)}</div></div>
       <button class="x" data-act="close-modal">${icon('x')}</button>
     </div>
     <div class="modal-b">
       <div class="fld full" style="margin-bottom:14px"><label>Стадия — нажмите, чтобы переключить</label><div class="chips oneline">${stageOpts}</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-        <span class="tag">${icon('user','sm')} ${m.name}</span>
-        <span class="tag">${icon('layers','sm')} ${d.source}</span>
+        <span class="tag">${icon('user','sm')} ${escA(m.name)}</span>
+        <span class="tag">${icon('layers','sm')} ${escA(d.source)}</span>
       </div>
       ${canMoney?`<div class="cards-row" style="grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
         <div class="kpi" style="padding:12px"><div class="k-lbl">Сумма заказа</div><div class="k-val" style="font-size:19px">${money(sum)}</div></div>
@@ -251,9 +251,9 @@ function renderClients(){
     const total=ds.reduce((s,d)=>s+(d.sum||0),0);
     const debt=ds.reduce((s,d)=>s+dealDebt(d),0);
     return `<tr class="clickable" data-act="open-client" data-id="${cl.id}">
-      <td><div class="cell-name">${avatarXs(cl.name,cl.id)}<div><div style="font-weight:600">${cl.name}</div><div class="muted2" style="font-size:11.5px">${cl.type}</div></div></div></td>
-      <td class="muted">${cl.phone}</td>
-      <td class="muted">${cl.address}</td>
+      <td><div class="cell-name">${avatarXs(cl.name,cl.id)}<div><div style="font-weight:600">${escA(cl.name)}</div><div class="muted2" style="font-size:11.5px">${escA(cl.type)}</div></div></div></td>
+      <td class="muted">${escA(cl.phone)}</td>
+      <td class="muted">${escA(cl.address)}</td>
       <td class="num">${ds.length}</td>
       <td class="num">${total?moneyK(total):'—'}</td>
       <td class="num">${debt>0?`<span class="tag amber">${moneyK(debt)}</span>`:'<span class="muted2">—</span>'}</td>
@@ -262,7 +262,7 @@ function renderClients(){
   // панель фильтров
   const selSt='background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:7px 10px;color:var(--txt);font-size:13px;outline:none;cursor:pointer';
   const types=[...new Set(DB.clients.map(c=>c.type).filter(Boolean))];
-  const typeOpts=`<option value="all">Все типы</option>`+types.map(v=>`<option value="${escA(v)}"${fType===v?' selected':''}>${v}</option>`).join('');
+  const typeOpts=`<option value="all">Все типы</option>`+types.map(v=>`<option value="${escA(v)}"${fType===v?' selected':''}>${escA(v)}</option>`).join('');
   const debtOpts=[['all','Долг — любой'],['debt','С долгом'],['nodebt','Без долга']]
     .map(([v,l])=>`<option value="${v}"${fDebt===v?' selected':''}>${l}</option>`).join('');
   return `<div class="panel">
@@ -286,11 +286,11 @@ function openClient(id){
   const ds=DB.deals.filter(d=>d.clientId===cl.id);
   const total=ds.reduce((s,d)=>s+(d.sum||0),0); const paid=ds.reduce((s,d)=>s+dealPaid(d),0);
   const dealRows=ds.map(d=>{const st=stageById(d.stage);
-    return `<div class="stat-line"><span><span class="dot-i" style="background:${st.color}"></span> ${st.name} · ${dateStr(d.createdAt)} <span class="muted2">${d.note||''}</span></span><span style="font-weight:700">${d.sum?money(d.sum):'—'}</span></div>`;}).join('')||'<div class="muted">Сделок нет</div>';
+    return `<div class="stat-line"><span><span class="dot-i" style="background:${st.color}"></span> ${escA(st.name)} · ${dateStr(d.createdAt)} <span class="muted2">${escA(d.note||'')}</span></span><span style="font-weight:700">${d.sum?money(d.sum):'—'}</span></div>`;}).join('')||'<div class="muted">Сделок нет</div>';
   openModal(`
     <div class="modal-h">
       <span class="av" style="width:42px;height:42px;border-radius:11px;display:grid;place-items:center;background:${colorFor(cl.id)};color:#fff;font-weight:700">${initials(cl.name)}</span>
-      <div><h3>${cl.name}</h3><div class="mh-sub">${cl.type} · ${cl.phone}</div></div>
+      <div><h3>${escA(cl.name)}</h3><div class="mh-sub">${escA(cl.type)} · ${escA(cl.phone)}</div></div>
       <button class="x" data-act="close-modal">${icon('x')}</button>
     </div>
     <div class="modal-b">
@@ -299,7 +299,7 @@ function openClient(id){
         <div class="kpi" style="padding:12px"><div class="k-lbl">Сумма</div><div class="k-val" style="font-size:19px">${moneyK(total)}</div></div>
         <div class="kpi" style="padding:12px"><div class="k-lbl">Оплачено</div><div class="k-val" style="font-size:19px;color:#4ade80">${moneyK(paid)}</div></div>
       </div>
-      <div class="fld full" style="margin-bottom:6px"><label>${icon('pin','sm')} Адрес</label><div style="font-size:13.5px">${cl.address}</div></div>
+      <div class="fld full" style="margin-bottom:6px"><label>${icon('pin','sm')} Адрес</label><div style="font-size:13.5px">${escA(cl.address)}</div></div>
       <div class="panel" style="margin-top:14px"><div class="panel-h" style="padding:12px 14px">${icon('funnel','sm')}<h3 style="font-size:13.5px">История сделок</h3></div><div class="panel-b" style="padding:12px 14px">${dealRows}</div></div>
     </div>
     <div class="modal-f"><button class="btn danger" data-act="del-client" data-id="${cl.id}" style="margin-right:auto">${icon('trash','sm')} Удалить</button>

@@ -92,12 +92,12 @@ function renderModule(){
 function renderLogin(g){
   g = g || gateStatus();
   const ownerBtn = g.mode==='owner' ? `<button class="share-fab" data-act="share-demo" title="Создать ссылку для клиента">${icon('link','sm')} Поделиться демо</button>` : '';
-  const clientBanner = g.mode==='valid' ? `<div class="demo-banner">${icon('clock','sm')} Демо-доступ активен до <b>${fmtExpiry(g.exp)}</b>${g.label?` · ${g.label}`:''}</div>` : '';
+  const clientBanner = g.mode==='valid' ? `<div class="demo-banner">${icon('clock','sm')} Демо-доступ активен до <b>${fmtExpiry(g.exp)}</b>${g.label?` · ${escA(g.label)}`:''}</div>` : '';
   const accts = DB.users.map(u=>{
     const c=colorFor(u.id);
     return `<button class="acct" data-act="login" data-id="${u.id}">
       <span class="av" style="background:${c}">${initials(u.name)}</span>
-      <span class="ai"><span class="an">${u.name}</span><span class="at">${u.title}</span></span>
+      <span class="ai"><span class="an">${escA(u.name)}</span><span class="at">${escA(u.title)}</span></span>
       <span class="ar">${u.primary?'демо':roleRu(u.role)}</span>
       ${icon('arrow','go')}
     </button>`;
@@ -127,7 +127,7 @@ function renderLogin(g){
       <div style="display:flex;align-items:center;gap:10px;margin:18px 0 14px;color:var(--muted2);font-size:11px;text-transform:uppercase;letter-spacing:.5px"><span style="flex:1;height:1px;background:var(--line)"></span>или демо-доступ без входа<span style="flex:1;height:1px;background:var(--line)"></span></div>
       <div class="lead">Каждая роль открывает свой набор модулей. Все данные демонстрационные.</div>
       <div class="accounts">${accts}</div>
-      <div class="login-extra">Демо: ${DB.company.legal}, ${DB.company.city}. ${DB.company.workshop}. Оборот ${DB.company.revenueYear}.<br>Все цифры и клиенты вымышленные — можно смело кликать, двигать сделки и принимать оплаты.</div>
+      <div class="login-extra">Демо: ${escA(DB.company.legal)}, ${escA(DB.company.city)}. ${escA(DB.company.workshop)}. Оборот ${escA(DB.company.revenueYear)}.<br>Все цифры и клиенты вымышленные — можно смело кликать, двигать сделки и принимать оплаты.</div>
     </div>
   </div></div>`;
 }
@@ -167,7 +167,7 @@ function renderShell(){
       let badge='';
       if(id==='measure'&&measureCount) badge=`<span class="badge">${measureCount}</span>`;
       if(id==='production'&&prodCount) badge=`<span class="badge alt">${prodCount}</span>`;
-      return `<button class="nav-item ${active}" data-act="nav" data-mod="${id}">${icon(m.icon)}<span>${m.name}</span>${badge}</button>`;
+      return `<button class="nav-item ${active}" data-act="nav" data-mod="${id}">${icon(m.icon)}<span>${escA(m.name)}</span>${badge}</button>`;
     }).join('');
   }).join('');
   const meta=MODULE_META[state.module]||{name:'',sub:''};
@@ -179,14 +179,14 @@ function renderShell(){
           <div><div class="brand-name">Ocean Glass</div><div class="brand-sub">CRM · Ош</div></div>
         </div>
         <div class="company-pill">
-          <div class="cc">${icon('pin','sm')} ${DB.company.city} · ${DB.company.workshop.split(' · ')[0]}</div>
+          <div class="cc">${icon('pin','sm')} ${escA(DB.company.city)} · ${escA(DB.company.workshop.split(' · ')[0])}</div>
         </div>
       </div>
       <nav class="nav">${nav}</nav>
       <div class="side-bottom">
         <div class="user-chip">
           <span class="av" style="background:${colorFor(u.id)}">${initials(u.name)}</span>
-          <span class="ui"><span class="un">${u.name}</span><span class="ut">${u.title}</span></span>
+          <span class="ui"><span class="un">${escA(u.name)}</span><span class="ut">${escA(u.title)}</span></span>
           <button class="sw" data-act="logout" title="Сменить пользователя">${icon('logout','sm')}</button>
         </div>
       </div>
@@ -209,7 +209,7 @@ function renderShell(){
   </div>`;
 }
 function renderNoAccess(){
-  return `<div class="empty">${icon('shield')}<h3>Нет доступа</h3><p>Этот раздел недоступен для роли «${state.user.title}».<br>Так работают права: сборщики и склад не видят финансы и клиентскую воронку.</p></div>`;
+  return `<div class="empty">${icon('shield')}<h3>Нет доступа</h3><p>Этот раздел недоступен для роли «${escA(state.user.title)}».<br>Так работают права: сборщики и склад не видят финансы и клиентскую воронку.</p></div>`;
 }
 
 /* ============ MODAL ============ */
@@ -232,7 +232,7 @@ function toast(text, kind){
   const root=document.getElementById('toast-root');
   root.innerHTML=`<div class="toast"><div class="t ${kind||'ok'}">
     <span class="ti" style="background:${kind==='warn'?'var(--amber-soft)':'var(--green-soft)'};color:${kind==='warn'?'#fbbf24':'#4ade80'}">${icon(kind==='warn'?'alert':'check','sm')}</span>
-    <span>${text}</span></div></div>`;
+    <span>${escA(text)}</span></div></div>`;
   clearTimeout(window.__toastT);
   window.__toastT=setTimeout(()=>{ root.innerHTML=''; }, 3200);
 }
@@ -254,7 +254,7 @@ function bars(rows, max){
   max = max || Math.max(1,...rows.map(r=>r.value));
   return `<div class="bars">`+rows.map(r=>`
     <div class="bar-row">
-      <span class="bl">${r.label}</span>
+      <span class="bl">${escA(r.label)}</span>
       <div class="bar-track"><div class="bar-fill" style="width:${Math.max(2,r.value/max*100)}%;background:${r.color||'linear-gradient(90deg,#2563eb,#3b82f6)'}">${r.inBar||''}</div></div>
       <span class="bv">${r.display!=null?r.display:r.value}</span>
     </div>`).join('')+`</div>`;
@@ -294,7 +294,7 @@ function buildNotifs(){
       const cl=dealById(d.id)?clientById(d.clientId):null;
       list.push({ id:'short_'+d.id, dealId:d.id, ov:true, due:'', icon:'alert', color:'#dc2626',
         title:'Не хватает материалов: '+(cl?cl.name:d.id),
-        sub: short.map(s=>`${s.name} — не хватает ${s.lack} ${s.unit}`).slice(0,3).join('; ') });
+        sub: short.map(s=>`${escA(s.name)} — не хватает ${s.lack} ${s.unit}`).slice(0,3).join('; ') });
     });
   }
   // 2) директор: просроченные чужие задачи (контроль)
@@ -312,7 +312,7 @@ function notifModal(){
   const items=list.map(n=>{ const isRead=notifRead.has(n.id);
     return `<div class="tl-item${isRead?' read':''}" data-nid="${n.id}" ${n.dealId?`data-act="goto-deal" data-id="${n.dealId}" style="cursor:pointer"`:''}>
       <div class="tl-dot" style="background:${n.color}24;color:${n.color}">${icon(n.icon,'sm')}</div>
-      <div class="tl-c"><div class="tl-t">${n.title}</div><div class="tl-d">${n.sub}</div></div>
+      <div class="tl-c"><div class="tl-t">${escA(n.title)}</div><div class="tl-d">${escA(n.sub)}</div></div>
       ${isRead?'':'<span class="tl-unread"></span>'}</div>`; }).join('')
     || '<div class="muted" style="padding:18px;text-align:center">Новых уведомлений нет 🎉</div>';
   openModal(`<div class="modal-h">${icon('bell')}<div><h3>Уведомления</h3><div class="mh-sub">${list.length?(unread?unread+' непрочит. из '+list.length:'все прочитаны'):'всё под контролем'}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
