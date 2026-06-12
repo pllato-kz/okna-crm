@@ -62,7 +62,7 @@ async function hmacB64url(secret, data) {
   const sig = await crypto.subtle.sign('HMAC', key, enc.encode(data));
   return bytesToB64url(new Uint8Array(sig));
 }
-export async function signJWT(payload, secret, ttlSec = 43200 /* 12 часов */) {
+export async function signJWT(payload, secret, ttlSec = 28800 /* 8 часов (рабочая смена) */) {
   const now = Math.floor(Date.now() / 1000);
   const header = strToB64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const body = strToB64url(JSON.stringify({ ...payload, iat: now, exp: now + ttlSec }));
