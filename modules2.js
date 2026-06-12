@@ -518,7 +518,7 @@ function renderSettings(){
       <div class="stat-line"><span>Оборот</span><span>${DB.company.revenueYear}</span></div>
     </div></div>
     <div class="panel"><div class="panel-h">${icon('clients')}<h3>Сотрудники</h3><span class="ph-sub">${DB.users.length}</span>${usAdd}</div>
-      <table class="tbl"><tbody>${emps}</tbody></table></div>
+      <div class="tbl-scroll"><table class="tbl"><tbody>${emps}</tbody></table></div></div>
   </div>
   <div class="panel section-gap"><div class="panel-h">${icon('shield')}<h3>Права доступа</h3><span class="ph-sub">${dir?'нажмите на ячейку, чтобы открыть/закрыть доступ роли к модулю':'кто что видит — сборщики и склад не видят финансы'}</span>${dir?`<button class="btn sm" style="margin-left:auto" data-act="add-role">${icon('plus','sm')} Роль</button>`:''}</div>
     <div class="tbl-scroll"><table class="tbl perm-tbl"><thead>${permHead}</thead><tbody>${permRows}</tbody></table></div></div>

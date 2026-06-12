@@ -334,6 +334,8 @@ input,select,textarea{font-family:inherit}
 @media (max-width:760px){.shell{grid-template-columns:1fr}.sidebar{position:fixed;left:-260px;z-index:50;transition:.2s;box-shadow:var(--shadow-lg)}
   .sidebar.open{left:0}.content{padding:16px}.topbar{padding:0 14px}.menu-toggle{display:grid!important}
   .search-toggle{display:grid}
+  .constr-body{grid-template-columns:1fr}
+  .panel-h{flex-wrap:wrap;row-gap:8px}
   .topbar .search{display:none}
   .topbar .search.open{display:flex;position:absolute;top:100%;left:0;right:0;width:auto;margin:0;border-radius:0;border-left:none;border-right:none;z-index:60}
   .topbar .search.open .search-dd{left:0;right:0;width:auto;max-width:none}
