@@ -287,6 +287,17 @@ function renderWarehouse(){
 }
 
 /* ============ PRODUCTION ============ */
+// статус плановой даты относительно SEED_NOW (демо-«сейчас»)
+function prodDateBadge(dateStr, done){
+  if(!dateStr) return null;
+  const fmt=new Date(dateStr+'T12:00:00').toLocaleDateString('ru-RU',{day:'2-digit',month:'short'});
+  if(done) return {txt:fmt, cls:'green'};
+  const dd=Math.round((new Date(dateStr+'T12:00:00')-SEED_NOW)/864e5);
+  if(dd<0) return {txt:'просроч. '+(-dd)+'д', cls:'red'};
+  if(dd===0) return {txt:'сегодня', cls:'amber'};
+  if(dd<=2) return {txt:'через '+dd+'д', cls:'amber'};
+  return {txt:fmt, cls:''};
+}
 function renderProduction(){
   const dir = state.user && state.user.role==='director';
   const editing = dir && state.prodEdit;
@@ -297,10 +308,16 @@ function renderProduction(){
     const cards=arr.map(d=>{const cl=clientById(d.clientId);
       const spec=(d.items||[]).map(c=>`${matById(c.profileId)?.type||''} ${c.w}×${c.h}`).slice(0,3).join(' · ');
       const winCount=(d.items||[]).reduce((s,c)=>s+(c.qty||1),0);
+      const rb=prodDateBadge(d.readyDate, ['ready','installing'].includes(d.prodStage));
+      const ib=prodDateBadge(d.installDate, d.stage==='done');
+      const datesRow=(rb||ib)?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
+        ${rb?`<span class="tag ${rb.cls}" style="font-size:10px">${icon('hammer','sm')} ${rb.txt}</span>`:''}
+        ${ib?`<span class="tag ${ib.cls}" style="font-size:10px">${icon('pin','sm')} ${ib.txt}</span>`:''}</div>`:'';
       return `<div class="kcard" draggable="true" data-pcard="${d.id}" data-act="open-prod" data-id="${d.id}" style="border-left-color:${col}">
         <div class="kc-client">${escA(cl.name)}</div>
         <div class="kc-addr">${icon('box','sm')} ${winCount} констр.</div>
         <div class="muted2" style="font-size:11.5px;margin-top:8px">${spec||'—'}</div>
+        ${datesRow}
         <div class="kc-meta"><span class="tag" style="font-size:10.5px">${escA(stageById(d.stage).name)}</span><span class="kc-days">${icon('pin','sm')} ${escA(cl.address.split(',')[0])}</span></div>
       </div>`;}).join('')||`<div class="muted2" style="font-size:12px;text-align:center;padding:14px 0">пусто</div>`;
     const locked=SYSTEM_PROD_IDS.includes(ps.id);
@@ -335,6 +352,11 @@ function openProd(id){
     <div class="modal-h">${icon('production')}<div><h3>Заказ · ${escA(cl.name)}</h3><div class="mh-sub">${icon('pin','sm')} ${escA(cl.address)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b">
       <div class="fld full" style="margin-bottom:16px"><label>Этап производства — нажмите, чтобы переключить</label><div class="chips oneline">${stageOpts}</div></div>
+      ${(()=>{ const rb=prodDateBadge(d.readyDate,['ready','installing'].includes(d.prodStage)), ib=prodDateBadge(d.installDate,d.stage==='done');
+        return `<div class="constr-body" style="padding:0;margin-bottom:16px">
+        <div class="fld"><label>Плановая готовность ${rb?`<span class="tag ${rb.cls}" style="font-size:10px;margin-left:4px">${rb.txt}</span>`:''}</label><input type="date" value="${d.readyDate||''}" data-act="prod-date" data-id="${d.id}" data-field="readyDate"></div>
+        <div class="fld"><label>Плановый монтаж ${ib?`<span class="tag ${ib.cls}" style="font-size:10px;margin-left:4px">${ib.txt}</span>`:''}</label><input type="date" value="${d.installDate||''}" data-act="prod-date" data-id="${d.id}" data-field="installDate"></div>
+      </div>`; })()}
       <div class="panel"><div class="panel-h" style="padding:12px 14px">${icon('ruler','sm')}<h3 style="font-size:13.5px">Спецификация (для цеха)</h3></div>
         <table class="tbl"><thead><tr><th>№</th><th>Профиль</th><th>Размер</th><th>Стеклопакет</th><th>Открывание</th><th style="text-align:center">Шт</th></tr></thead><tbody>${items}</tbody></table></div>
     </div>
