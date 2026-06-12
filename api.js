@@ -111,10 +111,12 @@ function apiMapBootstrap(boot){
   const EXTRAS      = apiSortByOrder(cat.extras).map(e => ({ id: e.id, name: e.name, price: e.price, per: e.per }));
   const MODULE_ROLES = {};
   for (const mr of (cat.module_roles || [])) (MODULE_ROLES[mr.module_id] = MODULE_ROLES[mr.module_id] || []).push(mr.role_id);
+  const SYS_ROLES = ['director','manager','surveyor','production','warehouse'];
+  const ROLES = apiSortByOrder(cat.roles || []).map(r => ({ id: r.id, name: r.name, sys: SYS_ROLES.includes(r.id) }));
 
   return {
     DB: { v: 1, company, users, materials, components, clients, deals, payables, activity, movements, tasks },
-    catalogs: { STAGES, PROD_STAGES, GLASS, OPENINGS, EXTRAS, MODULE_ROLES },
+    catalogs: { STAGES, PROD_STAGES, GLASS, OPENINGS, EXTRAS, MODULE_ROLES, ROLES },
   };
 }
 
@@ -220,6 +222,9 @@ const apiPersist = {
   setModuleRole: (moduleId, roleId, on) => on
     ? apiFetch('module_roles', { method: 'POST', body: { module_id: moduleId, role_id: roleId } })
     : apiFetch('module_roles?module_id=' + encodeURIComponent(moduleId) + '&role_id=' + encodeURIComponent(roleId), { method: 'DELETE' }),
+  createRole: (r) => apiFetch('roles', { method: 'POST', body: { id: r.id, name: r.name } }),
+  saveRole:   (r) => apiFetch('roles/' + r.id, { method: 'PUT', body: { name: r.name } }),
+  deleteRole: (id) => apiFetch('roles/' + id, { method: 'DELETE' }),
 };
 
 /* ---- WhatsApp / Green API ---- */

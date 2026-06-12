@@ -98,7 +98,7 @@ function renderLogin(g){
     </div>
   </div></div>`;
 }
-function roleRu(r){ return ({director:'Директор',manager:'Менеджер',surveyor:'Замерщик',production:'Производство',warehouse:'Склад'})[r]||r; }
+function roleRu(r){ return (typeof roleName==='function') ? roleName(r) : r; }
 
 /* ============ SHELL ============ */
 function navGroups(){

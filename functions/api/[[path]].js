@@ -450,6 +450,16 @@ export async function onRequest(context) {
       return ok({ deleted: true });
     }
 
+    // удаление роли (только директор): блок если назначена сотрудникам + чистка прав
+    if (resource === 'roles' && method === 'DELETE' && id) {
+      if (context.auth.role !== 'director') return fail(403, 'Недостаточно прав: изменять может только директор');
+      const cnt = await env.DB.prepare(`SELECT COUNT(*) AS n FROM users WHERE role_id = ?`).bind(id).first();
+      if (cnt && cnt.n > 0) return fail(409, `Роль назначена сотрудникам (${cnt.n}) — сначала смените им роль`);
+      await env.DB.prepare(`DELETE FROM module_roles WHERE role_id = ?`).bind(id).run();
+      await env.DB.prepare(`DELETE FROM roles WHERE id = ?`).bind(id).run();
+      return ok({ deleted: true });
+    }
+
     // установка/смена пароля: POST /api/users/:id/password { password }
     // разрешено директору или самому пользователю
     if (resource === 'users' && id && segs[2] === 'password') {

@@ -394,6 +394,19 @@ function dealPaid(d){ return (d.payments||[]).reduce((s,p)=>s+p.amount,0); }
 function dealDebt(d){ const sum=d.sum||dealItemsSum(d); return Math.max(0, sum-dealPaid(d)); }
 
 /* ============ PERMISSIONS ============ */
+// Роли — единый источник. Директор может добавлять/удалять роли (sys:true —
+// базовые, удалять/переименовывать нельзя) и менять им права в матрице ниже.
+const DEFAULT_ROLES = [
+  {id:'director',  name:'Директор',     sys:true},
+  {id:'manager',   name:'Менеджер',     sys:true},
+  {id:'surveyor',  name:'Замерщик',     sys:true},
+  {id:'production',name:'Производство', sys:true},
+  {id:'warehouse', name:'Склад',        sys:true},
+];
+let ROLES = DEFAULT_ROLES.map(r=>({...r}));
+const roleById  = id => ROLES.find(r=>r.id===id);
+const roleName  = id => { const r=roleById(id); return r?r.name:id; };
+
 const MODULE_ROLES = {
   dashboard:['director','manager'],
   funnel:   ['director','manager'],
@@ -405,13 +418,37 @@ const MODULE_ROLES = {
   settings: ['director'],
 };
 function canSee(mod){ return state.user && MODULE_ROLES[mod] && MODULE_ROLES[mod].includes(state.user.role); }
-function seesMoney(){ return state.user && ['director','manager'].includes(state.user.role); }
+// деньги видит директор всегда + любая роль с доступом к финансам
+function seesMoney(){ if(!state.user) return false; if(state.user.role==='director') return true;
+  return !!(MODULE_ROLES['finance'] && MODULE_ROLES['finance'].includes(state.user.role)); }
 function defaultModule(role){
   if(role==='surveyor') return 'measure';
   if(role==='production') return 'production';
   if(role==='warehouse') return 'warehouse';
-  return 'dashboard';
+  if(role==='director'||role==='manager') return 'dashboard';
+  // кастомная роль — первый доступный ей модуль
+  const order=['dashboard','funnel','clients','measure','warehouse','production','finance'];
+  return order.find(m=>(MODULE_ROLES[m]||[]).includes(role)) || 'dashboard';
 }
+// гидрация ролей/прав из локальной БД (демо) — переживает перезагрузку
+function hydratePerms(){
+  try{
+    if(DB && Array.isArray(DB.roles) && DB.roles.length) ROLES = DB.roles.map(r=>({...r}));
+    if(DB && DB.moduleRoles && typeof DB.moduleRoles==='object'){
+      Object.keys(MODULE_ROLES).forEach(k=>delete MODULE_ROLES[k]);
+      Object.keys(DB.moduleRoles).forEach(k=>{ MODULE_ROLES[k]=(DB.moduleRoles[k]||[]).slice(); });
+    }
+  }catch(e){}
+}
+function persistPerms(){
+  try{
+    DB.roles = ROLES.map(r=>({...r}));
+    DB.moduleRoles = {};
+    Object.keys(MODULE_ROLES).forEach(k=>{ DB.moduleRoles[k]=MODULE_ROLES[k].slice(); });
+    saveDB();
+  }catch(e){}
+}
+hydratePerms();
 
 /* ============ ДВИЖЕНИЯ СКЛАДА (приход/расход) ============ */
 /* Типы операций: dir — направление (in/out), color — тег в журнале. */

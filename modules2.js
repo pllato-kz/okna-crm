@@ -424,13 +424,12 @@ function renderSettings(){
       <td><span class="tag blue">${roleRu(u.role)}</span></td><td class="muted">${u.title}</td>${acts}</tr>`;
   }).join('');
   const mods=Object.keys(MODULE_META);
-  const roles=['director','manager','surveyor','production','warehouse'];
-  const permHead=`<tr><th>Модуль</th>${roles.map(r=>`<th style="text-align:center">${roleRu(r)}</th>`).join('')}</tr>`;
-  const permRows=mods.map(mod=>`<tr><td>${icon(MODULE_META[mod].icon,'sm')} ${MODULE_META[mod].name}</td>${roles.map(r=>{
-    const ok=(MODULE_ROLES[mod]||[]).includes(r);
+  const permHead=`<tr><th>Модуль</th>${ROLES.map(r=>`<th style="text-align:center;white-space:nowrap">${escA(r.name)}${dir&&!r.sys?`<button class="x" style="width:19px;height:19px;display:inline-grid;vertical-align:middle;margin-left:5px" data-act="del-role" data-id="${r.id}" title="Удалить роль «${escA(r.name)}»">${icon('x','sm')}</button>`:''}</th>`).join('')}</tr>`;
+  const permRows=mods.map(mod=>`<tr><td>${icon(MODULE_META[mod].icon,'sm')} ${MODULE_META[mod].name}</td>${ROLES.map(r=>{
+    const ok=(MODULE_ROLES[mod]||[]).includes(r.id);
     const inner = ok?`<span class="yes">${icon('check','sm')}</span>`:'<span class="no">—</span>';
-    return dir
-      ? `<td style="text-align:center"><button class="perm-cell${ok?' on':''}" data-act="perm-toggle" data-mod="${mod}" data-role="${r}" title="${ok?'Доступ открыт — нажмите, чтобы закрыть':'Доступ закрыт — нажмите, чтобы открыть'}">${inner}</button></td>`
+    return dir && r.id!=='director'
+      ? `<td style="text-align:center"><button class="perm-cell${ok?' on':''}" data-act="perm-toggle" data-mod="${mod}" data-role="${r.id}" title="${ok?'Доступ открыт — нажмите, чтобы закрыть':'Доступ закрыт — нажмите, чтобы открыть'}">${inner}</button></td>`
       : `<td style="text-align:center">${inner}</td>`;}).join('')}</tr>`).join('');
   const coEdit = dir ? `<button class="btn sm ghost" style="margin-left:auto" data-act="edit-company">${icon('edit','sm')} Изменить</button>` : '';
   const usAdd  = dir ? `<button class="btn sm" style="margin-left:auto" data-act="add-user">${icon('plus','sm')} Добавить</button>` : '';
@@ -467,7 +466,7 @@ function renderSettings(){
     <div class="panel"><div class="panel-h">${icon('clients')}<h3>Сотрудники</h3><span class="ph-sub">${DB.users.length}</span>${usAdd}</div>
       <table class="tbl"><tbody>${emps}</tbody></table></div>
   </div>
-  <div class="panel section-gap"><div class="panel-h">${icon('shield')}<h3>Права доступа</h3><span class="ph-sub">${dir?'нажмите на ячейку, чтобы открыть/закрыть доступ роли к модулю':'кто что видит — сборщики и склад не видят финансы'}</span></div>
+  <div class="panel section-gap"><div class="panel-h">${icon('shield')}<h3>Права доступа</h3><span class="ph-sub">${dir?'нажмите на ячейку, чтобы открыть/закрыть доступ роли к модулю':'кто что видит — сборщики и склад не видят финансы'}</span>${dir?`<button class="btn sm" style="margin-left:auto" data-act="add-role">${icon('plus','sm')} Роль</button>`:''}</div>
     <div class="tbl-scroll"><table class="tbl perm-tbl"><thead>${permHead}</thead><tbody>${permRows}</tbody></table></div></div>
   ${waPanel}
   ${dir?`<div class="section-gap"><div class="panel-h" style="border:none;padding:6px 0"><h3 style="font-size:15px">Каталоги и прайс</h3><span class="ph-sub">цены сразу применяются в расчёте КП</span></div>${catTable('glass')}${catTable('opening')}${catTable('extra')}</div>`:''}
