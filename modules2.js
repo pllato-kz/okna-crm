@@ -138,6 +138,7 @@ function initMeasureBindings(){
       const d=currentMeasureDeal(); if(!d) return;
       const c=(d.items||[]).find(x=>x.id===inp.dataset.cid); if(!c) return;
       let v=parseFloat(inp.value)||0; if(inp.dataset.field==='sashes'){v=Math.max(1,Math.min(5,Math.round(v)));} if(inp.dataset.field==='qty'){v=Math.max(1,Math.round(v));}
+      if(inp.dataset.field==='w'||inp.dataset.field==='h'){ v=Math.max(0,Math.min(20000,v)); } // без отрицательных габаритов
       c[inp.dataset.field]=v; saveDB(); patchMeasure();
       if(window.API && API.enabled) API.persist.saveItem(c).catch(()=>{});
     });
@@ -401,7 +402,7 @@ function prodDateBadge(dateStr, done){
   if(!dateStr) return null;
   const fmt=new Date(dateStr+'T12:00:00').toLocaleDateString('ru-RU',{day:'2-digit',month:'short'});
   if(done) return {txt:fmt, cls:'green'};
-  const dd=Math.round((new Date(dateStr+'T12:00:00')-SEED_NOW)/864e5);
+  const dd=Math.round((new Date(dateStr+'T12:00:00')-nowRef())/864e5);
   if(dd<0) return {txt:'просроч. '+(-dd)+'д', cls:'red'};
   if(dd===0) return {txt:'сегодня', cls:'amber'};
   if(dd<=2) return {txt:'через '+dd+'д', cls:'amber'};
