@@ -1715,6 +1715,12 @@ document.addEventListener('click', e=>{
     case 'm-extra': mSet(t.dataset.cid,'extras',t.dataset.v); break;
     case 'gen-kp': { const d=dealById(id); d.sum=computeMeasure(d).total; saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); openKp(id); } break;
     case 'print-kp': printKp(id); break;
+    case 'gen-invoice': { const d=dealById(id); if(d){ d.sum=computeMeasure(d).total; saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); openInvoice(id); } } break;
+    case 'print-invoice': printInvoice(id); break;
+    case 'gen-contract': { const d=dealById(id); if(d){ d.sum=computeMeasure(d).total;
+        if(!d.contractNo){ d.contractNo=nextContractNo(); d.contractDate=SEED_NOW.toISOString().slice(0,10); }
+        saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); openContract(id); } } break;
+    case 'print-contract': printContract(id); break;
     case 'quick-prepay': applyPrepay(id); break;
     case 'confirm-prepay': applyPrepay(id); break;
     case 'wh-tab': state.whTab=t.dataset.v; renderModule(); break;

@@ -256,6 +256,8 @@ CREATE TABLE deals (
   consumed_fittings  INTEGER NOT NULL DEFAULT 0,
   ready_date     TEXT,                              -- плановая готовность (производство)
   install_date   TEXT,                              -- плановый монтаж
+  contract_no    TEXT,                              -- номер договора подряда
+  contract_date  TEXT,                              -- дата договора
   created_at     TEXT NOT NULL DEFAULT (datetime('now')),
   stage_since    TEXT                                -- когда зашла в текущую стадию
 );
