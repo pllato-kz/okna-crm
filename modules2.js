@@ -36,7 +36,10 @@ function renderMeasure(){
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)">
     <span class="av" style="width:44px;height:44px;border-radius:11px;display:grid;place-items:center;background:${colorFor(cl.id)};color:#fff;font-weight:700">${initials(cl.name)}</span>
     <div><div style="font-weight:700;font-size:15px">${cl.name}</div><div class="muted" style="font-size:12.5px">${icon('pin','sm')} ${cl.address}</div></div>
-    <a class="btn sm" style="margin-left:auto" href="tel:${cl.phone.replace(/\s/g,'')}">${icon('phone','sm')} ${cl.phone}</a>
+    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+      ${canWa()?`<button class="btn green sm" data-act="wa-deal-chat" data-id="${d.id}">${icon('wa','sm')} Чат WhatsApp</button>`:''}
+      <a class="btn sm" href="tel:${cl.phone.replace(/\s/g,'')}">${icon('phone','sm')} ${cl.phone}</a>
+    </div>
   </div>
   <div class="measure-grid">
     <div>
@@ -164,7 +167,8 @@ function openKp(id){
     </div>
     <div class="modal-f">
       <button class="btn" data-act="print-kp" data-id="${d.id}">${icon('doc','sm')} Печать / PDF</button>
-      ${canWa()?`<button class="btn green" data-act="wa-deal" data-id="${d.id}">${icon('wa','sm')} Отправить в WhatsApp</button>`:''}
+      ${canWa()?`<button class="btn green" data-act="wa-deal-chat" data-id="${d.id}">${icon('wa','sm')} Чат WhatsApp</button>
+      <button class="btn" data-act="wa-deal" data-id="${d.id}">${icon('send','sm')} Быстрое сообщение</button>`:''}
       <button class="btn primary" data-act="confirm-prepay" data-id="${d.id}">${icon('money','sm')} Принять предоплату ${money(k.prepay)}</button>
     </div>
   `, true);
