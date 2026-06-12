@@ -1,6 +1,10 @@
 'use strict';
 /* ============ ACTIONS ============ */
-function login(id){ state.user=userById(id); state.module=defaultModule(state.user.role); state.measureDealId=null; applyHashToState(); render(); }
+function login(id){ state.user=userById(id); state.module=defaultModule(state.user.role); state.measureDealId=null; applyHashToState(); render(); flushHashOpen(); }
+// открыть карточку из URL (?deal=/?client=), один раз
+function flushHashOpen(){ const o=__pendingHashOpen; __pendingHashOpen=null; if(!o) return;
+  if(o.deal && dealById(o.deal)) openDeal(o.deal);
+  else if(o.client && clientById(o.client)) openClient(o.client); }
 function logout(){ try{ if(window.API){ API.logout(); API.enabled=false; } }catch(e){} state.user=null; render(); }
 
 /* ====== ВХОД ЧЕРЕЗ API (Слой 4) ====== */
@@ -1838,11 +1842,17 @@ document.addEventListener('drop', e=>{
   }catch(e){ try{ API.logout(); }catch(_){ } }
   applyHashToState(); // учесть deep-link из URL
   render();
+  flushHashOpen();
 })();
 /* навигация назад/вперёд браузера и ручная правка #-адреса */
 window.addEventListener('hashchange', ()=>{
   if(!state.user) return;
-  const m=hashModule();
-  if(m && MODULE_META[m] && canSee(m)){ if(m!==state.module){ state.module=m; state.sideOpen=false; render(); } }
-  else if(location.hash!=='#/'+state.module){ history.replaceState(null,'','#/'+state.module); } // некорректный/недоступный — вернуть
+  const h=parseHash();
+  if(h.mod && MODULE_META[h.mod] && canSee(h.mod)){
+    const changed = h.mod!==state.module
+      || (h.mod==='finance' && FIN_TABS.includes(h.tab) && h.tab!==state.financeTab)
+      || (h.mod==='warehouse' && WH_TABS.includes(h.tab) && h.tab!==state.whTab)
+      || !!h.deal || !!h.client;
+    if(changed){ applyHashToState(); state.sideOpen=false; render(); flushHashOpen(); }
+  } else if(location.hash!==currentHash()){ history.replaceState(null,'',currentHash()); } // некорректный/недоступный — вернуть
 });
