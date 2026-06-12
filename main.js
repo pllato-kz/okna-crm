@@ -22,8 +22,10 @@ function applyServerCatalogs(cat){
   fillArr(STAGES, cat.STAGES); fillArr(PROD_STAGES, cat.PROD_STAGES);
   fillArr(GLASS, cat.GLASS); fillArr(OPENINGS, cat.OPENINGS); fillArr(EXTRAS, cat.EXTRAS);
   if(cat.MODULE_ROLES && Object.keys(cat.MODULE_ROLES).length){
+    const def={}; Object.keys(MODULE_ROLES).forEach(k=>def[k]=MODULE_ROLES[k].slice());
     Object.keys(MODULE_ROLES).forEach(k=>{ delete MODULE_ROLES[k]; });
     Object.keys(cat.MODULE_ROLES).forEach(k=>{ MODULE_ROLES[k]=cat.MODULE_ROLES[k].slice(); });
+    Object.keys(def).forEach(k=>{ if(!(k in MODULE_ROLES)) MODULE_ROLES[k]=def[k]; });
   }
   if(Array.isArray(cat.ROLES) && cat.ROLES.length){ ROLES = cat.ROLES.map(r=>({...r})); }
 }

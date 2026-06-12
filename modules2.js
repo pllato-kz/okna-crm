@@ -444,6 +444,8 @@ function waTplPanelHtml(){
     <div style="margin-left:auto;display:flex;gap:8px"><button class="btn sm ghost" data-act="wa-tpl-reset" title="Вернуть стандартные">${icon('refresh','sm')}</button><button class="btn sm" data-act="wa-tpl-add">${icon('plus','sm')} Шаблон</button></div></div>
     <div class="tbl-scroll"><table class="tbl"><thead><tr><th>Этап</th><th>Название</th><th>Текст</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">Шаблонов нет</td></tr>'}</tbody></table></div></div>`;
 }
+// Отдельный раздел «Корзина» (директор + менеджер)
+function renderTrash(){ return trashPanelHtml(); }
 // Корзина: список мягко удалённых записей с восстановлением и сроком хранения
 function trashPanelHtml(){
   if(typeof purgeExpiredTrash==='function') purgeExpiredTrash();
@@ -525,7 +527,6 @@ function renderSettings(){
   ${waPanel}
   ${dir?waTplPanelHtml():''}
   ${dir?`<div class="section-gap"><div class="panel-h" style="border:none;padding:6px 0"><h3 style="font-size:15px">Каталоги и прайс</h3><span class="ph-sub">цены сразу применяются в расчёте КП</span></div>${catTable('glass')}${catTable('opening')}${catTable('extra')}</div>`:''}
-  ${trashPanelHtml()}
   <div class="panel section-gap"><div class="panel-h">${icon('refresh')}<h3>Демо-данные</h3></div><div class="panel-b">
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><span class="muted" style="font-size:13px">Сбросить все изменения и вернуть исходные демо-данные.</span>
     <button class="btn danger" data-act="reset">${icon('refresh','sm')} Сбросить демо</button></div></div></div>`;

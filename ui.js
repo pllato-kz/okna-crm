@@ -49,6 +49,7 @@ function renderModule(){
   else if(m==='warehouse') html=renderWarehouse();
   else if(m==='production')html=renderProduction();
   else if(m==='finance')   html=renderFinance();
+  else if(m==='trash')     html=renderTrash();
   else if(m==='settings')  html=renderSettings();
   view.innerHTML=html;
   if(m==='measure') initMeasureBindings();
@@ -107,7 +108,7 @@ function navGroups(){
     {title:'Поле',    items:['measure']},
     {title:'Операции',items:['warehouse','production']},
     {title:'Финансы', items:['finance']},
-    {title:'Система',  items:['settings']},
+    {title:'Система',  items:['trash','settings']},
   ];
 }
 const MODULE_META = {
@@ -118,6 +119,7 @@ const MODULE_META = {
   warehouse:{name:'Склад',    icon:'warehouse', sub:'Профиль, стеклопакеты, фурнитура'},
   production:{name:'Производство',icon:'production',sub:'Резка, стеклопакет, сборка, монтаж'},
   finance:  {name:'Финансы',  icon:'finance',   sub:'Дебиторка, оплаты, отчётность'},
+  trash:    {name:'Корзина',  icon:'trash',     sub:'Удалённые записи — восстановление'},
   settings: {name:'Настройки',icon:'settings',  sub:'Сотрудники и права доступа'},
 };
 function renderShell(){

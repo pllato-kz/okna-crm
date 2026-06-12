@@ -497,6 +497,7 @@ const MODULE_ROLES = {
   warehouse:['director','manager','warehouse','production'],
   production:['director','production','warehouse','surveyor'],
   finance:  ['director','manager'],
+  trash:    ['director','manager'],
   settings: ['director'],
 };
 function canSee(mod){ return state.user && MODULE_ROLES[mod] && MODULE_ROLES[mod].includes(state.user.role); }
@@ -517,8 +518,11 @@ function hydratePerms(){
   try{
     if(DB && Array.isArray(DB.roles) && DB.roles.length) ROLES = DB.roles.map(r=>({...r}));
     if(DB && DB.moduleRoles && typeof DB.moduleRoles==='object'){
+      const def={}; Object.keys(MODULE_ROLES).forEach(k=>def[k]=MODULE_ROLES[k].slice());
       Object.keys(MODULE_ROLES).forEach(k=>delete MODULE_ROLES[k]);
       Object.keys(DB.moduleRoles).forEach(k=>{ MODULE_ROLES[k]=(DB.moduleRoles[k]||[]).slice(); });
+      // добить модули, появившиеся в коде позже сохранённой матрицы (напр. «Корзина»)
+      Object.keys(def).forEach(k=>{ if(!(k in MODULE_ROLES)) MODULE_ROLES[k]=def[k]; });
     }
   }catch(e){}
 }
