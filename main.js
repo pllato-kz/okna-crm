@@ -1135,7 +1135,7 @@ document.addEventListener('click', e=>{
     case 'open-prod': openProd(id); break;
     case 'move-prod': moveProd(id, t.dataset.stage); break;
     case 'fin-tab': state.financeTab=t.dataset.v; renderModule(); break;
-    case 'fin-period': state.financePeriod=t.dataset.v; renderModule(); break;
+    case 'fin-period': state.financePeriod=t.dataset.v; state.financeFrom=null; state.financeTo=null; renderModule(); break;
     case 'share-demo': shareModal(); break;
     case 'share-pick': sharePick(t); break;
     case 'share-make': shareMake(t); break;
@@ -1148,7 +1148,8 @@ document.addEventListener('change', e=>{
   const t=e.target.closest('[data-act]'); if(!t) return;
   if(t.dataset.act==='m-profile') mSet(t.dataset.cid,'profileId',t.value);
   if(t.dataset.act==='m-glass') mSet(t.dataset.cid,'glassId',t.value);
-  if(t.dataset.act==='fin-date'){ state.financeFrom=t.value||null; state.financePeriod=t.value?'date':'all'; renderModule(); }
+  if(t.dataset.act==='fin-date'){ state.financeFrom=t.value||null; state.financePeriod=(state.financeFrom||state.financeTo)?'date':'all'; renderModule(); }
+  if(t.dataset.act==='fin-date-to'){ state.financeTo=t.value||null; state.financePeriod=(state.financeFrom||state.financeTo)?'date':'all'; renderModule(); }
 });
 document.addEventListener('input', e=>{
   const t=e.target.closest('[data-act]'); if(!t) return;

@@ -330,11 +330,17 @@ function renderFinance(){
   } else {
     // период отчётности
     const fp=state.financePeriod||'all';
-    let fromTs=0, periodLabel='за всё время';
+    let fromTs=-Infinity, toTs=Infinity, periodLabel='за всё время';
     if(fp==='7'){ fromTs=SEED_NOW.getTime()-7*864e5; periodLabel='за 7 дней'; }
     else if(fp==='30'){ fromTs=SEED_NOW.getTime()-30*864e5; periodLabel='за 30 дней'; }
-    else if(fp==='date' && state.financeFrom){ fromTs=new Date(state.financeFrom).getTime(); periodLabel='с '+dateFull(state.financeFrom); }
-    const inP=ts=>fromTs===0?true:(ts>=fromTs);
+    else if(fp==='date'){
+      if(state.financeFrom) fromTs=new Date(state.financeFrom).getTime();
+      if(state.financeTo) toTs=new Date(state.financeTo).getTime()+864e5-1; // включаем весь день «по»
+      if(state.financeFrom && state.financeTo) periodLabel='с '+dateFull(state.financeFrom)+' по '+dateFull(state.financeTo);
+      else if(state.financeFrom) periodLabel='с '+dateFull(state.financeFrom);
+      else if(state.financeTo) periodLabel='по '+dateFull(state.financeTo);
+    }
+    const inP=ts=>ts>=fromTs && ts<=toTs;
     const revenue=DB.deals.reduce((s,d)=>s+(d.payments||[]).filter(p=>inP(new Date(p.date).getTime())).reduce((a,p)=>a+p.amount,0),0);
     const orders=DB.deals.filter(d=>d.sum>0 && inP(new Date(d.createdAt).getTime())).reduce((s,d)=>s+d.sum,0);
     const cost=Math.round(revenue*0.56); const margin=revenue-cost;
@@ -344,12 +350,16 @@ function renderFinance(){
     const stageRows=STAGES.map(s=>{const cnt=DB.deals.filter(d=>stageIndex(d.stage)>=stageIndex(s.id)).length;
       return {label:s.name,value:cnt,display:cnt,color:`linear-gradient(90deg,${s.color},${s.color}cc)`};});
     const perChips=[['all','Всё время'],['30','30 дней'],['7','7 дней']].map(([v,l])=>`<button class="chip ${fp===v?'on':''}" data-act="fin-period" data-v="${v}">${l}</button>`).join('');
-    const fromVal=(fp==='date'&&state.financeFrom)?String(state.financeFrom).slice(0,10):'';
+    const fromVal=state.financeFrom?String(state.financeFrom).slice(0,10):'';
+    const toVal=state.financeTo?String(state.financeTo).slice(0,10):'';
+    const dInp='background:var(--bg2);border:1px solid '+(fp==='date'?'var(--accent2)':'var(--line)')+';border-radius:9px;padding:7px 10px;color:var(--txt);font-size:13px';
     body=`<div style="padding:18px 18px 6px">
       <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:16px">
         <span class="muted2" style="font-size:11.5px">Период:</span><div class="chips">${perChips}</div>
-        <span class="muted2" style="font-size:11.5px;margin-left:4px">или с даты:</span>
-        <input type="date" data-act="fin-date" value="${fromVal}" style="background:var(--bg2);border:1px solid ${fp==='date'?'var(--accent2)':'var(--line)'};border-radius:9px;padding:7px 10px;color:var(--txt);font-size:13px">
+        <span class="muted2" style="font-size:11.5px;margin-left:4px">или диапазон:</span>
+        <input type="date" data-act="fin-date" value="${fromVal}" title="с даты" style="${dInp}">
+        <span class="muted2" style="font-size:12px">—</span>
+        <input type="date" data-act="fin-date-to" value="${toVal}" title="по дату" style="${dInp}">
         <span class="muted2" style="font-size:11.5px;margin-left:auto">${periodLabel}</span>
       </div>
       <div class="cards-row" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:18px">
