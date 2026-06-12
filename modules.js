@@ -214,7 +214,20 @@ function openDeal(id){
 
 /* ============ CLIENTS ============ */
 function renderClients(){
-  const rows=DB.clients.map(cl=>{
+  const fType=state.clientType||'all', fDebt=state.clientDebt||'all', q=(state.clientSearch||'').trim().toLowerCase();
+  const anyFilter = fType!=='all'||fDebt!=='all'||!!q;
+  const matchQ=cl=> !q || [cl.name,cl.phone,cl.address].some(v=>(v||'').toLowerCase().includes(q));
+  const filtered=DB.clients.filter(cl=>{
+    if(fType!=='all' && cl.type!==fType) return false;
+    if(!matchQ(cl)) return false;
+    if(fDebt!=='all'){
+      const debt=DB.deals.filter(d=>d.clientId===cl.id).reduce((s,d)=>s+dealDebt(d),0);
+      if(fDebt==='debt' && !(debt>0)) return false;
+      if(fDebt==='nodebt' && debt>0) return false;
+    }
+    return true;
+  });
+  const rows=filtered.map(cl=>{
     const ds=DB.deals.filter(d=>d.clientId===cl.id);
     const total=ds.reduce((s,d)=>s+(d.sum||0),0);
     const debt=ds.reduce((s,d)=>s+dealDebt(d),0);
@@ -226,10 +239,22 @@ function renderClients(){
       <td class="num">${total?moneyK(total):'—'}</td>
       <td class="num">${debt>0?`<span class="tag amber">${moneyK(debt)}</span>`:'<span class="muted2">—</span>'}</td>
     </tr>`;
-  }).join('');
+  }).join('') || `<tr><td colspan="6" class="muted" style="text-align:center;padding:30px">Никого не найдено по фильтрам</td></tr>`;
+  // панель фильтров
+  const selSt='background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:7px 10px;color:var(--txt);font-size:13px;outline:none;cursor:pointer';
+  const types=[...new Set(DB.clients.map(c=>c.type).filter(Boolean))];
+  const typeOpts=`<option value="all">Все типы</option>`+types.map(v=>`<option value="${escA(v)}"${fType===v?' selected':''}>${v}</option>`).join('');
+  const debtOpts=[['all','Долг — любой'],['debt','С долгом'],['nodebt','Без долга']]
+    .map(([v,l])=>`<option value="${v}"${fDebt===v?' selected':''}>${l}</option>`).join('');
   return `<div class="panel">
-    <div class="panel-h">${icon('clients')}<h3>Клиенты</h3><span class="ph-sub">${DB.clients.length} записей</span>
+    <div class="panel-h">${icon('clients')}<h3>Клиенты</h3><span class="ph-sub">${anyFilter?`${filtered.length} из ${DB.clients.length}`:`${DB.clients.length} записей`}</span>
       <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="import-clients">${icon('arrow','sm')} Импорт</button><button class="btn sm" data-act="export" data-what="clients">${icon('doc','sm')} Экспорт</button><button class="btn primary sm" data-act="new-client">${icon('plus','sm')} Добавить</button></div></div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line)">
+      <div class="search" style="flex:1;min-width:200px;max-width:340px">${icon('search','sm')}<input id="cl-search" data-act="cl-search" placeholder="Поиск по имени, телефону, адресу" value="${escA(state.clientSearch||'')}" autocomplete="off"></div>
+      <select data-act="cl-type" style="${selSt}">${typeOpts}</select>
+      <select data-act="cl-debt" style="${selSt}">${debtOpts}</select>
+      ${anyFilter?`<button class="btn sm" data-act="clients-reset">${icon('x','sm')} Сбросить</button>`:''}
+    </div>
     <table class="tbl">
       <thead><tr><th>Клиент</th><th>Телефон</th><th>Адрес</th><th class="num">Сделок</th><th class="num">Сумма</th><th class="num">Долг</th></tr></thead>
       <tbody>${rows}</tbody>
