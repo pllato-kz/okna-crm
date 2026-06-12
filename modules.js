@@ -250,7 +250,7 @@ function renderClients(){
     <div class="panel-h">${icon('clients')}<h3>Клиенты</h3><span class="ph-sub">${anyFilter?`${filtered.length} из ${DB.clients.length}`:`${DB.clients.length} записей`}</span>
       <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="import-clients">${icon('arrow','sm')} Импорт</button><button class="btn sm" data-act="export" data-what="clients">${icon('doc','sm')} Экспорт</button><button class="btn primary sm" data-act="new-client">${icon('plus','sm')} Добавить</button></div></div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line)">
-      <div class="search" style="flex:1;min-width:200px;max-width:340px">${icon('search','sm')}<input id="cl-search" data-act="cl-search" placeholder="Поиск по имени, телефону, адресу" value="${escA(state.clientSearch||'')}" autocomplete="off"></div>
+      <div class="flt-search" style="flex:1;min-width:220px;max-width:360px">${icon('search','sm')}<input id="cl-search" data-act="cl-search" placeholder="Поиск по имени, телефону, адресу" value="${escA(state.clientSearch||'')}" autocomplete="off"></div>
       <select data-act="cl-type" style="${selSt}">${typeOpts}</select>
       <select data-act="cl-debt" style="${selSt}">${debtOpts}</select>
       ${anyFilter?`<button class="btn sm" data-act="clients-reset">${icon('x','sm')} Сбросить</button>`:''}

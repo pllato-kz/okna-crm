@@ -97,6 +97,9 @@ input,select,textarea{font-family:inherit}
 .topbar .search{margin-left:auto;position:relative;display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);
   border-radius:10px;padding:8px 12px;width:240px;color:var(--muted)}
 .topbar .search input{background:none;border:none;outline:none;color:var(--txt);width:100%;font-size:13.5px}
+.flt-search{position:relative;display:flex;align-items:center;gap:9px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:8px 13px;color:var(--muted)}
+.flt-search input{background:none;border:none;outline:none;color:var(--txt);width:100%;font-size:13.5px;padding:0}
+.flt-search:focus-within{border-color:var(--accent2)}
 .search-dd{position:absolute;top:calc(100% + 8px);right:0;width:320px;max-width:90vw;background:var(--panel);border:1px solid var(--line);
   border-radius:12px;box-shadow:var(--shadow-lg);padding:6px;display:none;max-height:62vh;overflow-y:auto;z-index:40}
 .search-dd.open{display:block}
