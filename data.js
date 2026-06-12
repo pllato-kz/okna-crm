@@ -79,6 +79,9 @@ const DEFAULT_STAGES = [
   {id:'install',    name:'Монтаж',      color:'#0d9488'},
   {id:'done',       name:'Выполнено',   color:'#16a34a'},
 ];
+// Стадии, на id которых завязаны разделы (Замер, Производство) и расчёты —
+// их можно переименовать и перекрасить, но не удалять.
+const SYSTEM_STAGE_IDS = ['measure','production','install','done'];
 const STAGES_KEY = 'okna_crm_stages';
 function loadStages(){ try{ const raw=localStorage.getItem(STAGES_KEY); if(raw){ const a=JSON.parse(raw); if(Array.isArray(a)&&a.length) return a; } }catch(e){} return DEFAULT_STAGES.map(s=>({...s})); }
 function saveStages(){ try{ localStorage.setItem(STAGES_KEY, JSON.stringify(STAGES)); }catch(e){} }

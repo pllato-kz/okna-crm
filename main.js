@@ -868,6 +868,7 @@ function stageSave(id){
 }
 function stageDelModal(id){
   if(!isDirector()) return; const s=stageById(id); if(!s) return;
+  if(SYSTEM_STAGE_IDS.includes(id)){ toast('Системную стадию (замер/производство/монтаж/выполнено) удалить нельзя — на ней завязаны разделы. Можно переименовать и сменить цвет','warn'); return; }
   if(STAGES.length<=1){ toast('Должна остаться хотя бы одна стадия','warn'); return; }
   const dealsIn=DB.deals.filter(d=>d.stage===id);
   const others=STAGES.filter(x=>x.id!==id);
@@ -880,6 +881,7 @@ function stageDelModal(id){
 }
 function stageDelConfirm(id){
   if(!isDirector()) return; const s=stageById(id); if(!s) return;
+  if(SYSTEM_STAGE_IDS.includes(id)){ toast('Системную стадию удалить нельзя','warn'); return; }
   if(STAGES.length<=1){ toast('Должна остаться хотя бы одна стадия','warn'); return; }
   const dealsIn=DB.deals.filter(d=>d.stage===id);
   if(dealsIn.length){ const sel=document.getElementById('stg-move'); const target=sel?sel.value:null;
