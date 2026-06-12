@@ -413,6 +413,28 @@ function catTable(type){
     <div class="tbl-scroll"><table class="tbl cat-tbl"><colgroup><col><col style="width:200px"><col style="width:160px"><col style="width:96px"></colgroup>
       <thead><tr><th>Наименование</th><th><span style="display:flex;justify-content:flex-end"><span>Цена</span><span style="flex:0 0 64px"></span></span></th><th>${cfg.hasPer?'Расчёт':''}</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
+// Корзина: список мягко удалённых записей с восстановлением и сроком хранения
+function trashPanelHtml(){
+  if(typeof purgeExpiredTrash==='function') purgeExpiredTrash();
+  const trash=DB.trash||[];
+  const selSt='background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:6px 9px;color:var(--txt);font-size:12.5px;outline:none;cursor:pointer';
+  const rows = trash.length ? trash.map(r=>{
+    const meta=TRASH_META[r.type]||{label:r.type,icon:'trash'};
+    const left=trashMsLeft(r);
+    const leftTxt = left===null ? 'хранится бессрочно' : (left>0 ? 'осталось '+Math.max(1,Math.ceil(left/86400000))+' дн.' : 'скоро удалится');
+    const retOpts=RETENTION_OPTS.map(([d,l])=>`<option value="${d}"${r.retentionDays===d?' selected':''}>${l}</option>`).join('');
+    return `<tr>
+      <td><div class="cell-name">${icon(meta.icon,'sm')}<div><div style="font-weight:600">${escA(r.name||'—')}</div><div class="muted2" style="font-size:11.5px">${meta.label}${r.sub?' · '+escA(r.sub):''}</div></div></div></td>
+      <td class="muted" style="white-space:nowrap">${dateStr(r.deletedAt)}</td>
+      <td style="white-space:nowrap"><select data-act="trash-retention" data-id="${r.id}" style="${selSt}">${retOpts}</select><div class="muted2" style="font-size:11px;margin-top:3px">${leftTxt}</div></td>
+      <td class="row-acts" style="white-space:nowrap">
+        <button class="btn sm" data-act="trash-restore" data-id="${r.id}">${icon('refresh','sm')} Восстановить</button>
+        <button class="btn sm danger ghost" data-act="trash-purge" data-id="${r.id}" title="Удалить навсегда">${icon('trash','sm')}</button></td></tr>`;
+  }).join('') : `<tr><td colspan="4" class="muted" style="text-align:center;padding:24px">Корзина пуста</td></tr>`;
+  return `<div class="panel section-gap"><div class="panel-h">${icon('trash')}<h3>Корзина</h3>
+    <span class="ph-sub">${trash.length?trash.length+' элем. · восстановите или задайте срок хранения':'удалённые записи можно восстановить'}</span></div>
+    <div class="tbl-scroll"><table class="tbl"><thead><tr><th>Запись</th><th>Удалено</th><th>Срок хранения</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
 function renderSettings(){
   const dir = state.user && state.user.role==='director'; // редактирование — только директор
   const emps=DB.users.map(u=>{
@@ -470,6 +492,7 @@ function renderSettings(){
     <div class="tbl-scroll"><table class="tbl perm-tbl"><thead>${permHead}</thead><tbody>${permRows}</tbody></table></div></div>
   ${waPanel}
   ${dir?`<div class="section-gap"><div class="panel-h" style="border:none;padding:6px 0"><h3 style="font-size:15px">Каталоги и прайс</h3><span class="ph-sub">цены сразу применяются в расчёте КП</span></div>${catTable('glass')}${catTable('opening')}${catTable('extra')}</div>`:''}
+  ${trashPanelHtml()}
   <div class="panel section-gap"><div class="panel-h">${icon('refresh')}<h3>Демо-данные</h3></div><div class="panel-b">
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><span class="muted" style="font-size:13px">Сбросить все изменения и вернуть исходные демо-данные.</span>
     <button class="btn danger" data-act="reset">${icon('refresh','sm')} Сбросить демо</button></div></div></div>`;

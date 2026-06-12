@@ -258,12 +258,33 @@ function buildSeed(){
 const DB_KEY = 'okna_crm_db_v1';
 let DB;
 function loadDB(){
-  try{ const raw=localStorage.getItem(DB_KEY); if(raw){ const d=JSON.parse(raw); if(d&&d.v===1){ if(!Array.isArray(d.movements)) d.movements=[]; if(!Array.isArray(d.waMessages)) d.waMessages=[]; if(!Array.isArray(d.tasks)) d.tasks=[]; return d; } } }catch(e){}
+  try{ const raw=localStorage.getItem(DB_KEY); if(raw){ const d=JSON.parse(raw); if(d&&d.v===1){ if(!Array.isArray(d.movements)) d.movements=[]; if(!Array.isArray(d.waMessages)) d.waMessages=[]; if(!Array.isArray(d.tasks)) d.tasks=[]; if(!Array.isArray(d.trash)) d.trash=[]; return d; } } }catch(e){}
   const seed=buildSeed(); localStorage.setItem(DB_KEY, JSON.stringify(seed)); return seed;
 }
 function saveDB(){ try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(e){} }
 function resetDB(){ localStorage.removeItem(DB_KEY); DB=loadDB(); }
 DB = loadDB();
+
+/* ============ КОРЗИНА (мягкое удаление) ============ */
+// Метаданные типов: подпись и куда возвращать при восстановлении.
+const TRASH_META = {
+  client:    {label:'Клиент',      icon:'clients'},
+  deal:      {label:'Сделка',      icon:'funnel'},
+  material:  {label:'Профиль',     icon:'box'},
+  component: {label:'Фурнитура',   icon:'box'},
+  glass:     {label:'Стеклопакет', icon:'money'},
+  opening:   {label:'Открывание',  icon:'money'},
+  extra:     {label:'Опция',       icon:'money'},
+  payable:   {label:'Долг поставщику', icon:'wallet'},
+};
+// Варианты срока хранения в корзине (дней; 0 — бессрочно).
+const RETENTION_OPTS = [ [7,'7 дней'], [30,'30 дней'], [90,'90 дней'], [0,'Бессрочно'] ];
+const TRASH_DEFAULT_DAYS = 30;
+// Сколько осталось до автоудаления (мс); null — бессрочно.
+function trashMsLeft(rec){
+  if(!rec || !rec.retentionDays) return null;
+  return new Date(rec.deletedAt).getTime() + rec.retentionDays*86400000 - Date.now();
+}
 
 const THEME_KEY = 'okna_crm_theme';
 function loadTheme(){ try{ return localStorage.getItem(THEME_KEY) || 'light'; }catch(e){ return 'light'; } }

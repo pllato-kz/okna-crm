@@ -366,6 +366,51 @@ function saveClient(id){
   saveDB(); if(apiOn()) persist(API.persist.saveClient(cl));
   closeModal(); render(); toast('Клиент обновлён');
 }
+/* ============ КОРЗИНА: мягкое удаление ============ */
+function trashPush(type, snapshot, name, sub){
+  DB.trash = DB.trash || [];
+  DB.trash.unshift({ id:uid('tr'), type, name:name||'', sub:sub||'', snapshot,
+    deletedAt:new Date().toISOString(), retentionDays:TRASH_DEFAULT_DAYS });
+}
+function purgeExpiredTrash(){
+  if(!Array.isArray(DB.trash) || !DB.trash.length) return;
+  const before=DB.trash.length;
+  DB.trash = DB.trash.filter(r=>{ const left=trashMsLeft(r); return left===null || left>0; });
+  if(DB.trash.length!==before) saveDB();
+}
+function trashSetRetention(id, days){
+  const r=(DB.trash||[]).find(x=>x.id===id); if(!r) return;
+  r.retentionDays=days; saveDB(); renderModule();
+}
+function trashPurge(id){ DB.trash=(DB.trash||[]).filter(x=>x.id!==id); saveDB(); renderModule(); toast('Удалено окончательно'); }
+function restoreDealApi(d, tasks){
+  persist(API.persist.createDeal(d).then(()=>{
+    (d.items||[]).forEach(it=>persist(API.persist.createItem(d.id, it).then(()=>{ (it.extras||[]).forEach(ex=>persist(API.persist.setItemExtra(it.id, ex, true))); })));
+    (d.payments||[]).forEach(p=>persist(API.persist.createPayment(d.id, p)));
+    (tasks||[]).forEach(t=>persist(API.persist.createTask(t)));
+  }));
+}
+function trashRestore(id){
+  const r=(DB.trash||[]).find(x=>x.id===id); if(!r) return; const s=r.snapshot;
+  switch(r.type){
+    case 'client':
+      if(!clientById(s.id)){ const {_wa, ...cl}=s; DB.clients.push(cl);
+        if(Array.isArray(_wa)){ DB.waMessages=DB.waMessages||[]; _wa.forEach(m=>DB.waMessages.push(m)); }
+        if(apiOn()) persist(API.persist.createClient(cl)); }
+      break;
+    case 'deal':
+      if(!dealById(s.id)){ const {_tasks, ...d}=s; DB.deals.push(d);
+        if(Array.isArray(_tasks)){ DB.tasks=DB.tasks||[]; _tasks.forEach(t=>DB.tasks.push(t)); }
+        if(apiOn()) restoreDealApi(d, _tasks); }
+      break;
+    case 'material':  if(!matById(s.id)){ DB.materials.push(s); if(apiOn()) persist(API.persist.createMaterial(s)); } break;
+    case 'component': if(!compById(s.id)){ DB.components.push(s); if(apiOn()) persist(API.persist.createComponent(s)); } break;
+    case 'payable':   if(!DB.payables.some(p=>p.id===s.id)){ DB.payables.push(s); if(apiOn()) persist(API.persist.createPayable(s)); } break;
+    case 'glass': case 'opening': case 'extra': { const cfg=CATALOGS_EDIT[r.type];
+      if(cfg && !cfg.arr().some(x=>x.id===s.id)){ cfg.arr().push(s); if(apiOn()) persist(API.fetch(cfg.api,{method:'POST',body:catBody(cfg,s)})); } break; }
+  }
+  DB.trash=DB.trash.filter(x=>x.id!==id); saveDB(); render(); toast('Восстановлено из корзины');
+}
 function delClientModal(id){
   const cl=clientById(id); if(!cl) return;
   const deals=DB.deals.filter(d=>d.clientId===id);
@@ -376,33 +421,38 @@ function delClientModal(id){
     return;
   }
   openModal(`<div class="modal-h">${icon('trash')}<h3>Удалить клиента?</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
-    <div class="modal-b"><p style="margin:0;color:var(--muted);line-height:1.5">${escA(cl.name)} · ${escA(cl.phone)}.<br>Будет удалена и переписка в чате. Действие необратимо.</p></div>
-    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="del-client-confirm" data-id="${id}">${icon('trash','sm')} Удалить</button></div>`);
+    <div class="modal-b"><p style="margin:0;color:var(--muted);line-height:1.5">${escA(cl.name)} · ${escA(cl.phone)}.<br>Клиент и переписка в чате переместятся в корзину — можно восстановить.</p></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="del-client-confirm" data-id="${id}">${icon('trash','sm')} В корзину</button></div>`);
 }
 function delClientConfirm(id){
   const cl=clientById(id); if(!cl) return;
   if(DB.deals.some(d=>d.clientId===id)){ toast('У клиента есть сделки — удаление невозможно','warn'); return; }
+  const snap={...cl}; if(Array.isArray(DB.waMessages)) snap._wa=DB.waMessages.filter(m=>m.clientId===id);
   DB.clients=DB.clients.filter(c=>c.id!==id);
   if(Array.isArray(DB.waMessages)) DB.waMessages=DB.waMessages.filter(m=>m.clientId!==id);
+  trashPush('client', snap, cl.name, cl.phone);
   saveDB();
   if(apiOn()) persist(API.fetch('clients/'+id, {method:'DELETE'}));
-  closeModal(); renderModule(); toast('Клиент удалён');
+  closeModal(); renderModule(); toast('Клиент перемещён в корзину');
 }
 function delDealModal(id){
   const d=dealById(id); if(!d) return; const cl=clientById(d.clientId);
   const paid=dealPaid(d);
   const warn = paid>0 ? `<br><span style="color:#fbbf24">Внимание: по сделке есть оплаты на ${money(paid)} — они тоже будут удалены.</span>` : '';
   openModal(`<div class="modal-h">${icon('trash')}<h3>Удалить сделку?</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
-    <div class="modal-b"><p style="margin:0;color:var(--muted);line-height:1.55">${cl?escA(cl.name):'—'} · ${stageById(d.stage).name}${d.sum?' · '+money(d.sum):''}.<br>Будут удалены конструкции и оплаты сделки. Действие необратимо.${warn}</p></div>
-    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="del-deal-confirm" data-id="${id}">${icon('trash','sm')} Удалить</button></div>`);
+    <div class="modal-b"><p style="margin:0;color:var(--muted);line-height:1.55">${cl?escA(cl.name):'—'} · ${stageById(d.stage).name}${d.sum?' · '+money(d.sum):''}.<br>Сделка с конструкциями и оплатами переместится в корзину — можно восстановить.${warn}</p></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="del-deal-confirm" data-id="${id}">${icon('trash','sm')} В корзину</button></div>`);
 }
 function delDealConfirm(id){
-  const d=dealById(id); if(!d) return;
+  const d=dealById(id); if(!d) return; const cl=clientById(d.clientId);
+  const snap={...d}; snap._tasks=(DB.tasks||[]).filter(t=>t.dealId===id);
   DB.deals=DB.deals.filter(x=>x.id!==id);
+  if(Array.isArray(DB.tasks)) DB.tasks=DB.tasks.filter(t=>t.dealId!==id);
   if(state.measureDealId===id) state.measureDealId=null;
+  trashPush('deal', snap, cl?cl.name:'Сделка', stageById(d.stage).name+(d.sum?' · '+money(d.sum):''));
   saveDB();
   if(apiOn()) persist(API.fetch('deals/'+id, {method:'DELETE'}));
-  closeModal(); render(); toast('Сделка удалена');
+  closeModal(); render(); toast('Сделка перемещена в корзину');
 }
 
 /* ====== КРЕДИТОРКА (payables) — ручное ведение ====== */
@@ -441,13 +491,15 @@ function payablePaid(id){
 function delPayableModal(id){
   const p=DB.payables.find(x=>x.id===id); if(!p) return;
   openModal(`<div class="modal-h">${icon('trash')}<h3>Удалить запись?</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
-    <div class="modal-b"><p style="margin:0;color:var(--muted);line-height:1.5">${escA(p.supplier)} · ${money(p.amount)}.<br>Действие необратимо.</p></div>
-    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="del-payable-confirm" data-id="${id}">${icon('trash','sm')} Удалить</button></div>`);
+    <div class="modal-b"><p style="margin:0;color:var(--muted);line-height:1.5">${escA(p.supplier)} · ${money(p.amount)}.<br>Запись переместится в корзину — можно восстановить.</p></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="del-payable-confirm" data-id="${id}">${icon('trash','sm')} В корзину</button></div>`);
 }
 function delPayableConfirm(id){
+  const p=DB.payables.find(x=>x.id===id);
   DB.payables=DB.payables.filter(x=>x.id!==id);
+  if(p) trashPush('payable', {...p}, p.supplier, money(p.amount));
   saveDB(); if(apiOn()) persist(API.persist.deletePayable(id));
-  closeModal(); renderModule(); toast('Запись удалена');
+  closeModal(); renderModule(); toast('Запись перемещена в корзину');
 }
 
 /* ====== КАТАЛОГИ И ПРАЙС (стеклопакеты, открывания, опции) — только директор ====== */
@@ -488,15 +540,17 @@ function catDelModal(type,id){
     return;
   }
   openModal(`<div class="modal-h">${icon('trash')}<h3>Удалить из каталога?</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
-    <div class="modal-b"><p style="margin:0;color:var(--muted)">«${escA(row.name)}». Действие необратимо.</p></div>
-    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="cat-del-confirm" data-type="${type}" data-id="${id}">${icon('trash','sm')} Удалить</button></div>`);
+    <div class="modal-b"><p style="margin:0;color:var(--muted)">«${escA(row.name)}». Позиция переместится в корзину — можно восстановить.</p></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="cat-del-confirm" data-type="${type}" data-id="${id}">${icon('trash','sm')} В корзину</button></div>`);
 }
 function catDelConfirm(type,id){
   if(!isDirector()) return;
   const cfg=CATALOGS_EDIT[type]; if(!cfg) return; const arr=cfg.arr();
-  const i=arr.findIndex(x=>x.id===id); if(i>=0) arr.splice(i,1);
+  const i=arr.findIndex(x=>x.id===id); if(i<0) return; const row=arr[i];
+  arr.splice(i,1);
+  trashPush(type, {...row}, row.name, cfg.title);
   saveDB(); if(apiOn()) persist(API.fetch(cfg.api+'/'+id,{method:'DELETE'}));
-  closeModal(); render(); toast('Удалено из каталога');
+  closeModal(); render(); toast('Перемещено в корзину');
 }
 
 /* warehouse — приход (пополнение) */
@@ -613,15 +667,15 @@ function whItemDelModal(kind, id){
     return;
   }
   openModal(`<div class="modal-h">${icon('trash')}<h3>Удалить позицию?</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
-    <div class="modal-b"><p style="margin:0;color:var(--muted)">«${escA(it.name)}». Действие необратимо.</p></div>
-    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="wh-item-del-confirm" data-kind="${kind}" data-id="${id}">${icon('trash','sm')} Удалить</button></div>`);
+    <div class="modal-b"><p style="margin:0;color:var(--muted)">«${escA(it.name)}». Позиция переместится в корзину — можно восстановить.</p></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="wh-item-del-confirm" data-kind="${kind}" data-id="${id}">${icon('trash','sm')} В корзину</button></div>`);
 }
 function whItemDelConfirm(kind, id){
   if(!seesMoney()) return;
-  if(kind==='mat') DB.materials=DB.materials.filter(x=>x.id!==id);
-  else DB.components=DB.components.filter(x=>x.id!==id);
+  if(kind==='mat'){ const it=matById(id); DB.materials=DB.materials.filter(x=>x.id!==id); if(it) trashPush('material', {...it}, it.name, it.series||''); }
+  else { const it=compById(id); DB.components=DB.components.filter(x=>x.id!==id); if(it) trashPush('component', {...it}, it.name, it.unit||''); }
   saveDB(); if(apiOn()) persist(kind==='mat'?API.persist.deleteMaterial(id):API.persist.deleteComponent(id));
-  closeModal(); renderModule(); toast('Позиция удалена');
+  closeModal(); renderModule(); toast('Позиция перемещена в корзину');
 }
 
 /* measure mutations */
@@ -1140,6 +1194,8 @@ document.addEventListener('click', e=>{
     case 'create-client': createClient(); break;
     case 'del-client': delClientModal(id); break;
     case 'del-client-confirm': delClientConfirm(id); break;
+    case 'trash-restore': trashRestore(id); break;
+    case 'trash-purge': trashPurge(id); break;
     case 'edit-client': editClientModal(id); break;
     case 'save-client': saveClient(t.dataset.id); break;
     case 'import-clients': importClientsModal(); break;
@@ -1199,6 +1255,7 @@ document.addEventListener('change', e=>{
   if(t.dataset.act==='funnel-src'){ state.funnelSrc=t.value; renderModule(); }
   if(t.dataset.act==='cl-type'){ state.clientType=t.value; renderModule(); }
   if(t.dataset.act==='cl-debt'){ state.clientDebt=t.value; renderModule(); }
+  if(t.dataset.act==='trash-retention'){ trashSetRetention(t.dataset.id, parseInt(t.value,10)); }
   if(t.dataset.act==='fin-date'){ state.financeFrom=t.value||null; state.financePeriod=(state.financeFrom||state.financeTo)?'date':'all'; renderModule(); }
   if(t.dataset.act==='fin-date-to'){ state.financeTo=t.value||null; state.financePeriod=(state.financeFrom||state.financeTo)?'date':'all'; renderModule(); }
 });
@@ -1272,6 +1329,7 @@ document.addEventListener('drop', e=>{
 /* Если есть сохранённый токен — пробуем поднять данные с сервера и войти автоматически.
    При любой ошибке — тихий откат в демо-режим (localStorage), сайт не ломается. */
 (async function init(){
+  purgeExpiredTrash();
   try{
     if(window.API && API.isAuthed()){
       await bootFromApi();
