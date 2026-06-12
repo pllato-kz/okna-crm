@@ -1848,11 +1848,25 @@ document.addEventListener('drop', e=>{
 window.addEventListener('hashchange', ()=>{
   if(!state.user) return;
   const h=parseHash();
-  if(h.mod && MODULE_META[h.mod] && canSee(h.mod)){
-    const changed = h.mod!==state.module
-      || (h.mod==='finance' && FIN_TABS.includes(h.tab) && h.tab!==state.financeTab)
-      || (h.mod==='warehouse' && WH_TABS.includes(h.tab) && h.tab!==state.whTab)
-      || !!h.deal || !!h.client;
-    if(changed){ applyHashToState(); state.sideOpen=false; render(); flushHashOpen(); }
-  } else if(location.hash!==currentHash()){ history.replaceState(null,'',currentHash()); } // некорректный/недоступный — вернуть
+  if(!(h.mod && MODULE_META[h.mod] && canSee(h.mod))){
+    if(location.hash!==currentHash()) history.replaceState(null,'',currentHash()); // некорректный/недоступный — вернуть
+    return;
+  }
+  const wantCard = h.deal ? {type:'deal',id:h.deal} : (h.client ? {type:'client',id:h.client} : null);
+  const modChanged = h.mod!==state.module
+    || (h.mod==='finance' && FIN_TABS.includes(h.tab) && h.tab!==state.financeTab)
+    || (h.mod==='warehouse' && WH_TABS.includes(h.tab) && h.tab!==state.whTab);
+  if(modChanged){
+    if(__openCard){ __openCard=null; document.getElementById('modal-root').innerHTML=''; }
+    applyHashToState(); state.sideOpen=false; render(); flushHashOpen(); return;
+  }
+  // тот же модуль/вкладка — синхронизируем только карточку
+  if(wantCard){
+    if(!__openCard || __openCard.type!==wantCard.type || __openCard.id!==wantCard.id){
+      if(wantCard.type==='deal' && dealById(wantCard.id)) openDeal(wantCard.id);
+      else if(wantCard.type==='client' && clientById(wantCard.id)) openClient(wantCard.id);
+    }
+  } else if(__openCard){ // ушли с карточки (кнопка «назад») — закрыть
+    __openCard=null; document.getElementById('modal-root').innerHTML='';
+  }
 });

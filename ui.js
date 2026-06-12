@@ -20,12 +20,13 @@ function applyHashToState(){
   __pendingHashOpen = (h.deal||h.client) ? {deal:h.deal, client:h.client} : null;
   return true;
 }
-// канонический URL для текущего состояния (модуль + активная вкладка)
+// канонический URL для текущего состояния (модуль + вкладка + открытая карточка)
 function currentHash(){
   if(!state.user || !state.module) return location.hash;
   let h='#/'+state.module;
   if(state.module==='finance') h+='/'+(state.financeTab||'recv');
   else if(state.module==='warehouse') h+='/'+(state.whTab||'profile');
+  if(__openCard) h+='?'+(__openCard.type==='deal'?'deal=':'client=')+__openCard.id;
   return h;
 }
 // синхронизировать URL (новая запись истории при смене модуля/вкладки)
@@ -218,10 +219,12 @@ function openModal(html, wide){
 }
 // карточка, к которой надо вернуться после под-действия (изменить / сообщение / чат)
 let __cardReturn=null;
+let __openCard=null; // {type:'deal'|'client', id} — открытая карточка (для URL ?deal=/?client=)
 function closeModal(){
   const r=__cardReturn; __cardReturn=null;
   document.getElementById('modal-root').innerHTML='';
-  if(r){ try{ r(); }catch(e){} }
+  if(r){ try{ r(); }catch(e){} return; } // под-окно закрыто — карточка переоткрывается, URL не трогаем
+  if(__openCard){ __openCard=null; syncUrl(); } // закрыли карточку → URL обратно к разделу
 }
 
 /* ============ TOAST ============ */
