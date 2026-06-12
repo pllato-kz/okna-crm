@@ -25,6 +25,7 @@ function applyServerCatalogs(cat){
     Object.keys(MODULE_ROLES).forEach(k=>{ delete MODULE_ROLES[k]; });
     Object.keys(cat.MODULE_ROLES).forEach(k=>{ MODULE_ROLES[k]=cat.MODULE_ROLES[k].slice(); });
   }
+  if(Array.isArray(cat.ROLES) && cat.ROLES.length){ ROLES = cat.ROLES.map(r=>({...r})); }
 }
 /* persist: запускает запись на сервер только в API-режиме; ошибку показывает тостом */
 function apiOn(){ return !!(window.API && API.enabled); }
@@ -666,12 +667,11 @@ function saveCompany(){
   closeModal(); render(); toast('Данные компании сохранены');
 }
 
-const ROLE_OPTS=['director','manager','surveyor','production','warehouse'];
 function userModal(id){
   if(!isDirector()) return;
   const u = id ? userById(id) : null;
   const roleOf = u?u.role:'manager';
-  const opts = ROLE_OPTS.map(r=>`<option value="${r}"${r===roleOf?' selected':''}>${roleRu(r)}</option>`).join('');
+  const opts = ROLES.map(r=>`<option value="${r.id}"${r.id===roleOf?' selected':''}>${escA(r.name)}</option>`).join('');
   const apiMode = apiOn();
   const pwHint = u ? '(пусто — без изменений)' : (apiMode ? '(мин. 6 символов)' : '(в демо не требуется)');
   openModal(`<div class="modal-h">${icon('user')}<h3>${u?'Сотрудник':'Новый сотрудник'}</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
@@ -727,13 +727,53 @@ function delUserConfirm(id){
 }
 function togglePerm(mod, role){
   if(!isDirector()) return;
-  if(mod==='settings' && role==='director'){ toast('Директор всегда имеет доступ к настройкам','warn'); return; }
+  if(role==='director'){ toast('Директор имеет доступ ко всем модулям','warn'); return; }
   MODULE_ROLES[mod]=MODULE_ROLES[mod]||[];
   const i=MODULE_ROLES[mod].indexOf(role);
   const on = i<0;
   if(on) MODULE_ROLES[mod].push(role); else MODULE_ROLES[mod].splice(i,1);
+  persistPerms();
   if(apiOn()) persist(API.persist.setModuleRole(mod, role, on));
   renderModule();
+}
+/* ---- роли: добавление / удаление (только директор) ---- */
+function addRoleModal(){
+  if(!isDirector()) return;
+  openModal(`<div class="modal-h">${icon('shield')}<h3>Новая роль</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">
+      <div class="fld full"><label>Название роли</label><input id="role-name" placeholder="напр. Монтажник" autocomplete="off"></div>
+      <div class="muted2" style="font-size:11.5px;line-height:1.5;margin-top:4px">Роль создаётся без доступа к модулям — откройте нужные в матрице прав ниже.</div>
+    </div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="create-role">${icon('check','sm')} Создать</button></div>`);
+  const el=document.getElementById('role-name'); if(el) el.focus();
+}
+function createRole(){
+  if(!isDirector()) return;
+  const el=document.getElementById('role-name'); const name=el?el.value.trim():'';
+  if(!name){ toast('Укажите название роли','warn'); return; }
+  if(ROLES.some(r=>r.name.toLowerCase()===name.toLowerCase())){ toast('Роль с таким названием уже есть','warn'); return; }
+  const r={ id:uid('role'), name, sys:false };
+  ROLES.push(r); persistPerms();
+  if(apiOn()) persist(API.persist.createRole(r));
+  closeModal(); renderModule(); toast('Роль добавлена');
+}
+function delRoleModal(roleId){
+  if(!isDirector()) return; const r=roleById(roleId); if(!r) return;
+  if(r.sys){ toast('Базовую роль удалить нельзя','warn'); return; }
+  const used=DB.users.filter(u=>u.role===roleId);
+  if(used.length){ toast(`Роль назначена сотрудникам (${used.length}) — сначала смените им роль`,'warn'); return; }
+  openModal(`<div class="modal-h">${icon('trash')}<h3>Удалить роль?</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><p style="margin:0;color:var(--muted);line-height:1.5">Роль «${escA(r.name)}» и её права доступа будут удалены.</p></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="del-role-confirm" data-id="${roleId}">${icon('trash','sm')} Удалить</button></div>`);
+}
+function delRoleConfirm(roleId){
+  if(!isDirector()) return; const r=roleById(roleId); if(!r||r.sys) return;
+  if(DB.users.some(u=>u.role===roleId)){ toast('Роль назначена сотрудникам','warn'); return; }
+  Object.keys(MODULE_ROLES).forEach(m=>{ const i=MODULE_ROLES[m].indexOf(roleId);
+    if(i>=0){ MODULE_ROLES[m].splice(i,1); if(apiOn()) persist(API.persist.setModuleRole(m, roleId, false)); } });
+  ROLES = ROLES.filter(x=>x.id!==roleId); persistPerms();
+  if(apiOn()) persist(API.persist.deleteRole(roleId));
+  closeModal(); renderModule(); toast('Роль удалена');
 }
 
 /* ============ WHATSAPP (Green API) ============ */
@@ -1060,6 +1100,10 @@ document.addEventListener('click', e=>{
     case 'del-user': delUserModal(id); break;
     case 'del-user-confirm': delUserConfirm(id); break;
     case 'perm-toggle': togglePerm(t.dataset.mod, t.dataset.role); break;
+    case 'add-role': addRoleModal(); break;
+    case 'create-role': createRole(); break;
+    case 'del-role': delRoleModal(t.dataset.id); break;
+    case 'del-role-confirm': delRoleConfirm(id); break;
     case 'theme': state.theme = state.theme==='light' ? 'dark' : 'light'; try{ localStorage.setItem(THEME_KEY, state.theme); }catch(e){} applyTheme(state.theme); render(); break;
     case 'noop': break;
     case 'go-finance': state.module='finance'; state.financeTab='recv'; render(); break;
