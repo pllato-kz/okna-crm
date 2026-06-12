@@ -161,6 +161,7 @@ function funnelCard(d){
 /* ============ DEAL MODAL ============ */
 function openDeal(id){
   const d=dealById(id); if(!d) return;
+  __cardReturn=null; // открыли карточку «начисто» — её закрытие не должно никуда возвращать
   const cl=clientById(d.clientId); const m=userById(d.manager); const st=stageById(d.stage);
   const sum=d.sum||dealItemsSum(d); const paid=dealPaid(d); const debt=Math.max(0,sum-paid);
   const items=(d.items||[]).map(c=>{
@@ -203,11 +204,11 @@ function openDeal(id){
     </div>
     <div class="modal-f">
       <button class="btn danger" data-act="del-deal" data-id="${d.id}" style="margin-right:auto">${icon('trash','sm')} Удалить</button>
-      <button class="btn" data-act="edit-deal" data-id="${d.id}">${icon('edit','sm')} Изменить</button>
-      <button class="btn green" data-act="wa-deal-chat" data-id="${d.id}">${icon('wa','sm')} Чат WhatsApp</button>
-      <button class="btn" data-act="wa-deal" data-id="${d.id}">${icon('send','sm')} Быстрое сообщение</button>
+      <button class="btn" data-act="edit-deal" data-back="deal" data-id="${d.id}">${icon('edit','sm')} Изменить</button>
+      <button class="btn green" data-act="wa-deal-chat" data-back="deal" data-id="${d.id}">${icon('wa','sm')} Чат WhatsApp</button>
+      <button class="btn" data-act="wa-deal" data-back="deal" data-id="${d.id}">${icon('send','sm')} Быстрое сообщение</button>
       ${d.stage==='measure'?`<button class="btn soft" data-act="go-measure-deal" data-id="${d.id}">${icon('ruler','sm')} Открыть замер</button>`:''}
-      ${canMoney&&debt>0?`<button class="btn primary" data-act="add-payment" data-id="${d.id}">${icon('money','sm')} Принять оплату</button>`:''}
+      ${canMoney&&debt>0?`<button class="btn primary" data-act="add-payment" data-back="deal" data-id="${d.id}">${icon('money','sm')} Принять оплату</button>`:''}
     </div>
   `, true);
 }
@@ -263,6 +264,7 @@ function renderClients(){
 }
 function openClient(id){
   const cl=clientById(id); if(!cl) return;
+  __cardReturn=null;
   const ds=DB.deals.filter(d=>d.clientId===cl.id);
   const total=ds.reduce((s,d)=>s+(d.sum||0),0); const paid=ds.reduce((s,d)=>s+dealPaid(d),0);
   const dealRows=ds.map(d=>{const st=stageById(d.stage);
@@ -283,8 +285,8 @@ function openClient(id){
       <div class="panel" style="margin-top:14px"><div class="panel-h" style="padding:12px 14px">${icon('funnel','sm')}<h3 style="font-size:13.5px">История сделок</h3></div><div class="panel-b" style="padding:12px 14px">${dealRows}</div></div>
     </div>
     <div class="modal-f"><button class="btn danger" data-act="del-client" data-id="${cl.id}" style="margin-right:auto">${icon('trash','sm')} Удалить</button>
-      <button class="btn" data-act="edit-client" data-id="${cl.id}">${icon('edit','sm')} Изменить</button>
-      <button class="btn" data-act="wa-client" data-id="${cl.id}">${icon('send','sm')} Сообщение</button>
-      <button class="btn green" data-act="wa-chat" data-id="${cl.id}">${icon('wa','sm')} Чат WhatsApp</button></div>
+      <button class="btn" data-act="edit-client" data-back="client" data-id="${cl.id}">${icon('edit','sm')} Изменить</button>
+      <button class="btn" data-act="wa-client" data-back="client" data-id="${cl.id}">${icon('send','sm')} Сообщение</button>
+      <button class="btn green" data-act="wa-chat" data-back="client" data-id="${cl.id}">${icon('wa','sm')} Чат WhatsApp</button></div>
   `);
 }

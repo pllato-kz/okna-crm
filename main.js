@@ -1263,6 +1263,9 @@ function globalSearch(q){
 document.addEventListener('click', e=>{
   const t=e.target.closest('[data-act]'); if(!t) return;
   const a=t.dataset.act, id=t.dataset.id;
+  // под-действие из карточки (изменить / сообщение / чат / оплата) — вернуться к ней после закрытия
+  if(t.dataset.back==='deal') __cardReturn=()=>openDeal(id);
+  else if(t.dataset.back==='client') __cardReturn=()=>openClient(id);
   switch(a){
     case 'login': login(id); break;
     case 'api-login': apiLoginSubmit(); break;
