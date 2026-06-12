@@ -1162,23 +1162,54 @@ document.addEventListener('click', e=>{
   dd.classList.remove('open');
 });
 
-/* ============ DRAG & DROP ============ */
+/* ============ DRAG & DROP (+ авто-скролл к краям, как в Trello) ============ */
 let dragId=null, dragKind=null;
+let __dragX=0, __dragY=0, __dragRAF=null;
+function dragAutoScrollStep(){
+  if(dragId==null){ __dragRAF=null; return; }
+  const EDGE=72, MAX=26;
+  const ramp=d=>{ d=Math.max(0,d); return d>=EDGE?0:(1-d/EDGE); }; // ближе к краю — быстрее (0..1)
+  const x=__dragX, y=__dragY;
+  // горизонталь — доска канбана
+  const board=document.querySelector('.kanban');
+  if(board){ const r=board.getBoundingClientRect();
+    if(y>=r.top-EDGE && y<=r.bottom+EDGE){
+      if(x<r.left+EDGE) board.scrollLeft -= MAX*ramp(x-r.left);
+      else if(x>r.right-EDGE) board.scrollLeft += MAX*ramp(r.right-x);
+    }
+  }
+  // вертикаль — колонка под курсором, иначе область контента
+  let vEl=null; const under=document.elementFromPoint(x,y);
+  if(under) vEl=under.closest('.kcol-b');
+  if(!vEl) vEl=document.querySelector('.content');
+  if(vEl){ const r=vEl.getBoundingClientRect();
+    if(y<r.top+EDGE) vEl.scrollTop -= MAX*ramp(y-r.top);
+    else if(y>r.bottom-EDGE) vEl.scrollTop += MAX*ramp(r.bottom-y);
+  }
+  __dragRAF=requestAnimationFrame(dragAutoScrollStep);
+}
+function dragScrollStart(){ if(!__dragRAF) __dragRAF=requestAnimationFrame(dragAutoScrollStep); }
+function dragScrollStop(){ if(__dragRAF){ cancelAnimationFrame(__dragRAF); __dragRAF=null; } }
 document.addEventListener('dragstart', e=>{
+  if(!e.target||!e.target.closest) return;
   const c=e.target.closest('[data-card],[data-pcard]'); if(!c) return;
   dragId=c.dataset.card||c.dataset.pcard; dragKind=c.dataset.card?'deal':'prod'; c.classList.add('dragging');
+  __dragX=e.clientX; __dragY=e.clientY; dragScrollStart();
 });
-document.addEventListener('dragend', e=>{ const c=e.target.closest('[data-card],[data-pcard]'); if(c)c.classList.remove('dragging');
-  document.querySelectorAll('.drop-hot').forEach(x=>x.classList.remove('drop-hot')); dragId=null; });
+document.addEventListener('dragend', e=>{ const c=(e.target&&e.target.closest)?e.target.closest('[data-card],[data-pcard]'):null; if(c)c.classList.remove('dragging');
+  document.querySelectorAll('.drop-hot').forEach(x=>x.classList.remove('drop-hot')); dragId=null; dragScrollStop(); });
+/* трекинг позиции курсора для авто-скролла (capture — ловим всегда во время перетаскивания) */
+document.addEventListener('dragover', e=>{ if(dragId!=null){ __dragX=e.clientX; __dragY=e.clientY; } }, true);
 document.addEventListener('dragover', e=>{
+  if(!e.target||!e.target.closest) return;
   const z=e.target.closest('[data-drop],[data-pdrop]'); if(!z) return; e.preventDefault();
   const col=z.closest('.kcol'); document.querySelectorAll('.drop-hot').forEach(x=>x.classList.remove('drop-hot')); if(col)col.classList.add('drop-hot');
 });
 document.addEventListener('drop', e=>{
-  const z=e.target.closest('[data-drop],[data-pdrop]'); if(!z||!dragId) return; e.preventDefault();
+  const z=(e.target&&e.target.closest)?e.target.closest('[data-drop],[data-pdrop]'):null; if(!z||!dragId){ dragScrollStop(); return; } e.preventDefault();
   if(dragKind==='deal' && z.dataset.drop){ const d=dealById(dragId); if(d&&d.stage!==z.dataset.drop) moveStage(dragId, z.dataset.drop); }
   if(dragKind==='prod' && z.dataset.pdrop){ const d=dealById(dragId); if(d&&(d.prodStage||'queue')!==z.dataset.pdrop) moveProd(dragId, z.dataset.pdrop); }
-  dragId=null;
+  dragId=null; dragScrollStop();
 });
 
 /* ============ INIT ============ */
