@@ -1445,6 +1445,7 @@ document.addEventListener('click', e=>{
       if(apiOn()){ bootFromApi().then(()=>{ state.measureDealId=null; render(); toast('Данные обновлены с сервера'); }).catch(e=>toast('Ошибка обновления: '+(e&&e.message||''),'warn')); }
       else { resetDB(); state.measureDealId=null; render(); toast('Демо-данные сброшены'); }
       break;
+    case 'search-mobile': { const s=document.querySelector('.topbar .search'); if(s){ const open=s.classList.toggle('open'); if(open){ const i=document.getElementById('global-search'); if(i) i.focus(); } else { clearSearch(); } } } break;
     case 'notif': notifModal(); break;
     case 'edit-company': editCompanyModal(); break;
     case 'save-company': saveCompany(); break;
@@ -1597,11 +1598,11 @@ document.addEventListener('input', e=>{
 });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); clearSearch(); } });
 document.addEventListener('keydown', e=>{ if(e.key==='Enter' && (e.target.id==='api-email'||e.target.id==='api-pass')){ e.preventDefault(); apiLoginSubmit(); } });
-/* закрыть выпадашку поиска по клику вне неё */
+/* закрыть выпадашку и мобильную строку поиска по клику вне неё */
 document.addEventListener('click', e=>{
-  const dd=document.getElementById('search-dd'); if(!dd||!dd.classList.contains('open')) return;
-  if(e.target.closest('.search')) return;
-  dd.classList.remove('open');
+  if(e.target.closest('.search')||e.target.closest('[data-act="search-mobile"]')) return;
+  const dd=document.getElementById('search-dd'); if(dd&&dd.classList.contains('open')) dd.classList.remove('open');
+  const sb=document.querySelector('.topbar .search.open'); if(sb){ sb.classList.remove('open'); const i=document.getElementById('global-search'); if(i) i.value=''; }
 });
 
 /* ============ DRAG & DROP (+ авто-скролл к краям, как в Trello) ============ */

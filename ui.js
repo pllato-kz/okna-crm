@@ -164,6 +164,7 @@ function renderShell(){
           <div class="page-sub">${meta.sub}</div>
         </div>
         <div class="search">${icon('search','sm')}<input id="global-search" placeholder="Поиск клиента, сделки…" data-act="search" autocomplete="off"><div class="search-dd" id="search-dd"></div></div>
+        <button class="icon-btn search-toggle" data-act="search-mobile" title="Поиск">${icon('search')}</button>
         <button class="icon-btn" data-act="theme" title="Сменить тему">${icon(state.theme==='light'?'moon':'sun')}</button>
         <button class="icon-btn" data-act="notif" title="Уведомления">${icon('bell')}${notifN?`<span class="notif-badge">${notifN>9?'9+':notifN}</span>`:''}</button>
         <button class="icon-btn" data-act="reset" title="Сбросить демо-данные">${icon('refresh')}</button>
