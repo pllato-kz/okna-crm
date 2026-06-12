@@ -128,6 +128,7 @@ function patchMeasure(){
     const ae=document.getElementById('carea-'+c.id); if(ae) ae.textContent=(constrArea(c)*(c.qty||1)).toFixed(2)+' м²';
   });
   const k=computeMeasure(d);
+  d.sum=k.total; // держим сумму сделки в синхроне с позициями (локально; на сервер — по дискретным действиям)
   const set=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
   set('sum-sub',money(k.subtotal)); set('sum-disc','−'+money(k.discount)); set('sum-total',money(k.total)); set('sum-prepay',money(k.prepay));
 }
@@ -143,6 +144,9 @@ function initMeasureBindings(){
   });
 }
 /* KP doc */
+/* Номер документа из id сделки: 'd11'→'11-2026', 'd_a1b2'→'a1b2-2026'
+   (раньше .replace('d','') ломал uid-сделки в «_a1b2-2026») */
+function docNo(d){ return String(d.id).replace(/^d_?/,'') + '-' + SEED_NOW.getFullYear(); }
 /* Разметка КП — общая для модалки и для окна печати */
 function kpDocHtml(d){
   const cl=clientById(d.clientId); const k=computeMeasure(d);
@@ -150,7 +154,7 @@ function kpDocHtml(d){
     return `<tr><td>${i+1}</td><td>${escA(m.name)} (${escA(m.series)})<br><span style="color:#64748b">${c.w}×${c.h}мм, ${escA(openById(c.openId).name)}, ${c.sashes} ств., ${escA(glassById(c.glassId).name)}</span></td><td style="text-align:center">${c.qty||1}</td><td style="text-align:right">${money(constrPrice(c))}</td></tr>`;}).join('');
   return `<div class="kp-doc">
         <div class="kp-co"><div><h2>${escA(DB.company.name)}</h2><div style="color:#64748b;font-size:12px">${escA(DB.company.legal)} · ${escA(DB.company.city)}<br>${escA(DB.company.phone)}</div></div>
-          <div style="text-align:right;font-size:12px;color:#64748b">КП №${d.id.replace('d','')}-${new Date().getFullYear()}<br>${dateFull(SEED_NOW)}</div></div>
+          <div style="text-align:right;font-size:12px;color:#64748b">КП №${docNo(d)}<br>${dateFull(SEED_NOW)}</div></div>
         <div style="font-size:13px;margin-bottom:6px">Заказчик: <b>${escA(cl.name)}</b>, ${escA(cl.address)}</div>
         <table><thead><tr><th>№</th><th>Наименование</th><th style="text-align:center">Кол-во</th><th style="text-align:right">Стоимость</th></tr></thead><tbody>${rows}</tbody></table>
         <div style="text-align:right;color:#64748b;font-size:12.5px">Сумма: ${money(k.subtotal)}${k.discount?` · Скидка: −${money(k.discount)}`:''}</div>
@@ -196,7 +200,7 @@ function printKp(id){
 /* Разметка счёта — общая для модалки и окна печати */
 function invoiceDocHtml(d){
   const cl=clientById(d.clientId); const k=computeMeasure(d); const co=DB.company;
-  const no=d.id.replace('d','')+'-'+SEED_NOW.getFullYear();
+  const no=docNo(d);
   const vr=co.vatRate||0; const vat=vr?Math.round(k.total-k.total/(1+vr/100)):0;
   const rows=(d.items||[]).map((c,i)=>{ const m=matById(c.profileId); const q=c.qty||1; const line=constrPrice(c); const unit=Math.round(line/q);
     return `<tr><td>${i+1}</td><td>${escA(m.name)} (${escA(m.series)})<br><span style="color:#64748b">${c.w}×${c.h}мм, ${escA(openById(c.openId).name)}, ${c.sashes} ств., ${escA(glassById(c.glassId).name)}</span></td><td style="text-align:center">${q}</td><td style="text-align:right">${money(unit)}</td><td style="text-align:right">${money(line)}</td></tr>`;}).join('');
