@@ -204,7 +204,7 @@ function renderWarehouse(){
   let body;
   if(tab==='profile'){
     const rows=DB.materials.map(m=>{const low=m.stock<m.min; const pct=Math.min(100,m.stock/(m.min*2)*100);
-      return `<tr><td><div style="font-weight:600">${m.name}</div><div class="muted2" style="font-size:11.5px">${m.supplier}</div></td>
+      return `<tr data-wh-row="${m.id}"><td><div style="font-weight:600">${m.name}</div><div class="muted2" style="font-size:11.5px">${m.supplier}</div></td>
         <td><span class="tag ${m.type==='ПВХ'?'cyan':'violet'}">${m.type}</span></td>
         <td><span class="tag ${m.series==='Премиум'?'amber':m.series==='Средняя'?'blue':''}">${m.series}</span></td>
         ${showCost?`<td class="num">${money(m.rate)}/м²</td>`:''}
@@ -214,7 +214,7 @@ function renderWarehouse(){
     body=`<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Профиль</th><th>Тип</th><th>Серия</th>${showCost?'<th class="num">Цена</th>':''}<th>Остаток</th><th>Статус</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
   } else if(tab==='comp'){
     const rows=DB.components.map(c=>{const low=c.stock<c.min; const pct=Math.min(100,c.stock/(c.min*2)*100);
-      return `<tr><td style="font-weight:600">${c.name}</td>
+      return `<tr data-wh-row="${c.id}"><td style="font-weight:600">${c.name}</td>
         <td style="min-width:200px"><div style="display:flex;align-items:center;gap:10px"><div class="mini-bar"><i style="width:${pct}%;background:${low?'var(--red)':'var(--green)'}"></i></div><span style="font-weight:700;white-space:nowrap">${c.stock} ${c.unit}</span></div></td>
         <td class="muted">мин. ${c.min}</td>
         <td>${low?`<span class="tag red">${icon('alert','sm')} дозаказать</span>`:'<span class="tag green">в норме</span>'}</td>
