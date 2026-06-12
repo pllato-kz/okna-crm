@@ -345,7 +345,7 @@ function renderFinance(){
       return {label:s.name,value:cnt,display:cnt,color:`linear-gradient(90deg,${s.color},${s.color}cc)`};});
     const perChips=[['all','Всё время'],['30','30 дней'],['7','7 дней']].map(([v,l])=>`<button class="chip ${fp===v?'on':''}" data-act="fin-period" data-v="${v}">${l}</button>`).join('');
     const fromVal=(fp==='date'&&state.financeFrom)?String(state.financeFrom).slice(0,10):'';
-    body=`
+    body=`<div style="padding:18px 18px 6px">
       <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:16px">
         <span class="muted2" style="font-size:11.5px">Период:</span><div class="chips">${perChips}</div>
         <span class="muted2" style="font-size:11.5px;margin-left:4px">или с даты:</span>
@@ -361,7 +361,7 @@ function renderFinance(){
       <div class="grid-2b">
         <div class="panel"><div class="panel-h">${icon('funnel','sm')}<h3>Конверсия по этапам</h3><span class="ph-sub">${conv}% доходимость</span></div><div class="panel-b">${bars(stageRows)}</div></div>
         <div class="panel"><div class="panel-h">${icon('trend','sm')}<h3>Выручка по месяцам</h3></div><div class="panel-b">${bars([['дек',3.1],['янв',3.8],['фев',4.2],['мар',3.6],['апр',4.9],['май',revenueAll/1e6]].map((r,i,a)=>({label:r[0],value:r[1],display:r[1].toFixed(1)+' млн',color:i===a.length-1?'linear-gradient(90deg,#16a34a,#4ade80)':'linear-gradient(90deg,#2563eb,#3b82f6)'})))}</div></div>
-      </div>`;
+      </div></div>`;
   }
   return `
   <div class="cards-row" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:16px">
