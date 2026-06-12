@@ -1752,9 +1752,18 @@ document.addEventListener('click', e=>{
     case 'print-kp': printKp(id); break;
     case 'gen-invoice': openInvoice(id); break;
     case 'print-invoice': printInvoice(id); break;
-    case 'gen-contract': { const d=dealById(id); if(d){
-        if(!d.contractNo){ d.contractNo=nextContractNo(); d.contractDate=SEED_NOW.toISOString().slice(0,10); saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); }
-        openContract(id); } } break;
+    case 'gen-contract': {
+        const d=dealById(id); if(!d) break;
+        if(d.contractNo){ openContract(id); break; }
+        if(apiOn()){
+          // номер выдаёт сервер атомарно (без гонок и дублей)
+          API.persist.allocateContract(d.id)
+            .then(r=>{ d.contractNo=r.contractNo; d.contractDate=r.contractDate; saveDB(); openContract(id); })
+            .catch(e=>{ toast('Не удалось выдать номер договора: '+((e&&e.message)||''),'warn'); });
+        } else {
+          d.contractNo=nextContractNo(); d.contractDate=SEED_NOW.toISOString().slice(0,10); saveDB(); openContract(id);
+        }
+      } break;
     case 'print-contract': printContract(id); break;
     case 'quick-prepay': applyPrepay(id); break;
     case 'confirm-prepay': applyPrepay(id); break;

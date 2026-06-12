@@ -339,6 +339,13 @@ CREATE TABLE login_attempts (
   email TEXT,
   at    TEXT NOT NULL
 );
+
+-- Атомарные счётчики (нумерация документов). name напр. 'contract-2026'.
+-- Инкремент через INSERT .. ON CONFLICT DO UPDATE .. RETURNING — без гонок.
+CREATE TABLE counters (
+  name TEXT PRIMARY KEY,
+  val  INTEGER NOT NULL DEFAULT 0
+);
 CREATE INDEX idx_login_attempts_at ON login_attempts(at);
 
 -- Настройки WhatsApp-интеграции через Green API. Одна строка (id='main').
