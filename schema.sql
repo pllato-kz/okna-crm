@@ -327,6 +327,15 @@ CREATE INDEX idx_activity_user ON activity(user_id);
 -- ИНТЕГРАЦИИ
 -- ============================================================
 
+-- Защита входа от перебора: неудачные попытки по IP/email (окно 15 минут).
+CREATE TABLE login_attempts (
+  id    INTEGER PRIMARY KEY AUTOINCREMENT,
+  ip    TEXT,
+  email TEXT,
+  at    TEXT NOT NULL
+);
+CREATE INDEX idx_login_attempts_at ON login_attempts(at);
+
 -- Настройки WhatsApp-интеграции через Green API. Одна строка (id='main').
 -- api_token — секрет: хранится только на сервере, наружу (в bootstrap) НЕ отдаётся.
 CREATE TABLE wa_config (

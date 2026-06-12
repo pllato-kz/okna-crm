@@ -266,8 +266,24 @@ export async function onRequest(context) {
       const { email, password } = await readBody(request);
       if (!email || !password) return fail(400, 'Нужны email и password');
       if (!env.JWT_SECRET) return fail(500, 'JWT_SECRET не задан (wrangler secret put JWT_SECRET)');
+      // защита от перебора: не более LIMIT неудачных попыток за окно по IP/email
+      const LIMIT = 10, WINDOW_MIN = 15;
+      const ip = request.headers.get('cf-connecting-ip') || 'unknown';
+      const now = Date.now();
+      try { await env.DB.prepare(`DELETE FROM login_attempts WHERE at < ?`).bind(new Date(now - 60 * 60 * 1000).toISOString()).run(); } catch (_) {}
+      const since = new Date(now - WINDOW_MIN * 60 * 1000).toISOString();
+      const cnt = await env.DB.prepare(`SELECT COUNT(*) AS n FROM login_attempts WHERE (ip = ? OR email = ?) AND at > ?`).bind(ip, email, since).first();
+      if (cnt && cnt.n >= LIMIT) {
+        return new Response(JSON.stringify({ error: `Слишком много попыток входа. Повторите через ${WINDOW_MIN} минут.` }),
+          { status: 429, headers: { ...HEADERS, 'Retry-After': String(WINDOW_MIN * 60) } });
+      }
       const user = await env.DB.prepare(`SELECT * FROM users WHERE email = ? AND is_active = 1`).bind(email).first();
-      if (!user || !(await verifyPassword(password, user.password_hash))) return fail(401, 'Неверный логин или пароль');
+      if (!user || !(await verifyPassword(password, user.password_hash))) {
+        try { await env.DB.prepare(`INSERT INTO login_attempts (ip, email, at) VALUES (?, ?, ?)`).bind(ip, email, new Date(now).toISOString()).run(); } catch (_) {}
+        return fail(401, 'Неверный логин или пароль');
+      }
+      // успех — сбрасываем счётчик попыток для этого ip/email
+      try { await env.DB.prepare(`DELETE FROM login_attempts WHERE ip = ? OR email = ?`).bind(ip, email).run(); } catch (_) {}
       const token = await signJWT({ sub: user.id, role: user.role_id, name: user.name, email: user.email }, env.JWT_SECRET);
       return ok({ token, user: { id: user.id, name: user.name, email: user.email, role_id: user.role_id, title: user.title } });
     }
