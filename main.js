@@ -1555,12 +1555,12 @@ document.addEventListener('click', e=>{
     case 'save-client': saveClient(t.dataset.id); break;
     case 'import-clients': importClientsModal(); break;
     case 'import-clients-run': importClientsRun(); break;
-    case 'wa-deal': waSendModal(null, id); break;
-    case 'wa-client': waSendModal(id, null); break;
-    case 'wa-send': waDoSend(t.dataset.id||null, t.dataset.deal||null); break;
-    case 'wa-chat': waChatModal(id); break;
-    case 'wa-deal-chat': waDealChatModal(id); break;
-    case 'wa-chat-send': waChatSend(id); break;
+    case 'wa-deal': if(!canWa()){ toast('Нет доступа к WhatsApp','warn'); break; } waSendModal(null, id); break;
+    case 'wa-client': if(!canWa()){ toast('Нет доступа к WhatsApp','warn'); break; } waSendModal(id, null); break;
+    case 'wa-send': if(!canWa()){ toast('Нет доступа к WhatsApp','warn'); break; } waDoSend(t.dataset.id||null, t.dataset.deal||null); break;
+    case 'wa-chat': if(!canWa()){ toast('Нет доступа к WhatsApp','warn'); break; } waChatModal(id); break;
+    case 'wa-deal-chat': if(!canWa()){ toast('Нет доступа к WhatsApp','warn'); break; } waDealChatModal(id); break;
+    case 'wa-chat-send': if(!canWa()){ toast('Нет доступа к WhatsApp','warn'); break; } waChatSend(id); break;
     case 'wa-save-config': waSaveConfig(); break;
     case 'wa-check': waCheck(); break;
     case 'wa-setup-webhook': waSetupWebhook(); break;
