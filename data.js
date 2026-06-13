@@ -193,15 +193,15 @@ function buildSeed(){
 
   const materials = [
     {id:'m1',  name:'Montblanc Grace',  type:'ПВХ',      series:'Эконом',  rate:7800,  stock:640, min:300, unit:'пог.м', supplier:'Профиль-Маркет'},
-    {id:'m2',  name:'Rehau Blitz 60',   type:'ПВХ',      series:'Эконом',  rate:8500,  stock:210, min:300, unit:'пог.м', supplier:'Rehau KZ'},
-    {id:'m3',  name:'KBE Эталон 58',    type:'ПВХ',      series:'Средняя', rate:11000, stock:480, min:250, unit:'пог.м', supplier:'profine KZ'},
-    {id:'m4',  name:'Rehau Grazio 70',  type:'ПВХ',      series:'Средняя', rate:12000, stock:355, min:250, unit:'пог.м', supplier:'Rehau KZ'},
-    {id:'m5',  name:'Veka Softline 70', type:'ПВХ',      series:'Премиум', rate:16500, stock:120, min:150, unit:'пог.м', supplier:'Veka Урал'},
-    {id:'m6',  name:'Rehau Geneo 86',   type:'ПВХ',      series:'Премиум', rate:18500, stock:90,  min:120, unit:'пог.м', supplier:'Rehau KZ'},
-    {id:'m7',  name:'Provedal P400',    type:'Алюминий', series:'Эконом',  rate:9500,  stock:300, min:200, unit:'пог.м', supplier:'Алютех-КЗ'},
-    {id:'m8',  name:'Alutech W62',      type:'Алюминий', series:'Средняя', rate:16000, stock:175, min:150, unit:'пог.м', supplier:'Алютех-КЗ'},
-    {id:'m9',  name:'Alutech ALT W72',  type:'Алюминий', series:'Премиум', rate:22000, stock:60,  min:100, unit:'пог.м', supplier:'Алютех-КЗ'},
-    {id:'m10', name:'Schüco AWS 75',    type:'Алюминий', series:'Премиум', rate:28000, stock:42,  min:80,  unit:'пог.м', supplier:'Schüco Москва'},
+    {id:'m2',  name:'Rehau Blitz 60',   type:'ПВХ',      series:'Эконом',  rate:8500,  stock:210, min:300, unit:'пог.м', supplier:'Rehau'},
+    {id:'m3',  name:'KBE Эталон 58',    type:'ПВХ',      series:'Средняя', rate:11000, stock:480, min:250, unit:'пог.м', supplier:'profine'},
+    {id:'m4',  name:'Rehau Grazio 70',  type:'ПВХ',      series:'Средняя', rate:12000, stock:355, min:250, unit:'пог.м', supplier:'Rehau'},
+    {id:'m5',  name:'Veka Softline 70', type:'ПВХ',      series:'Премиум', rate:16500, stock:120, min:150, unit:'пог.м', supplier:'Veka'},
+    {id:'m6',  name:'Rehau Geneo 86',   type:'ПВХ',      series:'Премиум', rate:18500, stock:90,  min:120, unit:'пог.м', supplier:'Rehau'},
+    {id:'m7',  name:'Provedal P400',    type:'Алюминий', series:'Эконом',  rate:9500,  stock:300, min:200, unit:'пог.м', supplier:'Алютех'},
+    {id:'m8',  name:'Alutech W62',      type:'Алюминий', series:'Средняя', rate:16000, stock:175, min:150, unit:'пог.м', supplier:'Алютех'},
+    {id:'m9',  name:'Alutech ALT W72',  type:'Алюминий', series:'Премиум', rate:22000, stock:60,  min:100, unit:'пог.м', supplier:'Алютех'},
+    {id:'m10', name:'Schüco AWS 75',    type:'Алюминий', series:'Премиум', rate:28000, stock:42,  min:80,  unit:'пог.м', supplier:'Schüco'},
   ];
   const components = [
     {id:'c1', name:'Стеклопакет однокам. 24мм', stock:85, min:40, unit:'м²'},
@@ -215,21 +215,21 @@ function buildSeed(){
   ];
 
   const cnames = [
-    ['Айгуль Нурланова','+7 705 318 22 41','Ош, ул. Абая 102'],
-    ['Сергей Войтенко','+7 701 442 16 09','Ош, мкр. Юбилейный 14'],
-    ['Гульмира Ахметова','+7 747 905 73 28','Ош, ул. Тарана 58'],
-    ['ТОО «СтройДом»','+7 7142 39 11 70','Ош, пр. Аль-Фараби 119'],
-    ['Дмитрий Лебедев','+7 708 221 88 14','Рудный, ул. Ленина 22'],
-    ['Бекзат Сулейменов','+7 702 660 41 33','Ош, ул. Гоголя 77'],
-    ['Оксана Журавлёва','+7 705 119 30 52','Ош, мкр. Наурыз 6'],
-    ['Канат Жумабеков','+7 747 503 27 18','Лисаковск, ул. Мира 9'],
-    ['ИП Морозова','+7 701 884 55 02','Ош, ул. Баймагамбетова 195'],
-    ['Алексей Петров','+7 708 770 14 63','Ош, ул. Чехова 121'],
-    ['Жанна Калиева','+7 705 222 90 47','Ош, мкр. Береке 31'],
-    ['ОО «Школа №7»','+7 7142 54 22 18','Ош, ул. Маяковского 5'],
+    ['Айгуль Нурланова','+996 700 318 224','Ош, ул. Курманжан Датки 102'],
+    ['Сергей Войтенко','+996 555 442 160','Ош, мкр. Анар 14'],
+    ['Гульмира Ахметова','+996 770 905 732','Ош, ул. Масалиева 58'],
+    ['ОсОО «СтройДом»','+996 3222 39 11 70','Ош, пр. Ленина 119'],
+    ['Дмитрий Лебедев','+996 708 221 881','Кара-Суу, ул. Ленина 22'],
+    ['Бекзат Сулейменов','+996 702 660 413','Ош, ул. Гоголя 77'],
+    ['Оксана Журавлёва','+996 705 119 305','Ош, мкр. Черёмушки 6'],
+    ['Канат Жумабеков','+996 770 503 271','Джалал-Абад, ул. Мира 9'],
+    ['ИП Морозова','+996 701 884 550','Ош, ул. Навои 195'],
+    ['Алексей Петров','+996 708 770 146','Ош, ул. Чехова 121'],
+    ['Жанна Калиева','+996 705 222 904','Ош, мкр. Тулейкен 31'],
+    ['ОО «Школа №7»','+996 3222 54 22 18','Ош, ул. Маяковского 5'],
   ];
   const clients = cnames.map((c,i)=>({ id:'cl'+(i+1), name:c[0], phone:c[1], address:c[2],
-    type: c[0].match(/ТОО|ИП|ОО|Школа/)?'Юр. лицо':'Физ. лицо' }));
+    type: c[0].match(/ОсОО|ИП|ОО|Школа/)?'Юр. лицо':'Физ. лицо' }));
 
   const sources=['Instagram','2GIS','Сайт','Рекомендация','Билборд','Звонок'];
   const managers=['u_pm','u_isk'];
@@ -254,7 +254,7 @@ function buildSeed(){
       items:[constr('m3',1400,1400,'g2','tilt',2,['mosquito','sill','slopes','mount'])]});
   D({id:'d8',  clientId:'cl10',stage:'contract', manager:'u_pm', sum:512000,  createdAt:daysAgo(11).toISOString(), stageSince:daysAgo(2).toISOString(),  contractNo:'Д-2026-006', contractDate:daysAgo(1).toISOString().slice(0,10), note:'Согласование договора',
       items:[constr('m4',1600,1500,'g2','tilt',2,['sill','slopes','mount']), constr('m4',700,1400,'g2','turn',1,['sill','mount'])]});
-  D({id:'d9',  clientId:'cl4', stage:'prepaid',  manager:'u_isk',sum:1850000, createdAt:daysAgo(16).toISOString(), stageSince:daysAgo(3).toISOString(),  note:'Объект ТОО, аванс 50%',
+  D({id:'d9',  clientId:'cl4', stage:'prepaid',  manager:'u_isk',sum:1850000, createdAt:daysAgo(16).toISOString(), stageSince:daysAgo(3).toISOString(),  note:'Объект ОсОО, аванс 50%',
       items:[constr('m8',1800,2100,'g3','tilt',2,['mount','demount']), constr('m8',1800,2100,'g3','tilt',2,['mount','demount']), constr('m8',1200,2100,'g3','turn',1,['mount'])],
       payments:[{id:uid('p'),type:'Аванс',amount:925000,date:daysAgo(3).toISOString()}]});
   D({id:'d10', clientId:'cl11',stage:'prepaid',  manager:'u_pm', sum:368000,  createdAt:daysAgo(9).toISOString(),  stageSince:daysAgo(1).toISOString(),  note:'Аванс 30% получен',
@@ -277,23 +277,23 @@ function buildSeed(){
       payments:[{id:uid('p'),type:'Аванс',amount:243000,date:daysAgo(18).toISOString()},{id:uid('p'),type:'Доплата',amount:243000,date:daysAgo(4).toISOString()}]});
 
   const payables = [
-    {id:'pay1', supplier:'Rehau KZ',          forWhat:'Профиль Geneo/Grazio', amount:1250000, due:daysAgo(-6).toISOString(),  status:'ожидает'},
-    {id:'pay2', supplier:'Алютех-КЗ',         forWhat:'Профиль W62/W72',      amount:680000,  due:daysAgo(-2).toISOString(),  status:'ожидает'},
+    {id:'pay1', supplier:'Rehau',          forWhat:'Профиль Geneo/Grazio', amount:1250000, due:daysAgo(-6).toISOString(),  status:'ожидает'},
+    {id:'pay2', supplier:'Алютех',         forWhat:'Профиль W62/W72',      amount:680000,  due:daysAgo(-2).toISOString(),  status:'ожидает'},
     {id:'pay3', supplier:'Стеклопакет-Сервис',forWhat:'Стеклопакеты (партия)',amount:540000,  due:daysAgo(3).toISOString(),   status:'просрочено'},
-    {id:'pay4', supplier:'MACO KZ',           forWhat:'Фурнитура',            amount:320000,  due:daysAgo(-12).toISOString(), status:'ожидает'},
+    {id:'pay4', supplier:'MACO',           forWhat:'Фурнитура',            amount:320000,  due:daysAgo(-12).toISOString(), status:'ожидает'},
     {id:'pay5', supplier:'Аренда цеха',       forWhat:'Аренда, май',          amount:450000,  due:daysAgo(-1).toISOString(),  status:'ожидает'},
   ];
 
   const activity = [
     {who:'u_pm', text:'Принял предоплату 110 000 сом по сделке «Жанна Калиева»', at:daysAgo(1).toISOString(), kind:'money'},
     {who:'u_ps', text:'Завершил замер по адресу ул. Тарана 58', at:daysAgo(1).toISOString(), kind:'measure'},
-    {who:'u_isk',text:'Сделка ТОО «СтройДом» переведена в «Аванс»', at:daysAgo(3).toISOString(), kind:'funnel'},
+    {who:'u_isk',text:'Сделка ОсОО «СтройДом» переведена в «Аванс»', at:daysAgo(3).toISOString(), kind:'funnel'},
     {who:'u_as', text:'Заказ «Канат Жумабеков» переведён в «Сборка»', at:daysAgo(2).toISOString(), kind:'prod'},
     {who:'u_pm', text:'Новый лид из Instagram — Айгуль Нурланова', at:daysAgo(1).toISOString(), kind:'lead'},
   ];
 
   const movements = [
-    {id:uid('wm'), kind:'mat',  itemId:'m4', name:'Rehau Grazio 70',             unit:'пог.м', dir:'in',  type:'receipt',    qty:200, reason:'Поставка Rehau KZ',                 balanceAfter:355, who:'u_wh', at:daysAgo(40).toISOString()},
+    {id:uid('wm'), kind:'mat',  itemId:'m4', name:'Rehau Grazio 70',             unit:'пог.м', dir:'in',  type:'receipt',    qty:200, reason:'Поставка Rehau',                 balanceAfter:355, who:'u_wh', at:daysAgo(40).toISOString()},
     {id:uid('wm'), kind:'comp', itemId:'c2', name:'Стеклопакет двухкам. 32мм',    unit:'м²',    dir:'in',  type:'receipt',    qty:40,  reason:'Поставка Стеклопакет-Сервис',       balanceAfter:62,  who:'u_wh', at:daysAgo(18).toISOString()},
     {id:uid('wm'), kind:'mat',  itemId:'m5', name:'Veka Softline 70',             unit:'пог.м', dir:'out', type:'production', qty:48,  reason:'В производство — Бекзат Сулейменов',balanceAfter:120, who:'u_as', dealId:'d11', at:daysAgo(6).toISOString()},
     {id:uid('wm'), kind:'comp', itemId:'c5', name:'Фурнитура MACO пов.-откидная', unit:'компл', dir:'out', type:'writeoff',   qty:2,   reason:'Брак при сборке',                   balanceAfter:34,  who:'u_as', at:daysAgo(3).toISOString()},
