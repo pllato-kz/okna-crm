@@ -49,7 +49,7 @@ function recordMovement(o){
     id: uid('wm'), kind: o.kind, itemId: o.item.id, name: o.item.name, unit: o.item.unit,
     dir: o.dir, type: o.type, qty: o.qty, reason: o.reason || '',
     balanceAfter: o.item.stock, dealId: o.dealId || null,
-    who: (state.user && state.user.id) || null, at: SEED_NOW.toISOString(),
+    who: (state.user && state.user.id) || null, at: now().toISOString(),
   };
   DB.movements.unshift(rec);
   if (apiOn()) persist(API.persist.createMovement(rec));
@@ -73,7 +73,7 @@ async function apiLoginSubmit(){
 function nav(mod){ state.module=mod; state.sideOpen=false; render(); }
 
 function setDealStage(d, stage){
-  d.stage=stage; d.stageSince=SEED_NOW.toISOString();
+  d.stage=stage; d.stageSince=now().toISOString();
   if(['production','install'].includes(stage) && !d.prodStage) d.prodStage='queue';
   if(stage!=='lead' && !d.sum && (d.items||[]).length) d.sum=computeMeasure(d).total;
   saveDB(); if(apiOn()) persist(API.persist.saveDeal(d));
@@ -84,7 +84,7 @@ function notifyProdShortage(d){
   const short=materialShortage(d); if(!short.length) return null;
   const cl=clientById(d.clientId);
   const txt='⚠ Не хватает материалов для производства — '+(cl?cl.name:d.id)+': '+short.map(s=>`${s.name} (−${s.lack} ${s.unit})`).join(', ');
-  DB.activity.unshift({who:(state.user&&state.user.id)||null, text:txt, at:SEED_NOW.toISOString(), kind:'wh'});
+  DB.activity.unshift({who:(state.user&&state.user.id)||null, text:txt, at:now().toISOString(), kind:'wh'});
   saveDB(); if(apiOn()) persist(API.persist.createActivity(DB.activity[0]));
   return short;
 }
@@ -111,7 +111,7 @@ function moveProd(id, stage){ const d=dealById(id); if(!d) return; d.prodStage=s
   const used=consumeForStage(d, stage);
   if(used.length){
     const cl=clientById(d.clientId);
-    DB.activity.unshift({who:state.user.id,text:`Списано со склада (${PROD_STAGES.find(s=>s.id===stage).name}) — ${cl.name}`,at:SEED_NOW.toISOString(),kind:'wh'});
+    DB.activity.unshift({who:state.user.id,text:`Списано со склада (${PROD_STAGES.find(s=>s.id===stage).name}) — ${cl.name}`,at:now().toISOString(),kind:'wh'});
     // движения по уменьшившимся позициям — в журнал прихода/расхода
     for(const m of DB.materials){ const b=before['m:'+m.id]; if(b!=null && m.stock<b) recordMovement({kind:'mat', item:m, dir:'out', type:'production', qty:Math.round((b-m.stock)*10)/10, reason:`В производство — ${cl.name}`, dealId:d.id}); }
     for(const c of DB.components){ const b=before['c:'+c.id]; if(b!=null && c.stock<b) recordMovement({kind:'comp', item:c, dir:'out', type:'production', qty:Math.round((b-c.stock)*10)/10, reason:`В производство — ${cl.name}`, dealId:d.id}); }
@@ -128,9 +128,9 @@ function applyPrepay(id){
   const d=dealById(id); if(!d) return; const k=computeMeasure(d);
   d.sum=k.total;
   let addedPay=null;
-  if(dealPaid(d)===0){ d.payments=d.payments||[]; addedPay={id:uid('p'),type:'Аванс',amount:k.prepay,date:SEED_NOW.toISOString()}; d.payments.push(addedPay); }
-  d.stage='prepaid'; d.stageSince=SEED_NOW.toISOString(); d.prodStage='queue';
-  DB.activity.unshift({who:state.user.id,text:`Принял предоплату ${money(k.prepay)} — ${clientById(d.clientId).name}`,at:SEED_NOW.toISOString(),kind:'money'});
+  if(dealPaid(d)===0){ d.payments=d.payments||[]; addedPay={id:uid('p'),type:'Аванс',amount:k.prepay,date:now().toISOString()}; d.payments.push(addedPay); }
+  d.stage='prepaid'; d.stageSince=now().toISOString(); d.prodStage='queue';
+  DB.activity.unshift({who:state.user.id,text:`Принял предоплату ${money(k.prepay)} — ${clientById(d.clientId).name}`,at:now().toISOString(),kind:'money'});
   state.measureDealId=null;
   saveDB();
   if(apiOn()){ persist(API.persist.saveDeal(d)); if(addedPay) persist(API.persist.createPayment(d.id, addedPay)); persist(API.persist.createActivity(DB.activity[0])); }
@@ -146,7 +146,7 @@ function addPaymentModal(id){
 }
 function confirmPayment(id){
   const d=dealById(id); const amt=parseFloat(document.getElementById('pay-amt').value)||0; if(amt<=0){closeModal();return;}
-  d.payments=d.payments||[]; const addedPay={id:uid('p'),type:'Доплата',amount:amt,date:SEED_NOW.toISOString()}; d.payments.push(addedPay);
+  d.payments=d.payments||[]; const addedPay={id:uid('p'),type:'Доплата',amount:amt,date:now().toISOString()}; d.payments.push(addedPay);
   const wasDone = d.stage==='done';
   if(dealDebt(d)<=0 && d.stage==='install') d.stage='done';
   saveDB();
@@ -181,7 +181,7 @@ function createDeal(){
   }
   if(!cid){ toast('Выберите клиента','warn'); return; }
   const note=(document.getElementById('nd-note').value||'').trim()||'Новая заявка';
-  const nd={id:uid('d'),clientId:cid,stage:'lead',manager:state.user.id,sum:0,createdAt:SEED_NOW.toISOString(),stageSince:SEED_NOW.toISOString(),note,source:'Звонок',payments:[],items:[],kp:null,prodStage:null};
+  const nd={id:uid('d'),clientId:cid,stage:'lead',manager:state.user.id,sum:0,createdAt:now().toISOString(),stageSince:now().toISOString(),note,source:'Звонок',payments:[],items:[],kp:null,prodStage:null};
   DB.deals.unshift(nd);
   saveDB(); if(apiOn()) persist(API.persist.createDeal(nd)); closeModal(); renderModule(); toast('Лид создан');
 }
@@ -217,7 +217,7 @@ function saveDealEdit(id){
   if(paidEl){
     const newPaid=Math.max(0,Math.round(parseFloat(paidEl.value)||0));
     const delta=newPaid-dealPaid(d);
-    if(delta!==0){ addedPay={id:uid('p'), type:'Доплата', amount:delta, date:SEED_NOW.toISOString()}; d.payments=d.payments||[]; d.payments.push(addedPay); }
+    if(delta!==0){ addedPay={id:uid('p'), type:'Доплата', amount:delta, date:now().toISOString()}; d.payments=d.payments||[]; d.payments.push(addedPay); }
   }
   saveDB();
   if(apiOn()){ persist(API.persist.saveDeal(d)); if(addedPay) persist(API.persist.createPayment(d.id, addedPay)); }
@@ -386,7 +386,7 @@ function addTaskModal(dealId){
   openModal(`<div class="modal-h">${icon('clock')}<h3>Новая задача</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="constr-body" style="padding:0">
       <div class="fld full"><label>Что сделать</label><input id="tk-title" placeholder="напр. Перезвонить клиенту"></div>
-      <div class="fld"><label>Срок</label><input id="tk-due" type="date" value="${SEED_NOW.toISOString().slice(0,10)}"></div>
+      <div class="fld"><label>Срок</label><input id="tk-due" type="date" value="${now().toISOString().slice(0,10)}"></div>
       <div class="fld"><label>Ответственный</label><select id="tk-assignee">${opts}</select></div>
     </div></div>
     <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="create-task" data-id="${dealId}">${icon('check','sm')} Добавить</button></div>`);
@@ -394,7 +394,7 @@ function addTaskModal(dealId){
 function createTask(dealId){
   const v=i=>{const el=document.getElementById(i);return el?el.value.trim():'';};
   const title=v('tk-title'); if(!title){ toast('Опишите задачу','warn'); return; }
-  const dueRaw=v('tk-due'); const due=dueRaw?new Date(dueRaw).toISOString():SEED_NOW.toISOString();
+  const dueRaw=v('tk-due'); const due=dueRaw?new Date(dueRaw).toISOString():now().toISOString();
   const assignee=v('tk-assignee')||(dealById(dealId)||{}).manager||(state.user&&state.user.id);
   const nt={id:uid('t'),dealId,title,due,assignee,done:false};
   DB.tasks=DB.tasks||[]; DB.tasks.push(nt);
@@ -656,7 +656,7 @@ function whConfirmReceive(id, kind){
   it.stock = Math.round((it.stock+qty)*10)/10;
   const reason = (supEl && supEl.value.trim()) ? 'Поставка — '+supEl.value.trim() : 'Поступление на склад';
   recordMovement({kind, item:it, dir:'in', type:'receipt', qty, reason});
-  DB.activity.unshift({who:state.user.id,text:`Приход на склад: ${it.name} +${qty} ${it.unit}`,at:SEED_NOW.toISOString(),kind:'wh'});
+  DB.activity.unshift({who:state.user.id,text:`Приход на склад: ${it.name} +${qty} ${it.unit}`,at:now().toISOString(),kind:'wh'});
   saveDB();
   if(apiOn()){ persist(kind==='mat'?API.persist.saveMaterial(it):API.persist.saveComponent(it)); persist(API.persist.createActivity(DB.activity[0])); }
   closeModal(); render();
@@ -686,7 +686,7 @@ function whConfirmWriteoff(id, kind){
   const reason=((document.getElementById('wo-reason')||{}).value||'').trim()||MOVE_TYPES[type].label;
   it.stock = Math.round((it.stock-qty)*10)/10;
   recordMovement({kind, item:it, dir:'out', type, qty, reason});
-  DB.activity.unshift({who:state.user.id,text:`Расход со склада: ${it.name} −${qty} ${it.unit} (${MOVE_TYPES[type].label})`,at:SEED_NOW.toISOString(),kind:'wh'});
+  DB.activity.unshift({who:state.user.id,text:`Расход со склада: ${it.name} −${qty} ${it.unit} (${MOVE_TYPES[type].label})`,at:now().toISOString(),kind:'wh'});
   saveDB();
   if(apiOn()){ persist(kind==='mat'?API.persist.saveMaterial(it):API.persist.saveComponent(it)); persist(API.persist.createActivity(DB.activity[0])); }
   closeModal(); render();
@@ -1030,7 +1030,7 @@ function stageDelConfirm(id){
   const dealsIn=DB.deals.filter(d=>d.stage===id);
   if(dealsIn.length){ const sel=document.getElementById('stg-move'); const target=sel?sel.value:null;
     if(!target){ toast('Выберите стадию для переноса','warn'); return; }
-    dealsIn.forEach(d=>{ d.stage=target; d.stageSince=SEED_NOW.toISOString(); }); }
+    dealsIn.forEach(d=>{ d.stage=target; d.stageSince=now().toISOString(); }); }
   const i=STAGES.findIndex(x=>x.id===id); if(i>=0) STAGES.splice(i,1);
   STAGES.forEach((s2,ix)=>s2.sort=ix);
   if(state.funnelStage===id) state.funnelStage='all';
@@ -1197,7 +1197,7 @@ function waTplDelConfirm(id){ if(!isDirector()) return; WA_TEMPLATES=WA_TEMPLATE
 function waTplReset(){ if(!isDirector()) return; WA_TEMPLATES=defaultWaTemplates(); saveWaTemplates(); renderModule(); toast('Шаблоны сброшены к стандартным'); }
 function logWaActivity(cl){
   if(!cl) return;
-  DB.activity.unshift({who:(state.user&&state.user.id)||null, text:`Отправлено сообщение в WhatsApp — ${cl.name}`, at:SEED_NOW.toISOString(), kind:'lead'});
+  DB.activity.unshift({who:(state.user&&state.user.id)||null, text:`Отправлено сообщение в WhatsApp — ${cl.name}`, at:now().toISOString(), kind:'lead'});
   saveDB(); if(apiOn()) persist(API.persist.createActivity(DB.activity[0]));
 }
 function waDoSend(clientId, dealId){
@@ -1761,7 +1761,7 @@ document.addEventListener('click', e=>{
             .then(r=>{ d.contractNo=r.contractNo; d.contractDate=r.contractDate; saveDB(); openContract(id); })
             .catch(e=>{ toast('Не удалось выдать номер договора: '+((e&&e.message)||''),'warn'); });
         } else {
-          d.contractNo=nextContractNo(); d.contractDate=SEED_NOW.toISOString().slice(0,10); saveDB(); openContract(id);
+          d.contractNo=nextContractNo(); d.contractDate=now().toISOString().slice(0,10); saveDB(); openContract(id);
         }
       } break;
     case 'print-contract': printContract(id); break;

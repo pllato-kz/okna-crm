@@ -86,7 +86,13 @@ function chatTime(s){ if(!s) return ''; const d=new Date(s); return d.toLocaleDa
 function uid(p){ return (p||'id')+'_'+Math.random().toString(36).slice(2,8); }
 /* экранирование для подстановки в value="" / разметку (формы настроек) */
 function escA(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-const SEED_NOW = new Date('2026-05-29T11:00:00');
+// «Сейчас» демо привязано к РЕАЛЬНОЙ дате (на момент загрузки): сид-данные
+// раскладываются относительно неё через daysAgo(), и при показе всё выглядит
+// актуальным. Берём сегодня в 11:00 — для чистых границ суток в бэйджах.
+const SEED_NOW = (()=>{ const d=new Date(); d.setHours(11,0,0,0); return d; })();
+// Реальный момент для меток времени при СОЗДАНИИ записей (оплаты, события,
+// сделки, договоры). В демо ≈ сегодня; в боевом режиме — точное время вызова.
+function now(){ return new Date(); }
 // «Сейчас» для расчёта просрочки сроков: в демо (localStorage) — SEED_NOW, чтобы
 // сид-данные выглядели свежими; в боевом API-режиме — реальное время.
 function nowRef(){ try{ return (typeof apiOn==='function' && apiOn()) ? new Date() : SEED_NOW; }catch(e){ return SEED_NOW; } }
@@ -312,14 +318,43 @@ function buildSeed(){
     {id:'t_seed5', dealId:'d2', title:'Уточнить размеры проёмов',          due:daysAgo(2).toISOString(),   assignee:'u_pm',  done:true},
   ];
 
-  return { v:1, company, users, materials, components, clients, deals, payables, activity, movements, waMessages, tasks };
+  return { v:1, seedAnchor: SEED_NOW.toISOString(), company, users, materials, components, clients, deals, payables, activity, movements, waMessages, tasks };
 }
 
 /* ============ STATE / PERSISTENCE ============ */
 const DB_KEY = 'okna_crm_db_v1';
 let DB;
+// Демо-данные «сползают» относительно сегодняшней даты: при загрузке сдвигаем все
+// даты на дельту между сохранённым якорем и сегодня — чтобы при показе в любой день
+// сделки/оплаты/просрочки выглядели свежими, не сбрасывая правки пользователя.
+function reanchorSeed(db){
+  try{
+    if(!db) return db;
+    const DAY=86400000;
+    const target=new Date(); target.setHours(11,0,0,0);
+    // нет якоря → это старый сид (был жёстко привязан к 2026-05-29): мигрируем от него
+    const anchor = db.seedAnchor ? new Date(db.seedAnchor) : new Date('2026-05-29T11:00:00');
+    if(isNaN(anchor.getTime())){ db.seedAnchor=target.toISOString(); return db; }
+    const drift=Math.round((target.getTime()-anchor.getTime())/DAY);
+    if(drift===0) return db;
+    const shiftISO=s=>{ if(!s) return s; const d=new Date(s); return isNaN(d.getTime())?s:new Date(d.getTime()+drift*DAY).toISOString(); };
+    const shiftDay=s=>{ if(!s) return s; const d=new Date(s+'T11:00:00'); return isNaN(d.getTime())?s:new Date(d.getTime()+drift*DAY).toISOString().slice(0,10); };
+    (db.deals||[]).forEach(dl=>{
+      dl.createdAt=shiftISO(dl.createdAt); dl.stageSince=shiftISO(dl.stageSince);
+      dl.readyDate=shiftDay(dl.readyDate); dl.installDate=shiftDay(dl.installDate); dl.contractDate=shiftDay(dl.contractDate);
+      (dl.payments||[]).forEach(p=>{ p.date=shiftISO(p.date); });
+    });
+    (db.payables||[]).forEach(p=>{ p.due=shiftISO(p.due); });
+    (db.activity||[]).forEach(a=>{ a.at=shiftISO(a.at); });
+    (db.movements||[]).forEach(m=>{ m.at=shiftISO(m.at); });
+    (db.tasks||[]).forEach(t=>{ t.due=shiftISO(t.due); });
+    (db.waMessages||[]).forEach(m=>{ if(m.at) m.at=shiftISO(m.at); });
+    db.seedAnchor=target.toISOString();
+  }catch(e){}
+  return db;
+}
 function loadDB(){
-  try{ const raw=localStorage.getItem(DB_KEY); if(raw){ const d=JSON.parse(raw); if(d&&d.v===1){ if(!Array.isArray(d.movements)) d.movements=[]; if(!Array.isArray(d.waMessages)) d.waMessages=[]; if(!Array.isArray(d.tasks)) d.tasks=[]; if(!Array.isArray(d.trash)) d.trash=[]; return d; } } }catch(e){}
+  try{ const raw=localStorage.getItem(DB_KEY); if(raw){ const d=JSON.parse(raw); if(d&&d.v===1){ if(!Array.isArray(d.movements)) d.movements=[]; if(!Array.isArray(d.waMessages)) d.waMessages=[]; if(!Array.isArray(d.tasks)) d.tasks=[]; if(!Array.isArray(d.trash)) d.trash=[]; reanchorSeed(d); localStorage.setItem(DB_KEY, JSON.stringify(d)); return d; } } }catch(e){}
   const seed=buildSeed(); localStorage.setItem(DB_KEY, JSON.stringify(seed)); return seed;
 }
 function saveDB(){ try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(e){} }
