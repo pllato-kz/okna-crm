@@ -178,9 +178,6 @@ function renderShell(){
           <div class="brand-logo">${icon('oglass','lg')}</div>
           <div><div class="brand-name">Ocean Glass</div><div class="brand-sub">CRM · Ош</div></div>
         </div>
-        <div class="company-pill">
-          <div class="cc">${icon('pin','sm')} ${escA(DB.company.city)} · ${escA(DB.company.workshop.split(' · ')[0])}</div>
-        </div>
       </div>
       <nav class="nav">${nav}</nav>
       <div class="side-bottom">
