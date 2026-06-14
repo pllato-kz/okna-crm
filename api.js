@@ -90,6 +90,7 @@ function apiMapBootstrap(boot){
     items: (d.items || []).map(it => ({
       id: it.id, profileId: it.profile_id, glassId: it.glass_id, openId: it.opening_id,
       w: it.w, h: it.h, sashes: it.sashes, qty: it.qty, extras: (it.extras || []).slice(),
+      sashList: (() => { try { return it.sashes_json ? JSON.parse(it.sashes_json) : null; } catch (e) { return null; } })(),
     })),
     payments: (d.payments || []).map(p => ({ id: p.id, type: apiName(payTypes, p.type_id), amount: p.amount, date: p.date })),
     kp: null,
@@ -164,10 +165,10 @@ const apiPersist = {
   allocateContract: (dealId) => apiFetch('deals/' + dealId + '/contract-number', { method: 'POST' }),
   createItem: (dealId, it) => apiFetch('deal_items', { method: 'POST', body: {
     id: it.id, deal_id: dealId, profile_id: it.profileId, glass_id: it.glassId, opening_id: it.openId,
-    w: it.w, h: it.h, sashes: it.sashes, qty: it.qty,
+    w: it.w, h: it.h, sashes: it.sashes, sashes_json: it.sashList ? JSON.stringify(it.sashList) : null, qty: it.qty,
   }}),
   saveItem:   (it) => apiFetch('deal_items/' + it.id, { method: 'PUT', body: {
-    profile_id: it.profileId, glass_id: it.glassId, opening_id: it.openId, w: it.w, h: it.h, sashes: it.sashes, qty: it.qty,
+    profile_id: it.profileId, glass_id: it.glassId, opening_id: it.openId, w: it.w, h: it.h, sashes: it.sashes, sashes_json: it.sashList ? JSON.stringify(it.sashList) : null, qty: it.qty,
   }}),
   deleteItem: (itemId) => apiFetch('deal_items/' + itemId, { method: 'DELETE' }),
   setItemExtra: (itemId, extraId, on) => on

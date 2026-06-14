@@ -539,6 +539,32 @@ function materialShortage(d){
 
 /* ============ PRICING ============ */
 function constrArea(c){ return (c.w*c.h)/1e6; }
+/* ---- Покреативные створки ----
+   Каждая створка настраивается отдельно: {open: 'deaf'|'turn'|'tilt',
+   dir: 'left'|'right' (петли), active: bool}. c.sashes — их количество.
+   sashSel[cid] — индекс выбранной створки в UI (не персистится). */
+const sashSel = {};
+function ensureSashList(c){
+  const n=Math.max(1, Math.min(6, Math.round(c.sashes||1)));
+  if(!Array.isArray(c.sashList)) c.sashList=[];
+  const half=Math.ceil(n/2);
+  while(c.sashList.length<n){ const i=c.sashList.length; c.sashList.push({open:c.openId||'deaf', dir:i<half?'left':'right', active:(c.openId&&c.openId!=='deaf')||i===0}); }
+  if(c.sashList.length>n) c.sashList.length=n;
+  c.sashList.forEach(s=>{ if(s.open!=='turn'&&s.open!=='tilt'&&s.open!=='deaf') s.open='deaf'; if(s.dir!=='left'&&s.dir!=='right') s.dir='left'; if(typeof s.active!=='boolean') s.active=true; });
+  // легаси-поле openId держим осмысленным (первая активная створка) — для старых ссылок
+  const firstOpen=c.sashList.find(s=>s.active&&s.open!=='deaf'); c.openId=firstOpen?firstOpen.open:(c.sashList[0]?c.sashList[0].open:'deaf');
+  return c.sashList;
+}
+function sashOpenRate(s){ if(!s||!s.active) return 0; const o=openById(s.open); return o?o.rate:0; }
+/* Человекочитаемое описание открывания для КП/счёта/договора/карточки. */
+function constrOpenLabel(c){
+  const list=ensureSashList(c);
+  const counts={};
+  list.forEach(s=>{ const k=s.active?(openById(s.open)?.name||'—'):'отключена'; counts[k]=(counts[k]||0)+1; });
+  const keys=Object.keys(counts);
+  if(keys.length===1) return keys[0];
+  return keys.map(k=>`${counts[k]}×${k.toLowerCase()}`).join(', ');
+}
 /* длина опции в пог.м: «м» — вдоль низа (подоконник/отлив = ширина);
    «периметр» — откосы по трём сторонам проёма (2 высоты + верх, низ занят подоконником) */
 function extraLength(c, e){
@@ -547,9 +573,11 @@ function extraLength(c, e){
   return 0;
 }
 function constrPrice(c){
-  const m=matById(c.profileId); const g=glassById(c.glassId); const o=openById(c.openId);
+  const m=matById(c.profileId); const g=glassById(c.glassId);
   const area=constrArea(c);
-  let p = (m?m.rate:0)*area + (g?g.rate:0)*area + (o?o.rate:0)*(c.sashes||1);
+  // открывание считаем по каждой створке отдельно (активные поворотные/откидные)
+  const openCost=ensureSashList(c).reduce((a,s)=>a+sashOpenRate(s),0);
+  let p = (m?m.rate:0)*area + (g?g.rate:0)*area + openCost;
   (c.extras||[]).forEach(eid=>{ const e=extraById(eid); if(!e) return;
     const len=extraLength(c, e);
     p += len>0 ? e.price*len : e.price;   // длинномерные — по длине, прочее — за штуку

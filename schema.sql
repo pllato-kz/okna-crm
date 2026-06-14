@@ -277,6 +277,7 @@ CREATE TABLE deal_items (
   w           INTEGER NOT NULL DEFAULT 0,    -- ширина, мм
   h           INTEGER NOT NULL DEFAULT 0,    -- высота, мм
   sashes      INTEGER NOT NULL DEFAULT 1,    -- створок
+  sashes_json TEXT,                          -- настройка каждой створки: [{open,dir,active}]
   qty         INTEGER NOT NULL DEFAULT 1,    -- количество, шт
   sort        INTEGER NOT NULL DEFAULT 0
 );

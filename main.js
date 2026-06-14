@@ -775,6 +775,12 @@ function mSet(cid,field,val){ const d=currentMeasureDeal(); const c=d.items.find
   if(apiOn()){ if(field==='extras') persist(API.persist.setItemExtra(cid, val, c.extras.includes(val))); else persist(API.persist.saveItem(c)); }
   syncDealSum(d); saveDB();
   renderModule(); }
+/* настройка отдельной створки (open/dir/active). i — индекс створки. */
+function mSashSet(cid,i,patch){ const d=currentMeasureDeal(); if(!d) return; const c=(d.items||[]).find(x=>x.id===cid); if(!c)return;
+  const list=ensureSashList(c); const s=list[i]; if(!s) return;
+  Object.assign(s,patch); ensureSashList(c); // ensure пересчитает легаси openId
+  if(apiOn()) persist(API.persist.saveItem(c));
+  syncDealSum(d); saveDB(); renderModule(); }
 
 /* ============ НАСТРОЙКИ: компания / сотрудники / права (только директор) ============ */
 function isDirector(){ return !!(state.user && state.user.role==='director'); }
@@ -1240,7 +1246,7 @@ function waDealChatModal(dealId){
   const st=stageById(d.stage); const sum=d.sum||dealItemsSum(d); const paid=dealPaid(d); const debt=Math.max(0,sum-paid);
   const money$=seesMoney();
   const items=(d.items||[]).map(c=>{ const mt=matById(c.profileId);
-    return `<div class="stat-line"><span>${escA(mt?mt.type:'')} ${c.w}×${c.h}${(c.qty||1)>1?' ·'+c.qty+'шт':''}</span><span class="muted">${escA(openById(c.openId)?.name||'')}</span></div>`; }).join('')
+    return `<div class="stat-line"><span>${escA(mt?mt.type:'')} ${c.w}×${c.h}${(c.qty||1)>1?' ·'+c.qty+'шт':''}</span><span class="muted">${escA(constrOpenLabel(c))}</span></div>`; }).join('')
     || '<div class="muted2" style="font-size:12px">Конструкции не добавлены</div>';
   const moneyBlock = money$ ? `
       <div class="stat-line"><span>Сумма заказа</span><span style="font-weight:700">${money(sum)}</span></div>
@@ -1744,8 +1750,12 @@ document.addEventListener('click', e=>{
     case 'm-pick': state.measureDealId=id; renderModule(); break;
     case 'm-add': mAdd(); break;
     case 'm-del': mDel(t.dataset.cid); break;
-    case 'm-open': mSet(t.dataset.cid,'openId',t.dataset.v); break;
     case 'm-extra': mSet(t.dataset.cid,'extras',t.dataset.v); break;
+    // створки по отдельности: выбор створки + тип открывания / петли / активность
+    case 'm-sash-pick': sashSel[t.dataset.cid]=+t.dataset.i; renderModule(); break;
+    case 'm-sash-open': { sashSel[t.dataset.cid]=+t.dataset.i; const v=t.dataset.v; mSashSet(t.dataset.cid, +t.dataset.i, v!=='deaf'?{open:v,active:true}:{open:v}); } break;
+    case 'm-sash-dir': mSashSet(t.dataset.cid, +t.dataset.i, {dir:t.dataset.v}); break;
+    case 'm-sash-active': { const d=currentMeasureDeal(); const c=d&&(d.items||[]).find(x=>x.id===t.dataset.cid); if(c){ const s=ensureSashList(c)[+t.dataset.i]; if(s) mSashSet(t.dataset.cid, +t.dataset.i, {active:!s.active}); } } break;
     // Открытие/печать документов — операция только для чтения: НЕ трогаем d.sum
     // (раньше генерация КП/счёта/договора затирала сумму сделки расчётом по позициям).
     case 'gen-kp': openKp(id); break;

@@ -77,10 +77,17 @@ function constrCard(c,i){
   const m=matById(c.profileId);
   const profOpts=DB.materials.map(o=>`<option value="${o.id}" ${o.id===c.profileId?'selected':''}>${escA(o.name)} · ${escA(o.series)}</option>`).join('');
   const glassOpts=GLASS.map(g=>`<option value="${g.id}" ${g.id===c.glassId?'selected':''}>${escA(g.name)}</option>`).join('');
-  const openChips=OPENINGS.map(o=>`<button class="chip ${o.id===c.openId?'on':''}" data-act="m-open" data-cid="${c.id}" data-v="${o.id}">${escA(o.name)}</button>`).join('');
   const extras=EXTRAS.map(e=>`<button class="ex-toggle ${(c.extras||[]).includes(e.id)?'on':''}" data-act="m-extra" data-cid="${c.id}" data-v="${e.id}">${(c.extras||[]).includes(e.id)?icon('check','sm'):icon('plus','sm')} ${escA(e.name)}</button>`).join('');
-  const cnt=c.sashes||1; const sashes=[];
-  for(let s=0;s<cnt;s++){ const flip = s>=Math.ceil(cnt/2); sashes.push(`<div class="win-sash">${openSymbol(c.openId, flip)}</div>`); }
+  // створки — каждая настраивается отдельно; sashSel[cid] — выбранная для редактирования
+  const list=ensureSashList(c);
+  const sel=Math.min(sashSel[c.id]||0, list.length-1);
+  const sashesHtml=list.map((s,si)=>`<div class="win-sash${si===sel?' sel':''}${s.active?'':' off'}" data-act="m-sash-pick" data-cid="${c.id}" data-i="${si}" title="Створка ${si+1}">${ s.active?openSymbol(s.open, s.dir==='right'):'' }<span class="sash-no">${si+1}</span></div>`).join('');
+  const ss=list[sel]||{open:'deaf',dir:'left',active:true};
+  const sOpenChips=OPENINGS.map(o=>`<button class="chip ${ss.open===o.id?'on':''}" data-act="m-sash-open" data-cid="${c.id}" data-i="${sel}" data-v="${o.id}">${escA(o.name)}</button>`).join('');
+  const dirChips = (ss.open==='deaf'||!ss.active) ? `<span class="muted2" style="font-size:11.5px;padding:6px 0">${ss.active?'глухое — петли не нужны':'створка отключена'}</span>`
+    : `<button class="chip ${ss.dir==='left'?'on':''}" data-act="m-sash-dir" data-cid="${c.id}" data-i="${sel}" data-v="left">Петли слева</button>
+       <button class="chip ${ss.dir==='right'?'on':''}" data-act="m-sash-dir" data-cid="${c.id}" data-i="${sel}" data-v="right">Петли справа</button>`;
+  const activeChip=`<button class="ex-toggle ${ss.active?'on':''}" data-act="m-sash-active" data-cid="${c.id}" data-i="${sel}">${ss.active?icon('check','sm'):icon('plus','sm')} ${ss.active?'Активна':'Отключена'}</button>`;
   return `<div class="constr" data-cid="${c.id}">
     <div class="constr-h">
       <span class="ci">${icon('ruler','sm')}</span>
@@ -93,12 +100,16 @@ function constrCard(c,i){
       <div class="fld"><label>Высота, мм</label><input type="number" value="${c.h}" data-mnum data-cid="${c.id}" data-field="h"></div>
       <div class="fld full"><label>Профиль / серия</label><select data-act="m-profile" data-cid="${c.id}">${profOpts}</select></div>
       <div class="fld full"><label>Стеклопакет</label><select data-act="m-glass" data-cid="${c.id}">${glassOpts}</select></div>
-      <div class="fld"><label>Открывание</label><div class="chips">${openChips}</div></div>
-      <div class="fld"><label>Створок</label><input type="number" min="1" max="5" value="${c.sashes||1}" data-mnum data-cid="${c.id}" data-field="sashes"></div>
-      <div class="win-preview">${sashes.join('')}</div>
+      <div class="fld"><label>Створок</label><input type="number" min="1" max="6" value="${c.sashes||1}" data-mnum data-cid="${c.id}" data-field="sashes"></div>
+      <div class="fld"><label>Площадь</label><div style="font-size:14px;font-weight:600;padding:9px 0" id="carea-${c.id}">${(constrArea(c)*(c.qty||1)).toFixed(2)} м²</div></div>
+      <div class="fld full"><label>Схема — нажмите на створку, чтобы настроить</label><div class="win-preview">${sashesHtml}</div></div>
+      <div class="fld full sash-edit"><label>Створка ${sel+1} из ${list.length} · открывание</label>
+        <div class="chips">${sOpenChips}</div>
+        <div class="chips" style="margin-top:8px">${dirChips}</div>
+        <div style="margin-top:8px">${activeChip}</div>
+      </div>
       <div class="fld full"><label>Доп. опции</label><div class="extras">${extras}</div></div>
       <div class="fld"><label>Количество, шт</label><input type="number" min="1" value="${c.qty||1}" data-mnum data-cid="${c.id}" data-field="qty"></div>
-      <div class="fld"><label>Площадь</label><div style="font-size:14px;font-weight:600;padding:9px 0" id="carea-${c.id}">${(constrArea(c)*(c.qty||1)).toFixed(2)} м²</div></div>
     </div>
   </div>`;
 }
@@ -137,7 +148,14 @@ function initMeasureBindings(){
     inp.addEventListener('input',()=>{
       const d=currentMeasureDeal(); if(!d) return;
       const c=(d.items||[]).find(x=>x.id===inp.dataset.cid); if(!c) return;
-      let v=parseFloat(inp.value)||0; if(inp.dataset.field==='sashes'){v=Math.max(1,Math.min(5,Math.round(v)));} if(inp.dataset.field==='qty'){v=Math.max(1,Math.round(v));}
+      let v=parseFloat(inp.value)||0;
+      if(inp.dataset.field==='sashes'){
+        // меняем количество створок → пересобираем список и перерисовываем схему
+        c.sashes=Math.max(1,Math.min(6,Math.round(v))); ensureSashList(c); saveDB();
+        if(window.API && API.enabled) API.persist.saveItem(c).catch(()=>{});
+        renderModule(); return;
+      }
+      if(inp.dataset.field==='qty'){v=Math.max(1,Math.round(v));}
       if(inp.dataset.field==='w'||inp.dataset.field==='h'){ v=Math.max(0,Math.min(20000,v)); } // без отрицательных габаритов
       c[inp.dataset.field]=v; saveDB(); patchMeasure();
       if(window.API && API.enabled) API.persist.saveItem(c).catch(()=>{});
@@ -152,7 +170,7 @@ function docNo(d){ return String(d.id).replace(/^d_?/,'') + '-' + SEED_NOW.getFu
 function kpDocHtml(d){
   const cl=clientById(d.clientId); const k=computeMeasure(d);
   const rows=(d.items||[]).map((c,i)=>{const m=matById(c.profileId);
-    return `<tr><td>${i+1}</td><td>${escA(m.name)} (${escA(m.series)})<br><span style="color:#64748b">${c.w}×${c.h}мм, ${escA(openById(c.openId).name)}, ${c.sashes} ств., ${escA(glassById(c.glassId).name)}</span></td><td style="text-align:center">${c.qty||1}</td><td style="text-align:right">${money(constrPrice(c))}</td></tr>`;}).join('');
+    return `<tr><td>${i+1}</td><td>${escA(m.name)} (${escA(m.series)})<br><span style="color:#64748b">${c.w}×${c.h}мм, ${escA(constrOpenLabel(c))}, ${c.sashes} ств., ${escA(glassById(c.glassId).name)}</span></td><td style="text-align:center">${c.qty||1}</td><td style="text-align:right">${money(constrPrice(c))}</td></tr>`;}).join('');
   return `<div class="kp-doc">
         <div class="kp-co"><div><h2>${escA(DB.company.name)}</h2><div style="color:#64748b;font-size:12px">${escA(DB.company.legal)} · ${escA(DB.company.city)}<br>${escA(DB.company.phone)}</div></div>
           <div style="text-align:right;font-size:12px;color:#64748b">КП №${docNo(d)}<br>${dateFull(SEED_NOW)}</div></div>
@@ -204,7 +222,7 @@ function invoiceDocHtml(d){
   const no=docNo(d);
   const vr=co.vatRate||0; const vat=vr?Math.round(k.total-k.total/(1+vr/100)):0;
   const rows=(d.items||[]).map((c,i)=>{ const m=matById(c.profileId); const q=c.qty||1; const line=constrPrice(c); const unit=Math.round(line/q);
-    return `<tr><td>${i+1}</td><td>${escA(m.name)} (${escA(m.series)})<br><span style="color:#64748b">${c.w}×${c.h}мм, ${escA(openById(c.openId).name)}, ${c.sashes} ств., ${escA(glassById(c.glassId).name)}</span></td><td style="text-align:center">${q}</td><td style="text-align:right">${money(unit)}</td><td style="text-align:right">${money(line)}</td></tr>`;}).join('');
+    return `<tr><td>${i+1}</td><td>${escA(m.name)} (${escA(m.series)})<br><span style="color:#64748b">${c.w}×${c.h}мм, ${escA(constrOpenLabel(c))}, ${c.sashes} ств., ${escA(glassById(c.glassId).name)}</span></td><td style="text-align:center">${q}</td><td style="text-align:right">${money(unit)}</td><td style="text-align:right">${money(line)}</td></tr>`;}).join('');
   return `<div class="kp-doc">
         <div class="kp-co"><div><h2>Счёт на оплату № ${no}</h2><div style="color:#64748b;font-size:12px">от ${dateFull(SEED_NOW)}</div></div>
           <div style="text-align:right;font-size:12px;color:#64748b">${escA(co.legal)}<br>${escA(co.address)}<br>${escA(co.phone)}</div></div>
@@ -227,7 +245,7 @@ function contractDocHtml(d){
   const no=d.contractNo||nextContractNo(); const dt=d.contractDate?new Date(d.contractDate+'T12:00:00'):SEED_NOW;
   const vr=co.vatRate||0;
   const spec=(d.items||[]).map((c,i)=>{ const m=matById(c.profileId); const q=c.qty||1;
-    return `<tr><td>${i+1}</td><td>${escA(m.name)} (${escA(m.series)}), ${c.w}×${c.h}мм, ${escA(openById(c.openId).name)}, ${c.sashes} ств., ${escA(glassById(c.glassId).name)}</td><td style="text-align:center">${q}</td><td style="text-align:right">${money(constrPrice(c))}</td></tr>`;}).join('');
+    return `<tr><td>${i+1}</td><td>${escA(m.name)} (${escA(m.series)}), ${c.w}×${c.h}мм, ${escA(constrOpenLabel(c))}, ${c.sashes} ств., ${escA(glassById(c.glassId).name)}</td><td style="text-align:center">${q}</td><td style="text-align:right">${money(constrPrice(c))}</td></tr>`;}).join('');
   const ready=d.readyDate?dateFull(d.readyDate):'4–6 недель с даты аванса';
   const install=d.installDate?dateFull(d.installDate):'в течение 5 дней после готовности';
   // подстановка плейсхолдеров в (редактируемый) шаблон договора
@@ -456,7 +474,7 @@ function renderProduction(){
 function openProd(id){
   const d=dealById(id); if(!d) return; const cl=clientById(d.clientId);
   const items=(d.items||[]).map((c,i)=>{const m=matById(c.profileId);
-    return `<tr><td>${i+1}</td><td>${escA(m.name)}</td><td>${c.w}×${c.h}мм</td><td>${escA(glassById(c.glassId).name)}</td><td>${escA(openById(c.openId).name)}, ${c.sashes}ств</td><td style="text-align:center">${c.qty||1}</td></tr>`;}).join('');
+    return `<tr><td>${i+1}</td><td>${escA(m.name)}</td><td>${c.w}×${c.h}мм</td><td>${escA(glassById(c.glassId).name)}</td><td>${escA(constrOpenLabel(c))}, ${c.sashes}ств</td><td style="text-align:center">${c.qty||1}</td></tr>`;}).join('');
   const stageOpts=PROD_STAGES.map(s=>`<button class="chip ${s.id===(d.prodStage||'queue')?'on':''}" data-act="move-prod" data-id="${d.id}" data-stage="${s.id}">${escA(s.name)}</button>`).join('');
   openModal(`
     <div class="modal-h">${icon('production')}<div><h3>Заказ · ${escA(cl.name)}</h3><div class="mh-sub">${icon('pin','sm')} ${escA(cl.address)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
