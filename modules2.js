@@ -145,21 +145,35 @@ function patchMeasure(){
 }
 function initMeasureBindings(){
   document.querySelectorAll('[data-mnum]').forEach(inp=>{
+    const field=inp.dataset.field;
     inp.addEventListener('input',()=>{
       const d=currentMeasureDeal(); if(!d) return;
       const c=(d.items||[]).find(x=>x.id===inp.dataset.cid); if(!c) return;
-      let v=parseFloat(inp.value)||0;
-      if(inp.dataset.field==='sashes'){
-        // меняем количество створок → пересобираем список и перерисовываем схему
-        c.sashes=Math.max(1,Math.min(6,Math.round(v))); ensureSashList(c); saveDB();
+      if(field==='sashes'){
+        // во время ввода НЕ форсируем значение и НЕ перерисовываем экран — иначе
+        // нельзя стереть и набрать своё число. Пустое поле ждём; пересбор схемы и
+        // финальную нормализацию делаем по событию change (потеря фокуса/Enter).
+        if(inp.value.trim()==='') return;
+        c.sashes=Math.max(1,Math.min(6,Math.round(parseFloat(inp.value)||1))); ensureSashList(c); saveDB(); patchMeasure();
         if(window.API && API.enabled) API.persist.saveItem(c).catch(()=>{});
-        renderModule(); return;
+        return;
       }
-      if(inp.dataset.field==='qty'){v=Math.max(1,Math.round(v));}
-      if(inp.dataset.field==='w'||inp.dataset.field==='h'){ v=Math.max(0,Math.min(20000,v)); } // без отрицательных габаритов
-      c[inp.dataset.field]=v; saveDB(); patchMeasure();
+      let v=parseFloat(inp.value)||0;
+      if(field==='qty'){v=Math.max(1,Math.round(v));}
+      if(field==='w'||field==='h'){ v=Math.max(0,Math.min(20000,v)); } // без отрицательных габаритов
+      c[field]=v; saveDB(); patchMeasure();
       if(window.API && API.enabled) API.persist.saveItem(c).catch(()=>{});
     });
+    if(field==='sashes'){
+      inp.addEventListener('change',()=>{
+        const d=currentMeasureDeal(); if(!d) return;
+        const c=(d.items||[]).find(x=>x.id===inp.dataset.cid); if(!c) return;
+        c.sashes=Math.max(1,Math.min(6,Math.round(parseFloat(inp.value)||1))); inp.value=c.sashes;
+        ensureSashList(c); saveDB();
+        if(window.API && API.enabled) API.persist.saveItem(c).catch(()=>{});
+        renderModule();
+      });
+    }
   });
 }
 /* KP doc */
