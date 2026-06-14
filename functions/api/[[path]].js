@@ -304,8 +304,15 @@ async function handleWaWebhook(env, body) {
         const city = (await env.DB.prepare(`SELECT city FROM company WHERE id = 'main'`).first())?.city || '';
         await env.DB.prepare(`INSERT INTO clients (id, name, phone, address, type_id, created_at) VALUES (?, ?, ?, ?, 'individual', ?)`)
           .bind(clientId, name, '+' + digits, city, new Date().toISOString()).run();
-        await env.DB.prepare(`INSERT INTO activity (id, user_id, text, kind_id, at, created_at) VALUES (?, NULL, ?, NULL, ?, ?)`)
+        await env.DB.prepare(`INSERT INTO activity (id, user_id, text, kind_id, at, created_at) VALUES (?, NULL, ?, 'lead', ?, ?)`)
           .bind(uid('a'), 'Новый лид из WhatsApp — ' + name, new Date().toISOString(), new Date().toISOString()).run();
+        // авто-создание сделки в воронке (стадия «Новый лид», источник WhatsApp),
+        // чтобы заявка сразу попадала в пайплайн менеджеру
+        const nowIso = new Date().toISOString();
+        try {
+          await env.DB.prepare(`INSERT INTO deals (id, client_id, stage_id, source_id, sum, note, hot, discount, prepay_pct, created_at, stage_since) VALUES (?, ?, 'lead', 'whatsapp', 0, 'Заявка из WhatsApp', 0, 0, 30, ?, ?)`)
+            .bind(uid('d'), clientId, nowIso, nowIso).run();
+        } catch (e) { /* источник/таблица могут отсутствовать на старой схеме — не роняем вебхук */ }
       }
     }
     await waStoreMessage(env, { id: idMessage, chat_id: chatId, client_id: clientId, direction: 'in',
