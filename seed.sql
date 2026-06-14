@@ -51,6 +51,7 @@ INSERT INTO lead_sources(id,name,sort) VALUES ('site','Сайт',2);
 INSERT INTO lead_sources(id,name,sort) VALUES ('referral','Рекомендация',3);
 INSERT INTO lead_sources(id,name,sort) VALUES ('billboard','Билборд',4);
 INSERT INTO lead_sources(id,name,sort) VALUES ('call','Звонок',5);
+INSERT INTO lead_sources(id,name,sort) VALUES ('whatsapp','WhatsApp',6);
 INSERT INTO deal_stages(id,name,color,sort) VALUES ('lead','Новый лид','#64748b',0);
 INSERT INTO deal_stages(id,name,color,sort) VALUES ('measure','Замер','#0891b2',1);
 INSERT INTO deal_stages(id,name,color,sort) VALUES ('calc','Расчёт / КП','#7c3aed',2);
