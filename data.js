@@ -619,6 +619,7 @@ const MODULE_ROLES = {
   finance:  ['director','manager'],
   trash:    ['director','manager'],
   wa:       ['director','manager','surveyor'],
+  catalog:  ['director'],
   settings: ['director'],
 };
 function canSee(mod){ return state.user && MODULE_ROLES[mod] && MODULE_ROLES[mod].includes(state.user.role); }

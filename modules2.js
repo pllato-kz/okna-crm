@@ -583,6 +583,13 @@ function renderFinance(){
   <div class="panel">${body}</div>`;
 }
 
+/* ============ CATALOG / PRICING ============ */
+/* Отдельный раздел: каталоги и прайс (раньше был внутри Настроек). */
+function renderCatalog(){
+  return `<div class="panel-h" style="border:none;padding:4px 0 12px"><span class="ph-sub">Цены меняются здесь и сразу применяются в расчёте КП и стоимости конструкций.</span></div>
+    ${catTable('glass')}${catTable('opening')}${catTable('extra')}`;
+}
+
 /* ============ SETTINGS ============ */
 /* редактируемая таблица одного каталога (стеклопакеты / открывания / опции) */
 function catTable(type){
@@ -702,7 +709,6 @@ function renderSettings(){
     <div class="tbl-scroll"><table class="tbl perm-tbl"><thead>${permHead}</thead><tbody>${permRows}</tbody></table></div></div>
   ${waPanel}
   ${dir?waTplPanelHtml():''}
-  ${dir?`<div class="section-gap"><div class="panel-h" style="border:none;padding:6px 0"><h3 style="font-size:15px">Каталоги и прайс</h3><span class="ph-sub">цены сразу применяются в расчёте КП</span></div>${catTable('glass')}${catTable('opening')}${catTable('extra')}</div>`:''}
   ${dir?`<div class="panel section-gap"><div class="panel-h">${icon('doc')}<h3>Резервная копия</h3></div><div class="panel-b">
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><span class="muted" style="font-size:13px">Выгрузить все данные в файл (JSON) или восстановить из резервной копии.</span>
     <button class="btn" data-act="backup-export">${icon('doc','sm')} Экспорт всех данных</button>
