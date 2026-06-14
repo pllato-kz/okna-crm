@@ -100,16 +100,20 @@ function constrCard(c,i){
       <div class="fld"><label>Высота, мм</label><input type="number" value="${c.h}" data-mnum data-cid="${c.id}" data-field="h"></div>
       <div class="fld full"><label>Профиль / серия</label><select data-act="m-profile" data-cid="${c.id}">${profOpts}</select></div>
       <div class="fld full"><label>Стеклопакет</label><select data-act="m-glass" data-cid="${c.id}">${glassOpts}</select></div>
-      <div class="fld"><label>Створок</label><input type="number" min="1" max="6" value="${c.sashes||1}" data-mnum data-cid="${c.id}" data-field="sashes"></div>
-      <div class="fld"><label>Площадь</label><div style="font-size:14px;font-weight:600;padding:9px 0" id="carea-${c.id}">${(constrArea(c)*(c.qty||1)).toFixed(2)} м²</div></div>
-      <div class="fld full"><label>Схема — нажмите на створку, чтобы настроить</label><div class="win-preview">${sashesHtml}</div></div>
+      <div class="fld full"><label>Створки — количество и схема (нажмите на створку, чтобы настроить)</label>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div class="fld" style="flex:0 0 72px"><label>Кол-во</label><input type="number" min="1" max="6" value="${c.sashes||1}" data-mnum data-cid="${c.id}" data-field="sashes"></div>
+          <div class="win-preview" style="flex:1;margin:0">${sashesHtml}</div>
+        </div>
+      </div>
       <div class="fld full sash-edit"><label>Створка ${sel+1} из ${list.length} · открывание</label>
         <div class="chips">${sOpenChips}</div>
         <div class="chips" style="margin-top:8px">${dirChips}</div>
         <div style="margin-top:8px">${activeChip}</div>
       </div>
-      <div class="fld full"><label>Доп. опции</label><div class="extras">${extras}</div></div>
+      <div class="fld"><label>Площадь</label><div style="font-size:14px;font-weight:600;padding:9px 0" id="carea-${c.id}">${(constrArea(c)*(c.qty||1)).toFixed(2)} м²</div></div>
       <div class="fld"><label>Количество, шт</label><input type="number" min="1" value="${c.qty||1}" data-mnum data-cid="${c.id}" data-field="qty"></div>
+      <div class="fld full"><label>Доп. опции</label><div class="extras">${extras}</div></div>
     </div>
   </div>`;
 }
