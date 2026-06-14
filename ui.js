@@ -81,6 +81,7 @@ function renderModule(){
   else if(m==='production')html=renderProduction();
   else if(m==='finance')   html=renderFinance();
   else if(m==='trash')     html=renderTrash();
+  else if(m==='catalog')   html=renderCatalog();
   else if(m==='settings')  html=renderSettings();
   view.innerHTML=html;
   if(m==='measure') initMeasureBindings();
@@ -140,7 +141,7 @@ function navGroups(){
     {title:'Поле',    items:['measure']},
     {title:'Операции',items:['warehouse','production']},
     {title:'Финансы', items:['finance']},
-    {title:'Система',  items:['trash','settings']},
+    {title:'Система',  items:['catalog','trash','settings']},
   ];
 }
 const MODULE_META = {
@@ -153,6 +154,7 @@ const MODULE_META = {
   finance:  {name:'Финансы',  icon:'finance',   sub:'Дебиторка, оплаты, отчётность'},
   trash:    {name:'Корзина',  icon:'trash',     sub:'Удалённые записи — восстановление'},
   wa:       {name:'WhatsApp', icon:'wa',        sub:'Право писать клиентам в WhatsApp'},
+  catalog:  {name:'Каталоги и прайс',icon:'layers',sub:'Стеклопакеты, открывание, опции и цены'},
   settings: {name:'Настройки',icon:'settings',  sub:'Сотрудники и права доступа'},
 };
 function renderShell(){
