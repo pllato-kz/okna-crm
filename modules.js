@@ -183,7 +183,7 @@ function openDeal(id){
   const sum=d.sum||dealItemsSum(d); const paid=dealPaid(d); const debt=Math.max(0,sum-paid);
   const items=(d.items||[]).map(c=>{
     const mat=matById(c.profileId);
-    return `<tr><td>${escA(mat?mat.name:'—')} · ${c.w}×${c.h}мм</td><td class="muted">${escA(openById(c.openId)?.name||'')}, ${c.sashes} ств.</td><td class="num">${money(constrPrice(c))}</td></tr>`;
+    return `<tr><td>${escA(mat?mat.name:'—')} · ${c.w}×${c.h}мм</td><td class="muted">${escA(constrOpenLabel(c))}, ${c.sashes} ств.</td><td class="num">${money(constrPrice(c))}</td></tr>`;
   }).join('');
   const pays=(d.payments||[]).map(p=>`<div class="stat-line"><span>${escA(p.type)} · ${dateStr(p.date)}</span><span style="color:${p.amount<0?'#f87171':'#4ade80'};font-weight:700">${p.amount<0?'−':'+'}${money(Math.abs(p.amount))}</span></div>`).join('')||'<div class="muted" style="font-size:13px">Оплат пока нет</div>';
   const tlist=tasksForDeal(d.id);

@@ -224,7 +224,12 @@ input,select,textarea{font-family:inherit}
 .ex-toggle{display:flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--bg2);font-size:12.5px;font-weight:600;color:var(--muted)}
 .ex-toggle.on{background:var(--green-soft);border-color:#16653455;color:#86efac}
 .win-preview{aspect-ratio:1.25;background:linear-gradient(180deg,#0c1426,#0a1120);border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;gap:6px;grid-column:1/-1}
-.win-sash{flex:1;border:2px solid #3b5079;border-radius:4px;background:linear-gradient(135deg,#13233f88,#0e1a3088);position:relative}
+.win-sash{flex:1;border:2px solid #3b5079;border-radius:4px;background:linear-gradient(135deg,#13233f88,#0e1a3088);position:relative;cursor:pointer;transition:.12s}
+.win-sash:hover{border-color:#5a7cb8}
+.win-sash.sel{border-color:var(--accent2);box-shadow:0 0 0 2px var(--accent-soft) inset}
+.win-sash.off{opacity:.45;border-style:dashed}
+.sash-no{position:absolute;top:3px;left:5px;font-size:10px;font-weight:700;color:#5a7cb8;pointer-events:none}
+.win-sash.sel .sash-no{color:#bfdbfe}
 .win-sym{position:absolute;inset:6px;width:calc(100% - 12px);height:calc(100% - 12px);pointer-events:none}
 .win-sym.flip{transform:scaleX(-1)}
 .win-sym polyline{fill:none;stroke:#5a7cb8;stroke-width:1.6;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
