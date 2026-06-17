@@ -176,8 +176,22 @@ function funnelCard(d){
 }
 
 /* ============ DEAL MODAL ============ */
+/* какой карточный модал открыт — чтобы фото/комментарии возвращались в него */
+let __modalKind='deal';
+/* Блок «Фото объекта + Комментарии» для карточки сделки и карточки производства */
+function dealMediaBlock(d, canEdit){
+  const photos=(d.photos||[]);
+  const thumbs=photos.map(ph=>`<div class="ph-thumb" data-act="deal-photo-view" data-pid="${ph.id}" data-id="${d.id}" style="background-image:url('${ph.src}')">${canEdit?`<button class="ph-del" data-act="deal-photo-del" data-id="${d.id}" data-pid="${ph.id}" title="Удалить">${icon('x','sm')}</button>`:''}</div>`).join('');
+  const comments=(d.comments||[]);
+  const cmtRows=comments.length?comments.map(c=>{const u=userById(c.by); return `<div class="cmt"><div class="cmt-h"><b>${escA(u?u.name:'—')}</b> <span class="muted2">${chatTime(c.at)}</span></div><div class="cmt-b">${escA(c.text)}</div></div>`;}).join(''):'<div class="muted2" style="font-size:12px">Комментариев пока нет</div>';
+  return `<div class="panel" style="margin-bottom:16px"><div class="panel-h" style="padding:12px 14px">${icon('box','sm')}<h3 style="font-size:13.5px">Фото объекта (${photos.length})</h3>${canEdit?`<button class="btn sm" style="margin-left:auto" data-act="deal-photo-add" data-id="${d.id}">${icon('plus','sm')} Добавить фото</button>`:''}</div>
+      <div class="panel-b" style="padding:12px 14px">${photos.length?`<div class="ph-grid">${thumbs}</div>`:'<div class="muted2" style="font-size:12px">Фото пока нет — монтажник прикрепит после установки</div>'}</div></div>
+    <div class="panel" style="margin-bottom:16px"><div class="panel-h" style="padding:12px 14px">${icon('clients','sm')}<h3 style="font-size:13.5px">Комментарии и история</h3></div>
+      <div class="panel-b" style="padding:10px 14px"><div class="cmt-list">${cmtRows}</div>
+        <div style="display:flex;gap:8px;margin-top:10px"><input id="cmt-input-${d.id}" placeholder="Написать комментарий…" autocomplete="off" style="flex:1;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:9px;color:var(--txt)"><button class="btn primary sm" data-act="deal-comment-add" data-id="${d.id}">${icon('send','sm')}</button></div></div></div>`;
+}
 function openDeal(id){
-  const d=dealById(id); if(!d) return;
+  const d=dealById(id); if(!d) return; __modalKind='deal';
   __cardReturn=null; __openCard={type:'deal',id}; // открыли карточку «начисто» — отразим в URL
   const cl=clientById(d.clientId); const m=userById(d.manager); const st=stageById(d.stage);
   const sum=d.sum||dealItemsSum(d); const paid=dealPaid(d); const debt=Math.max(0,sum-paid);
@@ -218,6 +232,7 @@ function openDeal(id){
       ${canMoney?`<div class="panel" style="margin-bottom:16px"><div class="panel-h" style="padding:12px 14px">${icon('money','sm')}<h3 style="font-size:13.5px">Оплаты</h3></div><div class="panel-b" style="padding:12px 14px">${pays}</div></div>`:''}
       <div class="panel" id="deal-tasks" style="margin-bottom:16px"><div class="panel-h" style="padding:12px 14px">${icon('clock','sm')}<h3 style="font-size:13.5px">Задачи</h3><button class="btn sm" style="margin-left:auto" data-act="add-task" data-id="${d.id}">${icon('plus','sm')} Добавить</button></div>
         <div class="panel-b" style="padding:8px 14px">${taskRows}</div></div>
+      ${dealMediaBlock(d, true)}
     </div>
     <div class="modal-f">
       <button class="btn danger" data-act="del-deal" data-id="${d.id}" style="margin-right:auto">${icon('trash','sm')} Удалить</button>

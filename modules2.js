@@ -513,7 +513,7 @@ function renderProduction(){
   <div class="muted2" style="font-size:12px;margin-top:12px">Перетаскивайте заказы по этапам цеха.</div>`;
 }
 function openProd(id){
-  const d=dealById(id); if(!d) return; const cl=clientById(d.clientId);
+  const d=dealById(id); if(!d) return; __modalKind='prod'; const cl=clientById(d.clientId);
   const items=(d.items||[]).map((c,i)=>{const m=matById(c.profileId);
     return `<tr><td>${i+1}</td><td>${escA(m.name)}</td><td>${c.w}×${c.h}мм</td><td>${escA(glassById(c.glassId).name)}</td><td>${escA(constrOpenLabel(c))}, ${c.sashes}ств</td><td style="text-align:center">${c.qty||1}</td></tr>`;}).join('');
   const stageOpts=PROD_STAGES.map(s=>`<button class="chip ${s.id===(d.prodStage||'queue')?'on':''}" data-act="move-prod" data-id="${d.id}" data-stage="${s.id}">${escA(s.name)}</button>`).join('');
@@ -526,8 +526,9 @@ function openProd(id){
         <div class="fld"><label>Плановая готовность ${rb?`<span class="tag ${rb.cls}" style="font-size:10px;margin-left:4px">${rb.txt}</span>`:''}</label><input type="date" value="${d.readyDate||''}" data-act="prod-date" data-id="${d.id}" data-field="readyDate"></div>
         <div class="fld"><label>Плановый монтаж ${ib?`<span class="tag ${ib.cls}" style="font-size:10px;margin-left:4px">${ib.txt}</span>`:''}</label><input type="date" value="${d.installDate||''}" data-act="prod-date" data-id="${d.id}" data-field="installDate"></div>
       </div>`; })()}
-      <div class="panel"><div class="panel-h" style="padding:12px 14px">${icon('ruler','sm')}<h3 style="font-size:13.5px">Спецификация (для цеха)</h3></div>
+      <div class="panel" style="margin-bottom:16px"><div class="panel-h" style="padding:12px 14px">${icon('ruler','sm')}<h3 style="font-size:13.5px">Спецификация (для цеха)</h3></div>
         <table class="tbl"><thead><tr><th>№</th><th>Профиль</th><th>Размер</th><th>Стеклопакет</th><th>Открывание</th><th style="text-align:center">Шт</th></tr></thead><tbody>${items}</tbody></table></div>
+      ${dealMediaBlock(d, true)}
     </div>
     <div class="modal-f"><button class="btn" data-act="close-modal">Закрыть</button></div>
   `, true);
