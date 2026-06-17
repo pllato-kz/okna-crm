@@ -379,6 +379,32 @@ function tasksForDeal(id){ return (DB.tasks||[]).filter(t=>t.dealId===id).sort((
 function taskDayDiff(due){ if(!due) return 0; const d=new Date(due); const a=new Date(d.getFullYear(),d.getMonth(),d.getDate()); const n=new Date(SEED_NOW.getFullYear(),SEED_NOW.getMonth(),SEED_NOW.getDate()); return Math.round((a-n)/864e5); }
 function taskClass(t){ if(t.done) return {k:'done',txt:'выполнено',color:'#4ade80'}; const dd=taskDayDiff(t.due); if(dd<0) return {k:'overdue',txt:'просрочено',color:'#f87171'}; if(dd===0) return {k:'today',txt:'сегодня',color:'#fbbf24'}; if(dd===1) return {k:'soon',txt:'завтра',color:'#93c5fd'}; return {k:'upcoming',txt:'через '+dd+' дн.',color:'var(--muted)'}; }
 function taskRefresh(dealId){ if(dealId && document.getElementById('deal-tasks')) openDeal(dealId); else renderModule(); }
+/* вернуться в нужный карточный модал (сделка или производство) */
+function reopenModal(id){ if(__modalKind==='prod' && typeof openProd==='function') openProd(id); else openDeal(id); }
+/* фото объекта: монтажник прикрепляет итоговое фото (сжимаем в base64 для демо) */
+function dealPhotoAdd(dealId){
+  const d=dealById(dealId); if(!d) return;
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=()=>{ const f=inp.files&&inp.files[0]; if(!f) return;
+    const reader=new FileReader();
+    reader.onload=()=>{ const img=new Image(); img.onload=()=>{
+      const max=1280; let w=img.width, h=img.height; if(w>max||h>max){ const k=Math.min(max/w,max/h); w=Math.round(w*k); h=Math.round(h*k); }
+      const cv=document.createElement('canvas'); cv.width=w; cv.height=h; cv.getContext('2d').drawImage(img,0,0,w,h);
+      let src; try{ src=cv.toDataURL('image/jpeg',0.72); }catch(e){ src=reader.result; }
+      d.photos=d.photos||[]; d.photos.push({id:uid('ph'), src, by:(state.user&&state.user.id)||null, at:now().toISOString()});
+      saveDB(); toast('Фото добавлено'); reopenModal(dealId);
+    }; img.onerror=()=>toast('Не удалось прочитать изображение','warn'); img.src=reader.result; };
+    reader.readAsDataURL(f);
+  };
+  inp.click();
+}
+function dealPhotoView(pid, dealId){ const d=dealById(dealId); const ph=(d&&d.photos||[]).find(p=>p.id===pid); if(!ph) return;
+  openModal(`<div class="modal-h">${icon('box')}<div><h3>Фото объекта</h3><div class="mh-sub">${chatTime(ph.at)}</div></div><button class="x" data-act="deal-photo-back" data-id="${dealId}">${icon('x')}</button></div>
+    <div class="modal-b" style="text-align:center"><img src="${ph.src}" alt="фото" style="max-width:100%;border-radius:10px"></div>
+    <div class="modal-f"><button class="btn" data-act="deal-photo-back" data-id="${dealId}">${icon('arrow','sm')} Назад</button></div>`, true); }
+function dealCommentAdd(dealId){ const d=dealById(dealId); if(!d) return; const el=document.getElementById('cmt-input-'+dealId); const txt=(el&&el.value||'').trim(); if(!txt) return;
+  d.comments=d.comments||[]; d.comments.push({id:uid('cm'), by:(state.user&&state.user.id)||null, at:now().toISOString(), text:txt});
+  saveDB(); reopenModal(dealId); }
 function addTaskModal(dealId){
   const d=dealById(dealId);
   const users=DB.users.filter(u=>['director','manager','surveyor','production'].includes(u.role));
@@ -1732,6 +1758,11 @@ document.addEventListener('click', e=>{
     case 'edit-deal': editDealModal(id); break;
     case 'save-deal-edit': saveDealEdit(t.dataset.id); break;
     case 'add-task': addTaskModal(id); break;
+    case 'deal-photo-add': dealPhotoAdd(id); break;
+    case 'deal-photo-view': dealPhotoView(t.dataset.pid, id); break;
+    case 'deal-photo-back': reopenModal(id); break;
+    case 'deal-photo-del': { const d=dealById(id); if(d&&d.photos){ d.photos=d.photos.filter(ph=>ph.id!==t.dataset.pid); saveDB(); reopenModal(id); } } break;
+    case 'deal-comment-add': dealCommentAdd(id); break;
     case 'create-task': createTask(t.dataset.id); break;
     case 'task-toggle': toggleTask(id); break;
     case 'task-del': delTask(id); break;
