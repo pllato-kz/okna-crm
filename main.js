@@ -643,7 +643,7 @@ function whReceiveModal(id, kind){
     ? Math.max(1, Math.ceil((((it.min*2-it.stock)>0?(it.min*2-it.stock):it.min))/barLen))
     : Math.max(it.min, Math.round((it.min*2-it.stock)>0?(it.min*2-it.stock):it.min));
   const hint = isProfile ? `<div class="muted2" style="font-size:11.5px">профиль приходит хлыстами по ${barLen} м · ${qtyDefault} хлыст. = ${qtyDefault*barLen} пог.м</div>` : '';
-  const costRow = (isProfile && seesMoney()) ? `<div class="fld"><label>Цена прихода, сом/хлыст</label><input type="number" id="wr-rate" value="${Math.round((it.cost||0)*barLen)}"></div>` : '';
+  const costRow = (isProfile && seesMoney()) ? `<div class="fld"><label>Цена прихода, сом/хлыст</label><input type="number" id="wr-rate" value="${Math.round(matCost(it)*barLen)}"></div>` : '';
   const supRow = it.supplier ? `<div class="fld full"><label>Поставщик</label><input id="wr-sup" value="${escA(it.supplier)}"></div>` : '';
   openModal(`<div class="modal-h">${icon('box')}<div><h3>Приход на склад</h3><div class="mh-sub">${escA(it.name)} · сейчас ${it.stock} ${escA(it.unit)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="constr-body" style="padding:0">

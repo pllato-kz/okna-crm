@@ -174,6 +174,14 @@ const DEFAULT_CONTRACT_TPL =
 
 **4. Гарантия.** Гарантийный срок на изделия и монтаж — 5 лет с даты подписания акта приёма-передачи.`;
 
+/* Закупочная цена профиля за пог.м (отдельно от продажной rate за м²).
+   Глобально — чтобы использовать и в сиде, и при миграции старых данных/API. */
+const PROFILE_COST = {m1:1200,m2:1300,m3:1700,m4:1900,m5:2600,m6:3100,m7:1500,m8:2500,m9:3500,m10:4400};
+// закупочная цена за пог.м с запасным значением (если cost ещё не задан — старые данные/API)
+function matCost(m){ if(!m) return 0; return (m.cost!=null && m.cost>0) ? m.cost : (PROFILE_COST[m.id] || Math.round((m.rate||0)/15)); }
+// добить недостающие поля профиля (хлыст/закуп/обрезки) — для старого localStorage и API
+function migrateMaterials(db){ try{ (db.materials||[]).forEach(m=>{ if(!m.barLen) m.barLen=6; if(m.cost==null) m.cost=matCost(m); if(m.offcut==null) m.offcut=0; }); }catch(e){} return db; }
+
 /* ============ SEED BUILDER ============ */
 function buildSeed(){
   const company = { name:'Ocean Glass', legal:'ОсОО «Ocean Glass»', city:'Ош', phone:'+996 995 031 003',
@@ -205,7 +213,6 @@ function buildSeed(){
   ];
   // Профиль приходит хлыстами по 6 м: barLen — длина хлыста, cost — закупка за пог.м
   // (отдельно от продажной rate за м²), offcut — остаток-обрезки (пог.м, использовать первыми).
-  const PROFILE_COST = {m1:1200,m2:1300,m3:1700,m4:1900,m5:2600,m6:3100,m7:1500,m8:2500,m9:3500,m10:4400};
   materials.forEach(m=>{ m.barLen=6; m.cost=PROFILE_COST[m.id]||Math.round(m.rate/6); m.offcut=0; });
   // пара остатков-обрезков для демонстрации функции
   const _m4=materials.find(m=>m.id==='m4'); if(_m4) _m4.offcut=4;
@@ -361,7 +368,7 @@ function reanchorSeed(db){
   return db;
 }
 function loadDB(){
-  try{ const raw=localStorage.getItem(DB_KEY); if(raw){ const d=JSON.parse(raw); if(d&&d.v===1){ if(!Array.isArray(d.movements)) d.movements=[]; if(!Array.isArray(d.waMessages)) d.waMessages=[]; if(!Array.isArray(d.tasks)) d.tasks=[]; if(!Array.isArray(d.trash)) d.trash=[]; reanchorSeed(d); localStorage.setItem(DB_KEY, JSON.stringify(d)); return d; } } }catch(e){}
+  try{ const raw=localStorage.getItem(DB_KEY); if(raw){ const d=JSON.parse(raw); if(d&&d.v===1){ if(!Array.isArray(d.movements)) d.movements=[]; if(!Array.isArray(d.waMessages)) d.waMessages=[]; if(!Array.isArray(d.tasks)) d.tasks=[]; if(!Array.isArray(d.trash)) d.trash=[]; reanchorSeed(d); migrateMaterials(d); localStorage.setItem(DB_KEY, JSON.stringify(d)); return d; } } }catch(e){}
   const seed=buildSeed(); localStorage.setItem(DB_KEY, JSON.stringify(seed)); return seed;
 }
 function saveDB(){ try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(e){} }
