@@ -203,6 +203,13 @@ function buildSeed(){
     {id:'m9',  name:'Alutech ALT W72',  type:'Алюминий', series:'Премиум', rate:22000, stock:60,  min:100, unit:'пог.м', supplier:'Алютех'},
     {id:'m10', name:'Schüco AWS 75',    type:'Алюминий', series:'Премиум', rate:28000, stock:42,  min:80,  unit:'пог.м', supplier:'Schüco'},
   ];
+  // Профиль приходит хлыстами по 6 м: barLen — длина хлыста, cost — закупка за пог.м
+  // (отдельно от продажной rate за м²), offcut — остаток-обрезки (пог.м, использовать первыми).
+  const PROFILE_COST = {m1:1200,m2:1300,m3:1700,m4:1900,m5:2600,m6:3100,m7:1500,m8:2500,m9:3500,m10:4400};
+  materials.forEach(m=>{ m.barLen=6; m.cost=PROFILE_COST[m.id]||Math.round(m.rate/6); m.offcut=0; });
+  // пара остатков-обрезков для демонстрации функции
+  const _m4=materials.find(m=>m.id==='m4'); if(_m4) _m4.offcut=4;
+  const _m5=materials.find(m=>m.id==='m5'); if(_m5) _m5.offcut=2.5;
   const components = [
     {id:'c1', name:'Стеклопакет однокам. 24мм', stock:85, min:40, unit:'м²'},
     {id:'c2', name:'Стеклопакет двухкам. 32мм',  stock:62, min:50, unit:'м²'},
@@ -494,11 +501,30 @@ const CATALOGS_EDIT = {
 /* сколько и чего спишется на данном этапе производства; мутирует склад, флаги в d.consumed */
 const GLASS_COMP = {g1:'c1', g2:'c2', g3:'c3'};
 const FIT_COMP   = {turn:'c4', tilt:'c5'};
+// разбивка остатка профиля: целые хлысты (по barLen) + обрезки (пог.м)
+function barBreakdown(m){
+  const barLen=m.barLen||6; const off=Math.max(0, m.offcut||0);
+  const bars=Math.max(0, Math.round((m.stock-off)/barLen));
+  return {barLen, bars, offcut:Math.round(off*10)/10, total:m.stock};
+}
 function consumeForStage(d, stage){
   d.consumed = d.consumed || {};
   const used = []; const dec = (item, qty, unit) => { if(!item||qty<=0) return; item.stock=Math.max(0, Math.round((item.stock-qty)*10)/10); used.push(`${item.name} −${qty% 1?qty.toFixed(1):qty} ${unit||item.unit}`); };
   if(stage==='cutting' && !d.consumed.profile){
-    (d.items||[]).forEach(c=>{ dec(matById(c.profileId), Math.round(constrPerimeter(c))); });
+    // профиль режется хлыстами по 6 м: сначала пускаем обрезки, потом вскрываем хлысты;
+    // остаток от хлыста уходит в обрезки. Считаем по каждому профилю партией.
+    const byProf={};
+    (d.items||[]).forEach(c=>{ const id=c.profileId; byProf[id]=(byProf[id]||0)+Math.round(constrPerimeter(c)); });
+    Object.keys(byProf).forEach(id=>{ const m=matById(id); if(!m) return; const total=byProf[id]; if(total<=0) return;
+      const barLen=m.barLen||6; let off=Math.max(0,m.offcut||0);
+      const fromOff=Math.min(off, total); off-=fromOff; const need=total-fromOff;
+      let bars=0, newOff=0;
+      if(need>0){ bars=Math.ceil(need/barLen); newOff=Math.round((bars*barLen-need)*10)/10; off=Math.round((off+newOff)*10)/10; }
+      m.offcut=off;
+      m.stock=Math.max(0, Math.round((m.stock-total)*10)/10);
+      const parts=[]; if(fromOff>0) parts.push(`обрезок ${fromOff%1?fromOff.toFixed(1):fromOff} м`); if(bars>0) parts.push(`${bars} хлыст. (${bars*barLen} м)`);
+      used.push(`${m.name}: ${parts.join(' + ')} → в изделие ${total} м${newOff>0?`, обрезок +${newOff%1?newOff.toFixed(1):newOff} м`:''}`);
+    });
     d.consumed.profile = true;
   } else if(stage==='glass' && !d.consumed.glass){
     (d.items||[]).forEach(c=>{ dec(compById(GLASS_COMP[c.glassId]), Math.round(constrArea(c)*(c.qty||1)*10)/10); });

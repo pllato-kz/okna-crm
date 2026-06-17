@@ -380,15 +380,18 @@ function renderWarehouse(){
     ${(q||lowOnly)?`<button class="btn sm" data-act="wh-flt-reset">${icon('x','sm')} Сбросить</button>`:''}</div>`;
   if(tab==='profile'){
     const list=DB.materials.filter(m=>(!q||[m.name,m.supplier,m.series].some(v=>(v||'').toLowerCase().includes(q)))&&(!lowOnly||m.stock<m.min));
-    const rows=list.map(m=>{const low=m.stock<m.min; const pct=Math.min(100,m.stock/(m.min*2)*100);
+    const anyOffcut=DB.materials.some(m=>(m.offcut||0)>0);
+    const offcutBanner=anyOffcut?`<div style="display:flex;align-items:center;gap:8px;padding:9px 16px;background:var(--amber-soft);color:#b45309;font-size:12.5px;border-bottom:1px solid var(--line)">${icon('alert','sm')} Есть остатки-обрезки профиля — при нарезке используйте их в первую очередь (экономия материала).</div>`:'';
+    const rows=list.map(m=>{const low=m.stock<m.min; const pct=Math.min(100,m.stock/(m.min*2)*100); const bb=barBreakdown(m); const cost=m.cost||0; const barLen=m.barLen||6;
       return `<tr data-wh-row="${m.id}"><td><div style="font-weight:600">${escA(m.name)}</div><div class="muted2" style="font-size:11.5px">${escA(m.supplier)}</div></td>
         <td><span class="tag ${m.type==='ПВХ'?'cyan':'violet'}">${escA(m.type)}</span></td>
         <td><span class="tag ${m.series==='Премиум'?'amber':m.series==='Средняя'?'blue':''}">${escA(m.series)}</span></td>
-        ${showCost?`<td class="num">${money(m.rate)}/м²</td>`:''}
-        <td style="min-width:160px"><div style="display:flex;align-items:center;gap:10px"><div class="mini-bar"><i style="width:${pct}%;background:${low?'var(--red)':'var(--green)'}"></i></div><span style="font-weight:700;white-space:nowrap">${m.stock} ${escA(m.unit)}</span></div></td>
+        ${showCost?`<td class="num" style="white-space:nowrap">${money(cost)}/пог.м<div class="muted2" style="font-size:11px">${money(cost*barLen)}/хлыст</div></td>`:''}
+        <td style="min-width:180px"><div style="display:flex;align-items:center;gap:10px"><div class="mini-bar"><i style="width:${pct}%;background:${low?'var(--red)':'var(--green)'}"></i></div>
+          <span style="white-space:nowrap"><b>${bb.bars} хлыст.</b> <span class="muted2">(по ${barLen} м)</span> · ${m.stock} пог.м${bb.offcut>0?` <span class="tag green" style="font-size:10px">+ обрезки ${bb.offcut} м</span>`:''}</span></div></td>
         <td>${low?`<span class="tag red">${icon('alert','sm')} мало</span>`:'<span class="tag green">в норме</span>'}</td>
         ${actCell(m.id,'mat')}</tr>`;}).join('') || `<tr><td colspan="${showCost?7:6}" class="muted" style="text-align:center;padding:24px">Ничего не найдено</td></tr>`;
-    body=whFilterBar+`<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Профиль</th><th>Тип</th><th>Серия</th>${showCost?'<th class="num">Цена</th>':''}<th>Остаток</th><th>Статус</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    body=whFilterBar+offcutBanner+`<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Профиль</th><th>Тип</th><th>Серия</th>${showCost?'<th class="num">Цена</th>':''}<th>Остаток (хлысты · пог.м)</th><th>Статус</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
   } else if(tab==='comp'){
     const list=DB.components.filter(c=>(!q||(c.name||'').toLowerCase().includes(q))&&(!lowOnly||c.stock<c.min));
     const rows=list.map(c=>{const low=c.stock<c.min; const pct=Math.min(100,c.stock/(c.min*2)*100);

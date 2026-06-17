@@ -637,11 +637,17 @@ function catDelConfirm(type,id){
 function whReceiveModal(id, kind){
   const it = kind==='mat' ? matById(id) : compById(id);
   if(!it) return;
-  const costRow = (kind==='mat' && seesMoney()) ? `<div class="fld"><label>Цена прихода, сом/${escA(it.unit)}</label><input type="number" id="wr-rate" value="${it.rate||0}"></div>` : '';
+  const isProfile = kind==='mat'; const barLen = it.barLen||6;
+  const qtyLabel = isProfile ? `Количество, хлыстов (по ${barLen} м)` : `Количество, ${escA(it.unit)}`;
+  const qtyDefault = isProfile
+    ? Math.max(1, Math.ceil((((it.min*2-it.stock)>0?(it.min*2-it.stock):it.min))/barLen))
+    : Math.max(it.min, Math.round((it.min*2-it.stock)>0?(it.min*2-it.stock):it.min));
+  const hint = isProfile ? `<div class="muted2" style="font-size:11.5px">профиль приходит хлыстами по ${barLen} м · ${qtyDefault} хлыст. = ${qtyDefault*barLen} пог.м</div>` : '';
+  const costRow = (isProfile && seesMoney()) ? `<div class="fld"><label>Цена прихода, сом/хлыст</label><input type="number" id="wr-rate" value="${Math.round((it.cost||0)*barLen)}"></div>` : '';
   const supRow = it.supplier ? `<div class="fld full"><label>Поставщик</label><input id="wr-sup" value="${escA(it.supplier)}"></div>` : '';
   openModal(`<div class="modal-h">${icon('box')}<div><h3>Приход на склад</h3><div class="mh-sub">${escA(it.name)} · сейчас ${it.stock} ${escA(it.unit)}</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="constr-body" style="padding:0">
-      <div class="fld"><label>Количество, ${escA(it.unit)}</label><input type="number" min="1" id="wr-qty" value="${Math.max(it.min, Math.round((it.min*2-it.stock)>0?(it.min*2-it.stock):it.min))}" autofocus></div>
+      <div class="fld full"><label>${qtyLabel}</label><input type="number" min="1" id="wr-qty" value="${qtyDefault}" autofocus>${hint}</div>
       ${costRow}${supRow}
     </div></div>
     <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn green" data-act="wh-confirm-receive" data-id="${id}" data-kind="${kind}">${icon('check','sm')} Оприходовать</button></div>`);
@@ -649,18 +655,27 @@ function whReceiveModal(id, kind){
 function whConfirmReceive(id, kind){
   const it = kind==='mat' ? matById(id) : compById(id);
   if(!it) return;
-  const qty = Math.max(0, Math.round((parseFloat(document.getElementById('wr-qty').value)||0)*10)/10);
-  if(qty<=0){ toast('Укажите количество','warn'); return; }
-  const rateEl=document.getElementById('wr-rate'); if(rateEl){ const r=parseFloat(rateEl.value); if(r>0) it.rate=Math.round(r); }
-  const supEl=document.getElementById('wr-sup'); if(supEl && supEl.value.trim()) it.supplier=supEl.value.trim();
-  it.stock = Math.round((it.stock+qty)*10)/10;
-  const reason = (supEl && supEl.value.trim()) ? 'Поставка — '+supEl.value.trim() : 'Поступление на склад';
-  recordMovement({kind, item:it, dir:'in', type:'receipt', qty, reason});
-  DB.activity.unshift({who:state.user.id,text:`Приход на склад: ${it.name} +${qty} ${it.unit}`,at:now().toISOString(),kind:'wh'});
+  const isProfile = kind==='mat'; const barLen = it.barLen||6;
+  const raw = parseFloat(document.getElementById('wr-qty').value)||0;
+  if(raw<=0){ toast('Укажите количество','warn'); return; }
+  const supEl=document.getElementById('wr-sup'); const rateEl=document.getElementById('wr-rate');
+  let qtyMeters, label, moveReasonExtra='';
+  if(isProfile){
+    const bars=Math.max(0,Math.round(raw)); if(bars<=0){ toast('Укажите количество хлыстов','warn'); return; }
+    qtyMeters = bars*barLen; label = `${bars} хлыст. (${qtyMeters} пог.м)`; moveReasonExtra = ` · ${bars} хлыст.`;
+    if(rateEl){ const r=parseFloat(rateEl.value); if(r>0) it.cost=Math.round(r/barLen); } // цена за хлыст → за пог.м
+  } else {
+    qtyMeters = Math.max(0, Math.round(raw*10)/10); label = `${qtyMeters} ${it.unit}`;
+  }
+  if(supEl && supEl.value.trim()) it.supplier=supEl.value.trim();
+  it.stock = Math.round((it.stock+qtyMeters)*10)/10;
+  const reason = ((supEl && supEl.value.trim()) ? 'Поставка — '+supEl.value.trim() : 'Поступление на склад') + moveReasonExtra;
+  recordMovement({kind, item:it, dir:'in', type:'receipt', qty:qtyMeters, reason});
+  DB.activity.unshift({who:state.user.id,text:`Приход на склад: ${it.name} +${label}`,at:now().toISOString(),kind:'wh'});
   saveDB();
   if(apiOn()){ persist(kind==='mat'?API.persist.saveMaterial(it):API.persist.saveComponent(it)); persist(API.persist.createActivity(DB.activity[0])); }
   closeModal(); render();
-  toast(`Оприходовано: ${it.name} +${qty} ${it.unit} · остаток ${it.stock} ${it.unit}`);
+  toast(`Оприходовано: ${it.name} +${label} · остаток ${it.stock} пог.м`);
 }
 
 /* warehouse — расход / списание (брак, в производство вручную, возврат, корректировка) */
