@@ -572,18 +572,24 @@ function extraLength(c, e){
   if(e.per==='периметр') return (2*c.h + c.w)/1000;
   return 0;
 }
-function constrPrice(c){
+// расчётная цена за 1 шт (без количества и без ручной правки)
+function constrUnitBase(c){
   const m=matById(c.profileId); const g=glassById(c.glassId);
   const area=constrArea(c);
-  // открывание считаем по каждой створке отдельно (активные поворотные/откидные)
-  const openCost=ensureSashList(c).reduce((a,s)=>a+sashOpenRate(s),0);
-  let p = (m?m.rate:0)*area + (g?g.rate:0)*area + openCost;
+  let p = (m?m.rate:0)*area + (g?g.rate:0)*area + ensureSashList(c).reduce((a,s)=>a+sashOpenRate(s),0);
   (c.extras||[]).forEach(eid=>{ const e=extraById(eid); if(!e) return;
     const len=extraLength(c, e);
     p += len>0 ? e.price*len : e.price;   // длинномерные — по длине, прочее — за штуку
   });
-  return Math.round(p*(c.qty||1));
+  return Math.round(p);
 }
+// цена за 1 шт с учётом ручной правки менеджером (priceOverride)
+function constrUnitPrice(c){
+  const o=c.priceOverride;
+  return (o!=null && o!=='' && !isNaN(o)) ? Math.max(0,Math.round(Number(o))) : constrUnitBase(c);
+}
+// итоговая цена позиции (за всё количество)
+function constrPrice(c){ return constrUnitPrice(c) * (c.qty||1); }
 function dealItemsSum(d){ return (d.items||[]).reduce((s,c)=>s+constrPrice(c),0); }
 function dealPaid(d){ return (d.payments||[]).reduce((s,p)=>s+p.amount,0); }
 function dealDebt(d){ const sum=d.sum||dealItemsSum(d); return Math.max(0, sum-dealPaid(d)); }

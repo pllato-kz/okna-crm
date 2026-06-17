@@ -1751,6 +1751,7 @@ document.addEventListener('click', e=>{
     case 'm-add': mAdd(); break;
     case 'm-del': mDel(t.dataset.cid); break;
     case 'm-extra': mSet(t.dataset.cid,'extras',t.dataset.v); break;
+    case 'm-price-auto': { const d=currentMeasureDeal(); const c=d&&(d.items||[]).find(x=>x.id===t.dataset.cid); if(c){ delete c.priceOverride; if(apiOn()) persist(API.persist.saveItem(c)); syncDealSum(d); saveDB(); renderModule(); } } break;
     // створки по отдельности: выбор створки + тип открывания / петли / активность
     case 'm-sash-pick': sashSel[t.dataset.cid]=+t.dataset.i; renderModule(); break;
     case 'm-sash-open': { sashSel[t.dataset.cid]=+t.dataset.i; const v=t.dataset.v; mSashSet(t.dataset.cid, +t.dataset.i, v!=='deaf'?{open:v,active:true}:{open:v}); } break;

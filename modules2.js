@@ -75,6 +75,7 @@ function openSymbol(openId, flip){
 }
 function constrCard(c,i){
   const m=matById(c.profileId);
+  const overridden = c.priceOverride!=null && c.priceOverride!=='' && !isNaN(c.priceOverride);
   const profOpts=DB.materials.map(o=>`<option value="${o.id}" ${o.id===c.profileId?'selected':''}>${escA(o.name)} · ${escA(o.series)}</option>`).join('');
   const glassOpts=GLASS.map(g=>`<option value="${g.id}" ${g.id===c.glassId?'selected':''}>${escA(g.name)}</option>`).join('');
   const extras=EXTRAS.map(e=>`<button class="ex-toggle ${(c.extras||[]).includes(e.id)?'on':''}" data-act="m-extra" data-cid="${c.id}" data-v="${e.id}">${(c.extras||[]).includes(e.id)?icon('check','sm'):icon('plus','sm')} ${escA(e.name)}</button>`).join('');
@@ -110,6 +111,11 @@ function constrCard(c,i){
       </div>
       <div class="fld full"><label>Доп. опции</label><div class="extras">${extras}</div></div>
       <div class="fld"><label>Количество, шт</label><input type="number" min="1" value="${c.qty||1}" data-mnum data-cid="${c.id}" data-field="qty"></div>
+      <div class="fld"><label>Цена за шт, сом ${overridden?`<span class="tag amber" style="font-size:10px;margin-left:4px">вручную</span>`:''}</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="number" min="0" value="${constrUnitPrice(c)}" data-mnum data-cid="${c.id}" data-field="priceOverride" style="flex:1">
+          ${overridden?`<button class="btn sm ghost" data-act="m-price-auto" data-cid="${c.id}" title="Вернуть авторасчёт (${money(constrUnitBase(c))})">${icon('refresh','sm')}</button>`:''}
+        </div></div>
     </div>
   </div>`;
 }
@@ -158,6 +164,13 @@ function initMeasureBindings(){
         if(window.API && API.enabled) API.persist.saveItem(c).catch(()=>{});
         return;
       }
+      if(field==='priceOverride'){
+        // ручная цена за шт: во время ввода обновляем итог/сумму, без перерисовки
+        if(inp.value.trim()==='') return;
+        c.priceOverride=Math.max(0,Math.round(parseFloat(inp.value)||0)); saveDB(); patchMeasure();
+        if(window.API && API.enabled) API.persist.saveItem(c).catch(()=>{});
+        return;
+      }
       let v=parseFloat(inp.value)||0;
       if(field==='qty'){v=Math.max(1,Math.round(v));}
       if(field==='w'||field==='h'){ v=Math.max(0,Math.min(20000,v)); } // без отрицательных габаритов
@@ -171,6 +184,17 @@ function initMeasureBindings(){
         c.sashes=Math.max(1,Math.min(6,Math.round(parseFloat(inp.value)||1))); inp.value=c.sashes;
         ensureSashList(c); saveDB();
         if(window.API && API.enabled) API.persist.saveItem(c).catch(()=>{});
+        renderModule();
+      });
+    }
+    if(field==='priceOverride'){
+      inp.addEventListener('change',()=>{
+        const d=currentMeasureDeal(); if(!d) return;
+        const c=(d.items||[]).find(x=>x.id===inp.dataset.cid); if(!c) return;
+        // пусто → возврат к авторасчёту; иначе фиксируем ручную цену и показываем бейдж/сброс
+        if(inp.value.trim()==='') delete c.priceOverride;
+        else c.priceOverride=Math.max(0,Math.round(parseFloat(inp.value)||0));
+        saveDB(); if(window.API && API.enabled) API.persist.saveItem(c).catch(()=>{});
         renderModule();
       });
     }
