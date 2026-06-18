@@ -712,6 +712,24 @@ function renderSettings(){
   const usAdd  = dir ? `<button class="btn sm" style="margin-left:auto" data-act="add-user">${icon('plus','sm')} Добавить</button>` : '';
   const wa = (typeof waConfig==='object'&&waConfig) ? waConfig : {configured:false,enabled:false,idInstance:''};
   const waOn = wa.enabled && wa.configured;
+  const ig = (typeof igConfig==='object'&&igConfig) ? igConfig : {configured:false,enabled:false,username:''};
+  const igOn = ig.enabled && ig.configured;
+  const igPanel = dir ? `
+  <div class="panel section-gap"><div class="panel-h">${icon('clients')}<h3>Instagram · директ и заявки</h3>
+    <span class="ph-sub">${igOn?'<span class="tag green">подключено</span>':(ig.configured?'<span class="tag amber">выключено</span>':'<span class="tag">не настроено</span>')}</span></div>
+    <div class="panel-b">
+      <div class="constr-body" style="padding:0">
+        <div class="fld"><label>Аккаунт Instagram</label><input id="ig-user" value="${escA(ig.username||'')}" placeholder="напр. oceanglass.kg"></div>
+        <div class="fld"><label>Токен сервиса</label><input id="ig-token" type="password" placeholder="${ig.configured?'•••••••• (задан, пусто = не менять)':'токен сервиса/Meta'}"></div>
+        <div class="fld full"><label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--txt);text-transform:none"><input type="checkbox" id="ig-enabled" ${ig.enabled?'checked':''} style="width:auto"> Включить приём заявок из Instagram</label></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center">
+        <button class="btn primary" data-act="ig-save-config">${icon('check','sm')} Сохранить</button>
+      </div>
+      ${ig.webhookUrl?`<div class="fld full" style="margin-top:14px"><label>URL вебхука — вставьте в сервис Instagram (ManyChat / реклама / форвардер)</label>
+        <input readonly value="${escA(ig.webhookUrl)}" style="font-size:11.5px"></div>`:''}
+      <div class="muted2" style="font-size:11.5px;margin-top:10px;line-height:1.5">Green API работает только с WhatsApp. Для Instagram подключите сервис (ManyChat и аналоги ~$10–20/мес) или официальный Meta API, который шлёт входящие DM на наш URL вебхука. Каждое новое сообщение/заявка из рекламы автоматически создаёт клиента и сделку (источник «Instagram»). Нужен Instagram Business-аккаунт + привязанная Facebook-страница.</div>
+    </div></div>` : '';
   const waPanel = dir ? `
   <div class="panel section-gap"><div class="panel-h">${icon('wa')}<h3>WhatsApp · Green API</h3>
     <span class="ph-sub">${waOn?'<span class="tag green">подключено</span>':(wa.configured?'<span class="tag amber">выключено</span>':'<span class="tag">не настроено</span>')}</span></div>
@@ -750,6 +768,7 @@ function renderSettings(){
   <div class="panel section-gap"><div class="panel-h">${icon('shield')}<h3>Права доступа</h3><span class="ph-sub">${dir?'нажмите на ячейку, чтобы открыть/закрыть доступ роли к модулю':'кто что видит — сборщики и склад не видят финансы'}</span>${dir?`<button class="btn sm" style="margin-left:auto" data-act="add-role">${icon('plus','sm')} Роль</button>`:''}</div>
     <div class="tbl-scroll"><table class="tbl perm-tbl"><thead>${permHead}</thead><tbody>${permRows}</tbody></table></div></div>
   ${waPanel}
+  ${igPanel}
   ${dir?waTplPanelHtml():''}
   ${dir?`<div class="panel section-gap"><div class="panel-h">${icon('doc')}<h3>Резервная копия</h3></div><div class="panel-b">
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><span class="muted" style="font-size:13px">Выгрузить все данные в файл (JSON) или восстановить из резервной копии.</span>
