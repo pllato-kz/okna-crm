@@ -254,6 +254,15 @@ const apiWa = {
   setupWebhook: () => apiFetch('wa/setup-webhook', { method: 'POST' }),
 };
 
+const apiIg = {
+  getConfig: () => apiFetch('ig/config'),
+  saveConfig: (cfg) => apiFetch('ig/config', { method: 'PUT', body: {
+    username: cfg.username || '', token: cfg.token || '', enabled: cfg.enabled ? 1 : 0,
+  }}),
+  messages: (q) => apiFetch('ig/messages' + (q && q.clientId ? '?clientId=' + encodeURIComponent(q.clientId) : '')),
+  send: (handle, text, extra) => apiFetch('ig/send', { method: 'POST', body: Object.assign({ handle, text }, extra || {}) }),
+};
+
 const API = {
   TOKEN_KEY: API_TOKEN_KEY,
   enabled: false,            // включается после успешного входа/bootstrap; в демо-режиме остаётся false
@@ -269,5 +278,6 @@ const API = {
   isAuthed: () => !!apiGetToken(),
   persist: apiPersist,
   wa: apiWa,
+  ig: apiIg,
 };
 try { globalThis.API = API; } catch (e) {}

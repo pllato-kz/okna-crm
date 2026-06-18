@@ -379,3 +379,27 @@ CREATE TABLE wa_messages (
 CREATE INDEX idx_wa_msg_chat   ON wa_messages(chat_id);
 CREATE INDEX idx_wa_msg_client ON wa_messages(client_id);
 CREATE INDEX idx_wa_msg_ts     ON wa_messages(ts);
+
+-- Instagram-интеграция (провайдеро-независимая): конфиг + история DM
+CREATE TABLE ig_config (
+  id             TEXT PRIMARY KEY DEFAULT 'main',
+  username       TEXT,                            -- @аккаунт Instagram
+  token          TEXT,                            -- токен сервиса/Meta (секрет)
+  enabled        INTEGER NOT NULL DEFAULT 0,
+  webhook_secret TEXT,                            -- секрет вебхука (сервис шлёт ?key=)
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE ig_messages (
+  id           TEXT PRIMARY KEY,
+  chat_id      TEXT NOT NULL,                     -- '@username'
+  client_id    TEXT REFERENCES clients(id),
+  direction    TEXT NOT NULL,                     -- 'in' | 'out'
+  text         TEXT,
+  sender_name  TEXT,
+  status       TEXT,
+  at           TEXT,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX idx_ig_msg_chat   ON ig_messages(chat_id);
+CREATE INDEX idx_ig_msg_client ON ig_messages(client_id);
+INSERT INTO ig_config (id, enabled) VALUES ('main', 0);

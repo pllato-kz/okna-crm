@@ -15,6 +15,7 @@ async function bootFromApi(){
   applyServerCatalogs(mapped.catalogs); // справочники и права с сервера → живые глобали
   API.enabled = true;        // включаем запись на сервер
   try { waConfig = await API.wa.getConfig(); } catch(e){ waConfig = { configured:false, enabled:false, idInstance:'' }; }
+  try { igConfig = await API.ig.getConfig(); } catch(e){ igConfig = { configured:false, enabled:false, username:'' }; }
   return mapped;
 }
 /* Заменяет содержимое глобальных справочников-констант данными с сервера
@@ -1389,6 +1390,15 @@ function waSaveConfig(){
   API.wa.saveConfig({idInstance, apiToken, enabled}).then(c=>{ waConfig=c; render(); toast('Настройки WhatsApp сохранены'); })
     .catch(e=>toast('Не сохранено: '+((e&&e.message)||''),'warn'));
 }
+function igSaveConfig(){
+  if(!isDirector()){ return; }
+  const username=((document.getElementById('ig-user')||{}).value||'').trim();
+  const token=((document.getElementById('ig-token')||{}).value||'').trim();
+  const enabled=!!(document.getElementById('ig-enabled')||{}).checked;
+  if(!apiOn()){ toast('Подключение доступно только в серверном режиме (вход по логину)','warn'); return; }
+  API.ig.saveConfig({username, token, enabled}).then(c=>{ igConfig=c; render(); toast('Настройки Instagram сохранены'); })
+    .catch(e=>toast('Не сохранено: '+((e&&e.message)||''),'warn'));
+}
 function waCheck(){
   const el=document.getElementById('wa-status'); if(el) el.textContent='Проверяем…';
   if(!apiOn()){ if(el) el.textContent='доступно только в серверном режиме'; return; }
@@ -1790,6 +1800,7 @@ document.addEventListener('click', e=>{
     case 'wa-deal-chat': if(!canWa()){ toast('Нет доступа к WhatsApp','warn'); break; } waDealChatModal(id); break;
     case 'wa-chat-send': if(!canWa()){ toast('Нет доступа к WhatsApp','warn'); break; } waChatSend(id); break;
     case 'wa-save-config': waSaveConfig(); break;
+    case 'ig-save-config': igSaveConfig(); break;
     case 'wa-check': waCheck(); break;
     case 'wa-setup-webhook': waSetupWebhook(); break;
     case 'add-payment': addPaymentModal(id); break;

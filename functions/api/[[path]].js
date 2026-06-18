@@ -326,6 +326,47 @@ async function handleWaWebhook(env, body) {
   }
 }
 
+/* ============ INSTAGRAM (провайдеро-независимо) ============ */
+// Любой сервис (ManyChat/реклама IG/кастомный форвардер) шлёт нормализованный
+// вебхук → создаём клиента + сделку (источник instagram) + историю сообщений.
+async function igStoreMessage(env, m){
+  await env.DB.prepare(`INSERT INTO ig_messages (id, chat_id, client_id, direction, text, sender_name, status, at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET status = COALESCE(excluded.status, ig_messages.status)`)
+    .bind(m.id, m.chat_id, m.client_id || null, m.direction, m.text || '', m.sender_name || null, m.status || null, m.at || new Date().toISOString()).run();
+}
+async function igResolveClient(env, handle){
+  if(!handle) return null;
+  const row = await env.DB.prepare(`SELECT client_id FROM ig_messages WHERE chat_id = ? AND client_id IS NOT NULL ORDER BY created_at DESC LIMIT 1`).bind(handle).first();
+  return row ? row.client_id : null;
+}
+// нормализуем разные shapes: {username|from|sender.username, name, text|message, adLead}
+async function handleIgWebhook(env, body){
+  if(!body) return;
+  const uname = String(body.username || body.from || (body.sender && (body.sender.username || body.sender.id)) || '').replace(/[<>@\s]/g,'').slice(0,80);
+  if(!uname) return;
+  const name = String(body.name || (body.sender && body.sender.name) || uname).replace(/[<>]/g,'').trim().slice(0,80);
+  const adLead = !!(body.adLead || body.ad || body.source==='ad');
+  let text = String(body.text || body.message || (body.message && body.message.text) || '').slice(0,500);
+  if(!text && adLead) text='Заявка с рекламы Instagram';
+  const handle = '@'+uname;
+  const idMessage = body.idMessage || ('ig_'+Date.now()+Math.random().toString(36).slice(2,6));
+  let clientId = await igResolveClient(env, handle);
+  if(!clientId){
+    clientId = uid('cl');
+    const city = (await env.DB.prepare(`SELECT city FROM company WHERE id='main'`).first())?.city || '';
+    await env.DB.prepare(`INSERT INTO clients (id, name, phone, address, type_id, created_at) VALUES (?, ?, ?, ?, 'individual', ?)`)
+      .bind(clientId, name+' (Instagram)', handle, city, new Date().toISOString()).run();
+    await env.DB.prepare(`INSERT INTO activity (id, user_id, text, kind_id, at, created_at) VALUES (?, NULL, ?, 'lead', ?, ?)`)
+      .bind(uid('a'), 'Новый лид из Instagram — '+name, new Date().toISOString(), new Date().toISOString()).run();
+    const nowIso = new Date().toISOString();
+    const note = adLead ? 'Заявка с рекламы Instagram' : ('Заявка из Instagram' + (text ? (': '+text.slice(0,160)) : ''));
+    try{ await env.DB.prepare(`INSERT INTO deals (id, client_id, stage_id, source_id, sum, note, hot, discount, prepay_pct, created_at, stage_since) VALUES (?, ?, 'lead', 'instagram', 0, ?, ?, 0, 30, ?, ?)`)
+      .bind(uid('d'), clientId, note, adLead?1:0, nowIso, nowIso).run(); }catch(e){}
+  }
+  if(text) await igStoreMessage(env, { id:idMessage, chat_id:handle, client_id:clientId, direction:'in', text, sender_name:name, at:new Date().toISOString() });
+}
+
 /* ============ R2-ФАЙЛЫ ============ */
 async function putFile(env, request, name) {
   // ключ — криптослучайный (не угадать перебором), не Math.random
@@ -403,6 +444,18 @@ export async function onRequest(context) {
       if (!cfg || !cfg.webhook_secret || key !== cfg.webhook_secret) return fail(401, 'bad webhook key');
       const body = await readBody(request);
       try { await handleWaWebhook(env, body); } catch (e) { /* не роняем вебхук — Green API иначе зашлёт ретраи */ }
+      return ok({ received: true });
+    }
+
+    // вебхук Instagram (ПУБЛИЧНЫЙ — сервис-форвардер шлёт без нашего JWT; защищён секретом)
+    if (segs[0] === 'ig' && segs[1] === 'webhook') {
+      // верификация подписки (Meta шлёт GET hub.challenge) — отдаём как есть
+      if (method === 'GET') { const ch = url.searchParams.get('hub.challenge'); return ch ? new Response(ch, { status: 200 }) : ok({ ok: true }); }
+      const cfg = await env.DB.prepare(`SELECT * FROM ig_config WHERE id = 'main'`).first();
+      const key = url.searchParams.get('key') || bearerToken(request);
+      if (!cfg || !cfg.webhook_secret || key !== cfg.webhook_secret) return fail(401, 'bad webhook key');
+      const body = await readBody(request);
+      try { await handleIgWebhook(env, body); } catch (e) { /* не роняем вебхук */ }
       return ok({ received: true });
     }
 
@@ -574,6 +627,53 @@ export async function onRequest(context) {
         return ok({ sent: true, chatId, idMessage });
       }
       return fail(404, 'Неизвестный метод wa');
+    }
+
+    // ---- Instagram ----
+    if (segs[0] === 'ig') {
+      const getCfg = async () => await env.DB.prepare(`SELECT * FROM ig_config WHERE id = 'main'`).first();
+      // GET /api/ig/config — токен наружу не отдаём; webhookUrl (с секретом) — только директору
+      if (segs[1] === 'config' && method === 'GET') {
+        const c = await getCfg();
+        const out = { username: (c && c.username) || '', enabled: !!(c && c.enabled), configured: !!(c && c.username) };
+        if (context.auth.role === 'director' && c && c.webhook_secret) out.webhookUrl = url.origin + '/api/ig/webhook?key=' + c.webhook_secret;
+        return ok(out);
+      }
+      // PUT /api/ig/config — только директор. Пустой token = не менять.
+      if (segs[1] === 'config' && (method === 'PUT' || method === 'POST')) {
+        if (context.auth.role !== 'director') return fail(403, 'Изменять может только директор');
+        const b = await readBody(request); const cur = await getCfg();
+        const username = (b.username != null ? String(b.username).trim().replace(/^@/, '') : (cur && cur.username) || '');
+        const token = (b.token != null && String(b.token).trim() !== '') ? String(b.token).trim() : ((cur && cur.token) || '');
+        const enabled = b.enabled ? 1 : 0;
+        const secret = (cur && cur.webhook_secret) || (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '') : uid('igs') + uid('s'));
+        await env.DB.prepare(`INSERT INTO ig_config (id, username, token, enabled, webhook_secret, updated_at) VALUES ('main', ?, ?, ?, ?, datetime('now'))
+          ON CONFLICT(id) DO UPDATE SET username = excluded.username, token = excluded.token, enabled = excluded.enabled, webhook_secret = excluded.webhook_secret, updated_at = excluded.updated_at`)
+          .bind(username, token, enabled, secret).run();
+        return ok({ username, enabled: !!enabled, configured: !!username, webhookUrl: url.origin + '/api/ig/webhook?key=' + secret });
+      }
+      // GET /api/ig/messages?clientId= — история переписки
+      if (segs[1] === 'messages' && method === 'GET') {
+        const clientId = url.searchParams.get('clientId');
+        let rows;
+        if (clientId) {
+          const cl = await env.DB.prepare(`SELECT phone FROM clients WHERE id = ?`).bind(clientId).first();
+          rows = (await env.DB.prepare(`SELECT * FROM ig_messages WHERE client_id = ? OR chat_id = ? ORDER BY created_at`).bind(clientId, (cl && cl.phone) || '').all()).results || [];
+        } else {
+          rows = (await env.DB.prepare(`SELECT * FROM ig_messages ORDER BY created_at DESC LIMIT 100`).all()).results || [];
+        }
+        return ok({ messages: rows });
+      }
+      // POST /api/ig/send — исходящее. Доставка зависит от подключённого сервиса;
+      // здесь сохраняем в историю (на боевой — пробрасываем в API провайдера).
+      if (segs[1] === 'send' && method === 'POST') {
+        const b = await readBody(request); const text = String(b.text || '').trim(); const handle = String(b.handle || b.chatId || '').trim();
+        if (!text || !handle) return fail(400, 'Нужны handle и text');
+        const id = 'ig_' + Date.now() + Math.random().toString(36).slice(2, 6);
+        await igStoreMessage(env, { id, chat_id: handle, client_id: b.clientId || await igResolveClient(env, handle), direction: 'out', text, status: 'sent', at: new Date().toISOString() });
+        return ok({ sent: true, id, note: 'Сохранено в историю. Реальная доставка — через подключённый сервис Instagram.' });
+      }
+      return fail(404, 'Неизвестный метод ig');
     }
 
     // generic CRUD по реестру таблиц
