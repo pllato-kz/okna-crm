@@ -770,7 +770,7 @@ function whItemSave(kind, id){
     const type=v('wi-type')||'ПВХ'; const series=v('wi-series')||'Эконом'; const supplier=v('wi-sup');
     if(id){ const m=matById(id); if(!m) return; m.name=name; m.type=type; m.series=series; m.unit=unit; m.min=min; m.supplier=supplier; if(money$){ m.rate=Math.round(num('wi-rate')); m.cost=Math.round(num('wi-cost')); }
       saveDB(); if(apiOn()) persist(API.persist.saveMaterialCard(m)); }
-    else { const nm={id:uid('m'),name,type,series,rate:money$?Math.round(num('wi-rate')):0,cost:money$?Math.round(num('wi-cost')):0,stock:num('wi-stock'),min,unit,supplier,barLen:6,offcut:0};
+    else { const nm={id:uid('m'),name,type,series,rate:money$?Math.round(num('wi-rate')):0,cost:money$?Math.round(num('wi-cost')):0,stock:num('wi-stock'),min,unit,supplier,barLen:6};
       DB.materials.push(nm); saveDB(); if(apiOn()) persist(API.persist.createMaterial(nm)); }
   } else {
     if(id){ const c=compById(id); if(!c) return; c.name=name; c.unit=unit; c.min=min;

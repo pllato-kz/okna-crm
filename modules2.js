@@ -380,7 +380,7 @@ function renderWarehouse(){
     ${(q||lowOnly)?`<button class="btn sm" data-act="wh-flt-reset">${icon('x','sm')} Сбросить</button>`:''}</div>`;
   if(tab==='profile'){
     const list=DB.materials.filter(m=>(!q||[m.name,m.supplier,m.series].some(v=>(v||'').toLowerCase().includes(q)))&&(!lowOnly||m.stock<m.min));
-    const anyOffcut=DB.materials.some(m=>(m.offcut||0)>0);
+    const anyOffcut=DB.materials.some(m=>barBreakdown(m).offcut>0);
     const offcutBanner=anyOffcut?`<div style="display:flex;align-items:center;gap:8px;padding:9px 16px;background:var(--amber-soft);color:#b45309;font-size:12.5px;border-bottom:1px solid var(--line)">${icon('alert','sm')} Есть остатки-обрезки профиля — при нарезке используйте их в первую очередь (экономия материала).</div>`:'';
     const rows=list.map(m=>{const low=m.stock<m.min; const pct=Math.min(100,m.stock/(m.min*2)*100); const bb=barBreakdown(m); const cost=matCost(m); const barLen=m.barLen||6;
       return `<tr data-wh-row="${m.id}"><td><div style="font-weight:600">${escA(m.name)}</div><div class="muted2" style="font-size:11.5px">${escA(m.supplier)}</div></td>
