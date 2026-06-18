@@ -509,6 +509,13 @@ const CATALOGS_EDIT = {
 /* сколько и чего спишется на данном этапе производства; мутирует склад, флаги в d.consumed */
 const GLASS_COMP = {g1:'c1', g2:'c2', g3:'c3'};
 const FIT_COMP   = {turn:'c4', tilt:'c5'};
+// потребность в фурнитуре — по каждой активной открывающейся створке (глухие не считаем),
+// по её типу. Возвращает {compId: кол-во комплектов}. Учитывает по-створочную настройку.
+function fittingsNeed(c){
+  const q=c.qty||1; const out={};
+  ensureSashList(c).forEach(s=>{ if(s.active && (s.open==='turn'||s.open==='tilt')){ const cid=FIT_COMP[s.open]; if(cid) out[cid]=(out[cid]||0)+q; } });
+  return out;
+}
 // разбивка остатка профиля: целые хлысты (по barLen) + обрезки (пог.м)
 function barBreakdown(m){
   // единый источник правды — stock (пог.м). Целые хлысты и обрезок выводим из него:
@@ -540,7 +547,7 @@ function consumeForStage(d, stage){
     d.consumed.glass = true;
   } else if(stage==='assembly' && !d.consumed.fittings){
     (d.items||[]).forEach(c=>{
-      dec(compById(FIT_COMP[c.openId]), (c.sashes||1)*(c.qty||1), 'компл');
+      const fit=fittingsNeed(c); Object.keys(fit).forEach(cid=>dec(compById(cid), fit[cid], 'компл'));
       (c.extras||[]).forEach(ex=>{
         if(ex==='mosquito') dec(compById('c6'), (c.qty||1), 'шт');
         if(ex==='sill')     dec(compById('c7'), Math.round(c.w/1000*(c.qty||1)*10)/10);
@@ -559,7 +566,7 @@ function materialShortage(d){
   if(!cons.profile) items.forEach(c=>add(c.profileId, Math.round(constrPerimeter(c))));
   if(!cons.glass)   items.forEach(c=>add(GLASS_COMP[c.glassId], Math.round(constrArea(c)*(c.qty||1)*10)/10));
   if(!cons.fittings) items.forEach(c=>{
-    add(FIT_COMP[c.openId], (c.sashes||1)*(c.qty||1));
+    const fit=fittingsNeed(c); Object.keys(fit).forEach(cid=>add(cid, fit[cid]));
     (c.extras||[]).forEach(ex=>{
       if(ex==='mosquito') add('c6', c.qty||1);
       if(ex==='sill')     add('c7', Math.round(c.w/1000*(c.qty||1)*10)/10);
