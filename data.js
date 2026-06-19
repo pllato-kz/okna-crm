@@ -498,6 +498,17 @@ const openById = id => OPENINGS.find(o=>o.id===id);
 
 /* профиль конструкции в пог.м (периметр × кол-во) */
 function constrPerimeter(c){ return 2*(c.w+c.h)/1000*(c.qty||1); }
+/* Реалистичный расход профиля (пог.м): рама по периметру проёма + вертикальные импосты
+   между створками + створочные рамки открывающихся створок (глухие остекляются в раму). */
+function profileLen(c){
+  const n=Math.max(1, Math.round(c.sashes||1));
+  const W=c.w||0, H=c.h||0; const qty=c.qty||1;
+  const frame=2*(W+H);            // внешняя рама
+  const imposts=(n-1)*H;          // (n−1) вертикальных импостов высотой H
+  let sashes=0;                   // рамки только у активных открывающихся створок
+  ensureSashList(c).forEach(s=>{ if(s.active && (s.open==='turn'||s.open==='tilt')) sashes+=2*(W/n + H); });
+  return Math.round((frame+imposts+sashes)/1000*qty*10)/10; // пог.м, до 0.1
+}
 /* ============ РЕДАКТИРУЕМЫЕ КАТАЛОГИ И ПРАЙС (Настройки, директор) ============ */
 /* Метаданные для UI: что и как редактируется. Цена влияет на расчёт КП напрямую. */
 const CATALOGS_EDIT = {
@@ -531,7 +542,7 @@ function consumeForStage(d, stage){
     // профиль режется хлыстами по 6 м: сначала пускаем обрезок, потом вскрываем хлысты;
     // остаток от хлыста уходит в обрезок. Считаем по каждому профилю партией.
     const byProf={};
-    (d.items||[]).forEach(c=>{ const id=c.profileId; byProf[id]=(byProf[id]||0)+Math.round(constrPerimeter(c)); });
+    (d.items||[]).forEach(c=>{ const id=c.profileId; byProf[id]=(byProf[id]||0)+Math.round(profileLen(c)); });
     Object.keys(byProf).forEach(id=>{ const m=matById(id); if(!m) return; const total=byProf[id]; if(total<=0) return;
       const bb=barBreakdown(m); const barLen=bb.barLen;          // обрезок до списания (из stock)
       const fromOff=Math.min(bb.offcut, total); const need=total-fromOff;
@@ -563,7 +574,7 @@ function consumeForStage(d, stage){
 function materialShortage(d){
   const items=d.items||[]; const cons=d.consumed||{}; const need={};
   const add=(id,q)=>{ if(!id||q<=0) return; need[id]=(need[id]||0)+q; };
-  if(!cons.profile) items.forEach(c=>add(c.profileId, Math.round(constrPerimeter(c))));
+  if(!cons.profile) items.forEach(c=>add(c.profileId, Math.round(profileLen(c))));
   if(!cons.glass)   items.forEach(c=>add(GLASS_COMP[c.glassId], Math.round(constrArea(c)*(c.qty||1)*10)/10));
   if(!cons.fittings) items.forEach(c=>{
     const fit=fittingsNeed(c); Object.keys(fit).forEach(cid=>add(cid, fit[cid]));
