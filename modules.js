@@ -57,7 +57,7 @@ function renderDashboard(){
   // асинхронно из /api/storage (см. initDashboardBindings) — только директору.
   const isDir = state.user && state.user.role==='director';
   const storePanel = isDir ? `<div class="panel section-gap">
-    <div class="panel-h">${icon('box')}<h3>Хранилище данных</h3><span class="ph-sub">${apiOn()?'база D1 · файлы R2':'демо · браузер'}</span></div>
+    <div class="panel-h">${icon('box')}<h3>Хранилище данных</h3><span class="ph-sub">база D1 · файлы R2</span></div>
     <div class="panel-b" id="store-widget">${storageInitialHtml()}</div></div>` : '';
 
   return `
@@ -110,13 +110,9 @@ function renderDashboard(){
   </div>`;
 }
 
-/* Хранилище данных: начальный HTML панели (до асинхронной загрузки) */
+/* Хранилище данных: начальный HTML панели (до асинхронной загрузки боевых D1/R2) */
 function storageInitialHtml(){
-  if(apiOn()) return '<div class="muted" style="padding:8px 0">Загрузка статистики хранилища…</div>';
-  // демо: реальный размер слепка в localStorage
-  let used=0; try{ const raw=localStorage.getItem('okna_crm_db_v1')||''; used=new Blob([raw]).size; }catch(e){}
-  return storageBar('Локальное хранилище браузера', used, 5*1024*1024, 'демо-режим')
-    +'<div class="muted2" style="font-size:11.5px;line-height:1.5;margin-top:2px">В боевом режиме данные на сервере: <b>D1</b> (база — клиенты, сделки, склад) и <b>R2</b> (файлы — фото работ, документы). Здесь будет показано их заполнение.</div>';
+  return '<div class="muted" style="padding:8px 0">Загрузка статистики хранилища…</div>';
 }
 /* Хранилище данных: рендер реальной статистики D1+R2 (ответ /api/storage) */
 function renderStorageStats(s){
@@ -128,10 +124,10 @@ function renderStorageStats(s){
   html+='<div class="muted2" style="font-size:11px;margin-top:2px">Лимиты — ориентир Cloudflare (free): D1 5 ГБ, R2 10 ГБ.</div>';
   return html;
 }
-/* пост-рендер дашборда: подтянуть статистику хранилища из API (только директор) */
+/* пост-рендер дашборда: всегда тянем боевую статистику D1/R2 (эндпоинт публичный) */
 function initDashboardBindings(){
   const box=document.getElementById('store-widget');
-  if(!box || !apiOn()) return;
+  if(!box) return;
   API.storage().then(s=>{ const el=document.getElementById('store-widget'); if(el) el.innerHTML=renderStorageStats(s); })
     .catch(()=>{ const el=document.getElementById('store-widget'); if(el) el.innerHTML='<div class="muted2" style="padding:8px 0">Не удалось получить статистику хранилища</div>'; });
 }

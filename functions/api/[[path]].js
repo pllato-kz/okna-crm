@@ -442,6 +442,14 @@ export async function onRequest(context) {
     // health (публичный)
     if (segs[0] === 'health') return ok({ status: 'ok', time: new Date().toISOString() });
 
+    // статистика хранилища D1+R2 (ПУБЛИЧНАЯ — только инфра-метрики: размер БД,
+    // число строк/файлов; данных клиентов не раскрывает). Нужна, чтобы дашборд
+    // показывал реальное заполнение даже в демо-режиме без входа.
+    if (segs[0] === 'storage') {
+      if (method !== 'GET') return fail(405, 'Только GET');
+      return ok(await getStorageStats(env));
+    }
+
     // вход (публичный): email + password → JWT
     if (segs[0] === 'login') {
       if (method !== 'POST') return fail(405, 'Только POST');
@@ -597,13 +605,6 @@ export async function onRequest(context) {
         return ok({ ok: true });
       }
       return fail(404, 'Неизвестный SIP-эндпоинт');
-    }
-
-    // ---- Хранилище данных: размер D1 (база) + R2 (файлы), только директор ----
-    if (segs[0] === 'storage') {
-      if (method !== 'GET') return fail(405, 'Только GET');
-      if (context.auth.role !== 'director') return fail(403, 'Недостаточно прав');
-      return ok(await getStorageStats(env));
     }
 
     // ---- WhatsApp / Green API ----
