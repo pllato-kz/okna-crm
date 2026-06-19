@@ -250,8 +250,9 @@ function kpi(o){
   </div>`;
 }
 function avatarXs(name,id){ return `<span class="avatar-xs" style="background:${colorFor(id||name)}">${initials(name)}</span>`; }
-/* человекочитаемый размер в байтах */
-function fmtBytes(b){ b=Number(b)||0; if(b<1024) return b+' Б'; const u=['КБ','МБ','ГБ','ТБ']; let i=-1; do{ b/=1024; i++; }while(b>=1024&&i<u.length-1); return (b<10?Math.round(b*10)/10:Math.round(b))+' '+u[i]; }
+/* человекочитаемый размер в байтах. Десятичные единицы (1000) — как в панели
+   Cloudflare (kB/MB/GB), чтобы цифры в виджете совпадали с дашбордом CF. */
+function fmtBytes(b){ b=Number(b)||0; if(b<1000) return b+' Б'; const u=['кБ','МБ','ГБ','ТБ']; let i=-1; do{ b/=1000; i++; }while(b>=1000&&i<u.length-1); return (b<10?Math.round(b*10)/10:Math.round(b))+' '+u[i]; }
 /* полоса заполнения хранилища: использовано/лимит + процент */
 function storageBar(label, used, limit, sub){
   const pct = limit? Math.max(0.4, Math.min(100, used/limit*100)) : 0;
