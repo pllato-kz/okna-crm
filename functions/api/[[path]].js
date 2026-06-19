@@ -412,8 +412,8 @@ async function getStorageStats(env) {
     for (const t of tables) {
       try { const r = await env.DB.prepare(`SELECT COUNT(*) AS n FROM ${t}`).first(); const n = Number(r && r.n) || 0; byTable[t] = n; rows += n; } catch (_) {}
     }
-    out.d1 = { bytes, rows, byTable, limit: 5 * 1024 * 1024 * 1024 };
-  } catch (e) { out.d1 = { error: true, limit: 5 * 1024 * 1024 * 1024 }; }
+    out.d1 = { bytes, rows, byTable, limit: 5 * 1000 * 1000 * 1000 };
+  } catch (e) { out.d1 = { error: true, limit: 5 * 1000 * 1000 * 1000 }; }
   // ---- R2 ----
   try {
     if (env.BUCKET) {
@@ -434,9 +434,9 @@ async function getStorageStats(env) {
         }
         cursor = lst.truncated ? lst.cursor : undefined; pages++;
       } while (cursor && pages < 20);
-      out.r2 = { bytes, count, byType, limit: 10 * 1024 * 1024 * 1024 };
-    } else { out.r2 = { error: true, limit: 10 * 1024 * 1024 * 1024 }; }
-  } catch (e) { out.r2 = { error: true, limit: 10 * 1024 * 1024 * 1024 }; }
+      out.r2 = { bytes, count, byType, limit: 10 * 1000 * 1000 * 1000 };
+    } else { out.r2 = { error: true, limit: 10 * 1000 * 1000 * 1000 }; }
+  } catch (e) { out.r2 = { error: true, limit: 10 * 1000 * 1000 * 1000 }; }
   return out;
 }
 
