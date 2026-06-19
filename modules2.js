@@ -382,7 +382,9 @@ function renderWarehouse(){
     const anyOffcut=DB.materials.some(m=>barBreakdown(m).offcutTotal>0);
     const offminBar=`<div style="display:flex;align-items:center;gap:6px;padding:9px 16px;font-size:12.5px;border-bottom:1px solid var(--line);flex-wrap:wrap">
       <span class="muted2">Полезный обрезок ≥</span>
-      <input id="wh-offmin" data-act="wh-offmin" type="number" step="0.1" min="0" value="${offcutMin()}" style="width:62px;text-align:center"> <span class="muted2">м — короче уходит в лом и не хранится</span></div>`;
+      <input id="wh-offmin" data-act="wh-offmin" type="number" step="0.1" min="0" value="${offcutMin()}" style="width:62px;text-align:center"> <span class="muted2">м (короче — в лом)</span>
+      <span class="muted2" style="margin-left:14px">Припуск на рез/ус</span>
+      <input id="wh-cutmargin" data-act="wh-cutmargin" type="number" step="0.01" min="0" value="${cutMargin()}" style="width:62px;text-align:center"> <span class="muted2">м на деталь</span></div>`;
     const offcutBanner=anyOffcut?`<div style="display:flex;align-items:center;gap:8px;padding:9px 16px;background:var(--amber-soft);color:#b45309;font-size:12.5px;border-bottom:1px solid var(--line)">${icon('alert','sm')} Есть остатки-обрезки профиля — при нарезке система пускает их в дело первыми (экономия материала). Нажмите на бейдж «обрезки», чтобы увидеть список.</div>`:'';
     const rows=list.map(m=>{const low=m.stock<m.min; const pct=Math.min(100,m.stock/(m.min*2)*100); const bb=barBreakdown(m); const cost=matCost(m); const barLen=m.barLen||6;
       return `<tr data-wh-row="${m.id}"><td><div style="font-weight:600">${escA(m.name)}</div><div class="muted2" style="font-size:11.5px">${escA(m.supplier)}</div></td>

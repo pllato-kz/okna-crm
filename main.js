@@ -105,10 +105,15 @@ function waMoveStage(id, stage){
   waDealChatModal(id);
   toast(short?'⚠ Не хватает материалов — уведомлены ответственный и склад':`Стадия: «${stageById(stage).name}»`, short?'warn':undefined);
 }
-function moveProd(id, stage){ const d=dealById(id); if(!d) return; d.prodStage=stage;
+function moveProd(id, stage, cutOpts){ const d=dealById(id); if(!d) return;
+  // этап «Резка»: перед списанием профиля показываем план раскроя на подтверждение
+  if(stage==='cutting' && !(d.consumed&&d.consumed.profile) && (d.items||[]).length && !cutOpts){
+    cutPlanModal(id, stage); return;
+  }
+  d.prodStage=stage;
   if(stage==='installing' && d.stage==='production') d.stage='install';
   const before = snapshotStock();   // всегда — для журнала движений
-  const used=consumeForStage(d, stage);
+  const used=consumeForStage(d, stage, cutOpts);
   if(used.length){
     const cl=clientById(d.clientId);
     DB.activity.unshift({who:state.user.id,text:`Списано со склада (${PROD_STAGES.find(s=>s.id===stage).name}) — ${cl.name}`,at:now().toISOString(),kind:'wh'});
@@ -123,6 +128,35 @@ function moveProd(id, stage){ const d=dealById(id); if(!d) return; d.prodStage=s
   else { toast(`Этап: ${PROD_STAGES.find(s=>s.id===stage).name}`); }
   const low=[...DB.materials,...DB.components].filter(x=>x.stock<x.min).map(x=>x.name);
   if(low.length) toast(`⚠ Ниже минимума: ${low.slice(0,3).join(', ')}${low.length>3?` и ещё ${low.length-3}`:''} — нужен дозаказ`); }
+
+/* ====== Подтверждение раскроя профиля перед списанием (этап «Резка») ====== */
+let __cutPlan=null;
+function cutPlanModal(id, stage){ __cutPlan={dealId:id, stage, opts:{}}; openModal(cutPlanHtml()); }
+function cutPlanHtml(){
+  const d=dealById(__cutPlan.dealId); if(!d) return '';
+  const cuts=cutsByProfile(d); const f=v=>v%1?Math.round(v*10)/10:v;
+  const rows=Object.keys(cuts).map(id=>{
+    const m=matById(id); if(!m) return '';
+    const pieces=cuts[id]; const useOff=__cutPlan.opts[id]!==false;
+    const r=planCut(m, pieces, useOff); const bb=barBreakdown(m);
+    const need=Math.round((pieces.reduce((a,l)=>a+l,0)+pieces.length*cutMargin())*10)/10;
+    const enough=(m.stock||0)>=need;
+    return `<div style="padding:11px 0;border-bottom:1px solid var(--line)">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+        <div style="font-weight:600">${escA(m.name)}</div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted2);text-transform:none;cursor:pointer"><input type="checkbox" data-act="cut-toggle" data-prof="${id}" ${useOff?'checked':''} style="width:auto"> использовать обрезки</label>
+      </div>
+      <div class="muted2" style="font-size:12px;margin-top:4px">${pieces.length} дет. · нужно ${f(need)} м (с припуском) · на складе ${bb.bars} хлыст. + ${bb.offcuts.length} обрезков (${f(bb.offcutTotal)} м)</div>
+      <div style="font-size:12.5px;margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">${r.fromOffcut>0?`<span class="tag green">из обрезков ${f(r.fromOffcut)} м</span>`:''}${r.openedBars>0?`<span class="tag">вскрыть ${r.openedBars} хлыст.</span>`:''}${r.scrap>0?`<span class="tag amber">лом ${f(r.scrap)} м</span>`:''}${r.kerf>0?`<span class="muted2">припуск ${f(r.kerf)} м</span>`:''}</div>
+      ${!enough?`<div class="tag red" style="margin-top:5px">${icon('alert','sm')} не хватает на складе</div>`:''}
+    </div>`;
+  }).join('');
+  return `<div class="modal-h">${icon('ruler')}<div><h3>План раскроя профиля</h3><div class="mh-sub">Подтвердите перед списанием · припуск на рез/ус ${cutMargin()} м</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">${rows||'<div class="muted">Нет профиля для раскроя</div>'}</div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn green" data-act="cut-plan-confirm">${icon('check','sm')} Подтвердить и списать</button></div>`;
+}
+function cutToggle(prof, checked){ if(!__cutPlan) return; __cutPlan.opts[prof]=checked; const el=document.querySelector('#modal-root .modal'); if(el) el.innerHTML=cutPlanHtml(); }
+function cutPlanConfirm(){ if(!__cutPlan) return; const {dealId,stage,opts}=__cutPlan; __cutPlan=null; moveProd(dealId, stage, {cut:opts}); }
 
 function applyPrepay(id){
   const d=dealById(id); if(!d) return; const k=computeMeasure(d);
@@ -1839,6 +1873,8 @@ document.addEventListener('click', e=>{
     case 'wh-item-del-confirm': whItemDelConfirm(t.dataset.kind, id); break;
     case 'open-prod': openProd(id); break;
     case 'move-prod': moveProd(id, t.dataset.stage); break;
+    case 'cut-toggle': cutToggle(t.dataset.prof, t.checked); break;
+    case 'cut-plan-confirm': cutPlanConfirm(); break;
     case 'fin-tab': state.financeTab=t.dataset.v; renderModule(); break;
     case 'fin-period': state.financePeriod=t.dataset.v; state.financeFrom=null; state.financeTo=null; renderModule(); break;
     case 'close-modal': closeModal(); break;
@@ -1867,6 +1903,7 @@ document.addEventListener('input', e=>{
   if(t.dataset.act==='cl-search'){ state.clientSearch=t.value; renderModule(); const si=document.getElementById('cl-search'); if(si){ si.focus(); const v=si.value; si.setSelectionRange(v.length,v.length); } return; }
   if(t.dataset.act==='wh-search'){ state.whSearch=t.value; renderModule(); const si=document.getElementById('wh-search'); if(si){ si.focus(); const v=si.value; si.setSelectionRange(v.length,v.length); } return; }
   if(t.dataset.act==='wh-offmin'){ DB.offcutMin=Math.max(0,Math.round((parseFloat(t.value)||0)*10)/10); saveDB(); return; }
+  if(t.dataset.act==='wh-cutmargin'){ DB.cutMargin=Math.max(0,Math.round((parseFloat(t.value)||0)*1000)/1000); saveDB(); return; }
   if(t.dataset.act==='m-discount'){ const d=dealById(t.dataset.id); d.discount=Math.max(0,Math.min(30,parseFloat(t.value)||0)); saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); patchMeasure(); }
   if(t.dataset.act==='m-prepay'){ const d=dealById(t.dataset.id); d.prepayPct=Math.max(0,Math.min(100,parseFloat(t.value)||0)); saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); patchMeasure(); }
 });
