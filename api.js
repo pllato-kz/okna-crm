@@ -72,10 +72,16 @@ function apiMapBootstrap(boot){
   const clients = (boot.clients || []).map(c => ({
     id: c.id, name: c.name, phone: c.phone, address: c.address, type: apiName(clientTypes, c.type_id),
   }));
-  const materials = (boot.materials || []).map(m => ({
-    id: m.id, name: m.name, type: apiName(matTypes, m.type_id), series: apiName(matSeries, m.series_id),
-    rate: m.rate, stock: m.stock, min: m.min_stock, unit: m.unit, supplier: m.supplier,
-  }));
+  const materials = (boot.materials || []).map(m => {
+    const o = {
+      id: m.id, name: m.name, type: apiName(matTypes, m.type_id), series: apiName(matSeries, m.series_id),
+      rate: m.rate, stock: m.stock, min: m.min_stock, unit: m.unit, supplier: m.supplier, barLen: 6,
+    };
+    // D1 хранит только суммарный stock — выводим пачку (хлысты+обрезки) из него,
+    // иначе раскрой/приход/списание обнулят остаток (bars/offcuts отсутствуют).
+    if (typeof normalizeProfile === 'function') normalizeProfile(o);
+    return o;
+  });
   const components = (boot.components || []).map(c => ({
     id: c.id, name: c.name, stock: c.stock, min: c.min_stock, unit: c.unit,
   }));

@@ -739,6 +739,7 @@ function whConfirmReceive(id, kind){
   if(isProfile){
     const bars=Math.max(0,Math.round(raw)); if(bars<=0){ toast('Укажите количество хлыстов','warn'); return; }
     qtyMeters = bars*barLen; label = `${bars} хлыст. (${qtyMeters} пог.м)`; moveReasonExtra = ` · ${bars} хлыст.`;
+    if(it.bars==null || !Array.isArray(it.offcuts)) normalizeProfile(it); // пачка из остатка (API-материалы)
     it.bars=(it.bars||0)+bars; // приход профиля — целые хлысты в пачку
     if(rateEl){ const r=parseFloat(rateEl.value); if(r>0) it.cost=Math.round(r/barLen); } // цена за хлыст → за пог.м
   } else {
