@@ -532,6 +532,9 @@ function profileCutList(c){
 // На каждую деталь добавляется припуск cutMargin (рез/ус) — уходит в потери.
 function cutPieces(m, pieces, useOffcuts){
   if(useOffcuts===undefined) useOffcuts=true;
+  // материалы из API приходят без пачки (bars/offcuts) — выводим её из остатка,
+  // иначе recalcStock обнулит склад (bars=0). Демо-слепок уже имеет пачку.
+  if(m.bars==null || !Array.isArray(m.offcuts)) normalizeProfile(m);
   const barLen=m.barLen||6, minOff=offcutMin(), mg=cutMargin();
   let offcuts=(m.offcuts||[]).slice(), bars=m.bars||0;
   let fromOffcut=0, openedBars=0, scrap=0, totalCut=0, kerf=0;
@@ -558,11 +561,13 @@ function cutPieces(m, pieces, useOffcuts){
 function cutsByProfile(d){ const out={}; (d.items||[]).forEach(c=>{ const id=c.profileId; (out[id]=out[id]||[]).push(...profileCutList(c)); }); return out; }
 // «сухой» расчёт плана раскроя профиля без изменения склада (для подтверждения)
 function planCut(m, pieces, useOffcuts){
-  const clone={ barLen:m.barLen||6, bars:m.bars||0, offcuts:(m.offcuts||[]).slice() };
+  // клон с остатком; пачку выведет cutPieces, если её нет (API-материалы)
+  const clone={ barLen:m.barLen||6, bars:m.bars, offcuts:Array.isArray(m.offcuts)?m.offcuts.slice():undefined, stock:m.stock };
   return cutPieces(clone, pieces, useOffcuts);
 }
 // списать qty пог.м профиля вручную (приоритет: мелкие обрезки → хлысты)
 function drawMeters(m, qty){
+  if(m.bars==null || !Array.isArray(m.offcuts)) normalizeProfile(m);
   const barLen=m.barLen||6, minOff=offcutMin();
   let need=Math.round(qty*10)/10;
   let offcuts=(m.offcuts||[]).slice().sort((a,b)=>a-b); const kept=[];
