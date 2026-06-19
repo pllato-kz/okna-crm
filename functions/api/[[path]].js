@@ -417,13 +417,24 @@ async function getStorageStats(env) {
   // ---- R2 ----
   try {
     if (env.BUCKET) {
-      let bytes = 0, count = 0, cursor, pages = 0;
+      const catOf = (key) => {
+        const ext = (String(key || '').split('.').pop() || '').toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'bmp', 'svg'].includes(ext)) return 'image';
+        if (ext === 'pdf') return 'pdf';
+        if (['doc', 'docx', 'xls', 'xlsx', 'csv', 'txt'].includes(ext)) return 'doc';
+        return 'other';
+      };
+      let bytes = 0, count = 0, cursor, pages = 0; const byType = {};
       do {
         const lst = await env.BUCKET.list({ cursor, limit: 1000 });
-        for (const o of (lst.objects || [])) { bytes += (o.size || 0); count++; }
+        for (const o of (lst.objects || [])) {
+          const c = catOf(o.key); (byType[c] = byType[c] || { bytes: 0, count: 0 });
+          byType[c].bytes += (o.size || 0); byType[c].count++;
+          bytes += (o.size || 0); count++;
+        }
         cursor = lst.truncated ? lst.cursor : undefined; pages++;
       } while (cursor && pages < 20);
-      out.r2 = { bytes, count, limit: 10 * 1024 * 1024 * 1024 };
+      out.r2 = { bytes, count, byType, limit: 10 * 1024 * 1024 * 1024 };
     } else { out.r2 = { error: true, limit: 10 * 1024 * 1024 * 1024 }; }
   } catch (e) { out.r2 = { error: true, limit: 10 * 1024 * 1024 * 1024 }; }
   return out;

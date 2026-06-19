@@ -119,8 +119,20 @@ function renderStorageStats(s){
   s=s||{}; let html='';
   if(s.d1 && !s.d1.error) html+=storageBar('База данных D1', s.d1.bytes||0, s.d1.limit||0, (s.d1.rows!=null?s.d1.rows.toLocaleString('ru-RU')+' строк':''));
   else html+='<div class="muted2" style="margin-bottom:12px">D1: размер недоступен</div>';
-  if(s.r2 && !s.r2.error) html+=storageBar('Файлы R2', s.r2.bytes||0, s.r2.limit||0, (s.r2.count||0)+' файлов');
-  else html+='<div class="muted2">R2: размер недоступен</div>';
+  if(s.r2 && !s.r2.error){
+    html+=storageBar('Файлы R2', s.r2.bytes||0, s.r2.limit||0, (s.r2.count||0)+' файлов');
+    const R2L={image:'Фото / изображения',pdf:'PDF-документы',doc:'Документы',other:'Прочее'};
+    const types=Object.entries(s.r2.byType||{}).filter(([,v])=>v&&v.count).sort((a,b)=>b[1].bytes-a[1].bytes);
+    if(types.length) html+='<div style="margin:-6px 0 12px 0">'+types.map(([k,v])=>{
+        const pct=s.r2.bytes?Math.round(v.bytes/s.r2.bytes*100):0;
+        return `<div style="display:flex;align-items:center;gap:8px;font-size:12px;padding:3px 0">
+          <span style="flex:1;min-width:0;color:var(--muted2)">${R2L[k]||k}</span>
+          <span class="muted2" style="width:54px;text-align:right">${v.count} шт</span>
+          <span style="width:64px;text-align:right;font-weight:600">${fmtBytes(v.bytes)}</span>
+          <span class="muted2" style="width:34px;text-align:right">${pct}%</span>
+        </div>`; }).join('')+'</div>';
+    else if((s.r2.count||0)===0) html+='<div class="muted2" style="font-size:11.5px;margin:-6px 0 12px 0">Файлов пока нет — фото работ и вложения появятся здесь.</div>';
+  } else html+='<div class="muted2">R2: размер недоступен</div>';
   html+='<div class="muted2" style="font-size:11px;margin-top:2px">Лимиты — ориентир Cloudflare (free): D1 5 ГБ, R2 10 ГБ.</div>';
   return html;
 }
