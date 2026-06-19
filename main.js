@@ -775,7 +775,7 @@ function whItemModal(kind, id){
       <div class="fld"><label>Минимум (для дозаказа)</label><input id="wi-min" type="number" min="0" value="${it?it.min:''}"></div>
       ${!id?`<div class="fld"><label>Начальный остаток</label><input id="wi-stock" type="number" min="0" value="0"></div>`:''}
     </div></div>
-    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="wh-item-save" data-kind="${kind}"${it?` data-id="${it.id}"`:''}>${icon('check','sm')} Сохранить</button></div>`);
+    <div class="modal-f">${(id&&money$)?`<button class="btn danger" data-act="wh-del" data-id="${id}" data-kind="${kind}" style="margin-right:auto">${icon('trash','sm')} Удалить</button>`:''}<button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="wh-item-save" data-kind="${kind}"${it?` data-id="${it.id}"`:''}>${icon('check','sm')} Сохранить</button></div>`);
 }
 function whItemSave(kind, id){
   const money$=seesMoney(); const isMat=(kind==='mat');

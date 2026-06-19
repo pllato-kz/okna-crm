@@ -297,6 +297,13 @@ input,select,textarea{font-family:inherit}
 .row-acts .btn.sm{padding:6px 9px}
 .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tbl-scroll>.tbl{min-width:600px}
+/* компактные строки склада — чтобы таблица помещалась без скролла */
+.wh-compact .tbl th{padding:6px 10px}
+.wh-compact .tbl td{padding:5px 10px;font-size:13px;line-height:1.2}
+.wh-compact .tbl td .muted2{font-size:10.5px;line-height:1.15}
+.wh-compact .row-acts .btn.sm{padding:5px 9px;font-size:12px}
+.wh-compact .mini-bar{display:none}
+.btn.sm.icon{padding:6px}.btn.sm.icon svg{margin:0}
 .cat-tbl{table-layout:fixed;width:100%}
 .cat-tbl td:first-child{overflow:hidden;text-overflow:ellipsis}
 .perm-tbl{min-width:560px}
