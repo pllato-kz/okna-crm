@@ -393,6 +393,41 @@ async function readBody(request) {
   try { return await request.json(); } catch (_) { return {}; }
 }
 
+/* ============ СТАТИСТИКА ХРАНИЛИЩА (D1 + R2) ============ */
+// D1: размер БД = page_count × page_size; число строк по основным таблицам.
+// R2: суммарный размер и количество объектов (постранично через list).
+// Лимиты — ориентир Cloudflare free (D1 5 ГБ, R2 10 ГБ).
+async function getStorageStats(env) {
+  const out = { d1: null, r2: null };
+  // ---- D1 ----
+  try {
+    const pc = await env.DB.prepare('PRAGMA page_count').first().catch(() => null);
+    const ps = await env.DB.prepare('PRAGMA page_size').first().catch(() => null);
+    const pageCount = pc ? Number(pc.page_count ?? Object.values(pc)[0]) || 0 : 0;
+    const pageSize = ps ? Number(ps.page_size ?? Object.values(ps)[0]) || 0 : 0;
+    const tables = ['clients', 'deals', 'deal_items', 'payments', 'payables', 'materials',
+      'components', 'warehouse_movements', 'activity', 'tasks', 'users'];
+    let rows = 0; const byTable = {};
+    for (const t of tables) {
+      try { const r = await env.DB.prepare(`SELECT COUNT(*) AS n FROM ${t}`).first(); const n = Number(r && r.n) || 0; byTable[t] = n; rows += n; } catch (_) {}
+    }
+    out.d1 = { bytes: pageCount * pageSize, rows, byTable, limit: 5 * 1024 * 1024 * 1024 };
+  } catch (e) { out.d1 = { error: true, limit: 5 * 1024 * 1024 * 1024 }; }
+  // ---- R2 ----
+  try {
+    if (env.BUCKET) {
+      let bytes = 0, count = 0, cursor, pages = 0;
+      do {
+        const lst = await env.BUCKET.list({ cursor, limit: 1000 });
+        for (const o of (lst.objects || [])) { bytes += (o.size || 0); count++; }
+        cursor = lst.truncated ? lst.cursor : undefined; pages++;
+      } while (cursor && pages < 20);
+      out.r2 = { bytes, count, limit: 10 * 1024 * 1024 * 1024 };
+    } else { out.r2 = { error: true, limit: 10 * 1024 * 1024 * 1024 }; }
+  } catch (e) { out.r2 = { error: true, limit: 10 * 1024 * 1024 * 1024 }; }
+  return out;
+}
+
 /* ============ ТОЧКА ВХОДА ============ */
 export async function onRequest(context) {
   const { request, env, params } = context;
@@ -561,6 +596,13 @@ export async function onRequest(context) {
         return ok({ ok: true });
       }
       return fail(404, 'Неизвестный SIP-эндпоинт');
+    }
+
+    // ---- Хранилище данных: размер D1 (база) + R2 (файлы), только директор ----
+    if (segs[0] === 'storage') {
+      if (method !== 'GET') return fail(405, 'Только GET');
+      if (context.auth.role !== 'director') return fail(403, 'Недостаточно прав');
+      return ok(await getStorageStats(env));
     }
 
     // ---- WhatsApp / Green API ----

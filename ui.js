@@ -85,6 +85,7 @@ function renderModule(){
   else if(m==='settings')  html=renderSettings();
   view.innerHTML=html;
   if(m==='measure') initMeasureBindings();
+  if(m==='dashboard') initDashboardBindings();
   view.scrollTop=0;
   syncUrl();
 }
@@ -249,6 +250,18 @@ function kpi(o){
   </div>`;
 }
 function avatarXs(name,id){ return `<span class="avatar-xs" style="background:${colorFor(id||name)}">${initials(name)}</span>`; }
+/* человекочитаемый размер в байтах */
+function fmtBytes(b){ b=Number(b)||0; if(b<1024) return b+' Б'; const u=['КБ','МБ','ГБ','ТБ']; let i=-1; do{ b/=1024; i++; }while(b>=1024&&i<u.length-1); return (b<10?Math.round(b*10)/10:Math.round(b))+' '+u[i]; }
+/* полоса заполнения хранилища: использовано/лимит + процент */
+function storageBar(label, used, limit, sub){
+  const pct = limit? Math.max(0.4, Math.min(100, used/limit*100)) : 0;
+  const col = pct>85?'var(--red)':(pct>60?'var(--amber)':'var(--green)');
+  return `<div style="margin-bottom:13px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:13px;margin-bottom:5px"><span style="font-weight:600">${label}</span><span class="muted2" style="font-size:12px">${fmtBytes(used)} / ${fmtBytes(limit)}${sub?' · '+sub:''}</span></div>
+    <div class="mini-bar" style="height:9px"><i style="width:${pct}%;background:${col}"></i></div>
+    <div class="muted2" style="font-size:11px;margin-top:3px">${pct<1?'<1':Math.round(pct*10)/10}% использовано</div>
+  </div>`;
+}
 function bars(rows, max){
   max = max || Math.max(1,...rows.map(r=>r.value));
   return `<div class="bars">`+rows.map(r=>`

@@ -279,5 +279,6 @@ const API = {
   persist: apiPersist,
   wa: apiWa,
   ig: apiIg,
+  storage: () => apiFetch('storage'),
 };
 try { globalThis.API = API; } catch (e) {}
