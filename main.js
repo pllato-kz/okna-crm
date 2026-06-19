@@ -856,7 +856,13 @@ function whItemDelConfirm(kind, id){
 // состава (единый источник правды — позиции, а не «момент печати документа»).
 function syncDealSum(d){ if(!d) return; d.sum=computeMeasure(d).total; if(apiOn()) persist(API.persist.saveDeal(d)); }
 function mAdd(){ const d=currentMeasureDeal(); if(!d) return; d.items=d.items||[];
-  const nit={id:uid('cn'),profileId:'m4',w:1300,h:1400,glassId:'g2',openId:'tilt',sashes:2,qty:1,extras:['sill','slopes']};
+  // дефолты берём из существующего каталога (id не хардкодим — иначе при
+  // изменённом каталоге ссылка на удалённую позицию ломает запись на сервере)
+  const prof=(DB.materials[0]&&DB.materials[0].id);
+  const glass=((GLASS.find(g=>g.id==='g2')||GLASS[0]||{}).id);
+  const open=((OPENINGS.find(o=>o.id==='tilt')||OPENINGS.find(o=>o.id!=='deaf')||OPENINGS[0]||{}).id);
+  if(!prof||!glass||!open){ toast('Заполните каталог (профиль, стекло, открывание) в разделе «Каталоги»','warn'); return; }
+  const nit={id:uid('cn'),profileId:prof,w:1300,h:1400,glassId:glass,openId:open,sashes:2,qty:1,extras:[]};
   d.items.push(nit);
   if(apiOn()){ persist(API.persist.createItem(d.id, nit).then(()=>{ (nit.extras||[]).forEach(ex=>persist(API.persist.setItemExtra(nit.id, ex, true))); })); }
   syncDealSum(d); saveDB();
