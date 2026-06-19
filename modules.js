@@ -52,6 +52,24 @@ function renderDashboard(){
         <div class="muted2" style="font-size:11.5px;margin-top:2px">${escA(tcl?tcl.name+' · ':'')}<span style="color:${tc.color}">${dateStr(t.due)} · ${tc.txt}</span>${escA(tu?' · '+tu.name.split(' ')[0]:'')}</div></div>
     </div>`;}).join(''):'<div class="muted" style="padding:8px 0">Открытых задач нет 🎉</div>';
 
+  // заполненность склада (хранилище): что и насколько заполнено.
+  // «полнота» = остаток к нормативу (2×минимума); ниже минимума — красным.
+  const fillPct=(it)=>Math.max(2,Math.min(100,Math.round((it.stock||0)/Math.max(1,(it.min||0)*2)*100)));
+  const fillRow=(it)=>{ const pct=fillPct(it); const low=(it.stock||0)<(it.min||0);
+    const col=low?'var(--red)':(pct<55?'var(--amber)':'var(--green)');
+    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)">
+      <div style="flex:1;min-width:0;font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escA(it.name)}">${escA(it.name)}</div>
+      <div class="mini-bar" style="width:86px;flex:none"><i style="width:${pct}%;background:${col}"></i></div>
+      <span style="width:80px;text-align:right;font-size:11.5px;color:var(--muted2);white-space:nowrap">${it.stock} ${escA(it.unit||'')}</span>
+      <span style="width:38px;text-align:right;font-size:11.5px;font-weight:700;color:${col}">${pct}%</span>
+    </div>`; };
+  const byFill=(a,b)=> ((a.stock||0)/Math.max(1,(a.min||0)*2)) - ((b.stock||0)/Math.max(1,(b.min||0)*2));
+  const matFill=DB.materials.slice().sort(byFill).slice(0,7);
+  const compFill=DB.components.slice().sort(byFill).slice(0,7);
+  const lowMat=DB.materials.filter(m=>(m.stock||0)<(m.min||0)).length;
+  const lowComp=DB.components.filter(c=>(c.stock||0)<(c.min||0)).length;
+  const moreLink=(n)=> n>0?`<div class="muted2" style="font-size:11.5px;padding-top:9px;cursor:pointer" data-act="kpi-nav" data-mod="warehouse">+ ещё ${n} — открыть склад →</div>`:'';
+
   return `
   <div class="cards-row">
     ${kpi({icon:'money',label:'Выручка за месяц',value:moneyK(monthRevenue),color:'#16a34a',soft:'var(--green-soft)',sub:'<span class="up">▲ 18%</span> к апрелю',subClass:'',nav:'finance',tab:'pl'})}
@@ -85,6 +103,17 @@ function renderDashboard(){
     <div class="panel">
       <div class="panel-h">${icon('layers')}<h3>Источники лидов</h3></div>
       <div class="panel-b">${bars(srcRows)}</div>
+    </div>
+  </div>
+
+  <div class="grid-2 section-gap">
+    <div class="panel">
+      <div class="panel-h">${icon('warehouse')}<h3>Заполненность склада · профиль</h3><span class="ph-sub"${lowMat?' style="color:var(--red)"':''}>${lowMat?lowMat+' ниже минимума':'всё в норме'}</span></div>
+      <div class="panel-b">${matFill.map(fillRow).join('')||'<div class="muted">Нет позиций</div>'}${moreLink(DB.materials.length-matFill.length)}</div>
+    </div>
+    <div class="panel">
+      <div class="panel-h">${icon('box')}<h3>Заполненность склада · стеклопакеты и фурнитура</h3><span class="ph-sub"${lowComp?' style="color:var(--red)"':''}>${lowComp?lowComp+' ниже минимума':'всё в норме'}</span></div>
+      <div class="panel-b">${compFill.map(fillRow).join('')||'<div class="muted">Нет позиций</div>'}${moreLink(DB.components.length-compFill.length)}</div>
     </div>
   </div>
 
