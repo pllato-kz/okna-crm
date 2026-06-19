@@ -33,41 +33,12 @@ function currentHash(){
 function syncUrl(){ if(!state.user || !state.module) return; const h=currentHash(); if(location.hash!==h) history.pushState(null,'',h); }
 function render(){
   const app=document.getElementById('app');
-  // Демо-гейт отключён: доступ контролирует вход (/api/login). gateStatus/renderGate оставлены для совместимости.
+  // Боевой режим: нет пользователя → экран входа (/api/login). Демо-гейта нет.
   if(!state.user){ app.innerHTML=renderLogin(); return; }
   app.innerHTML=renderShell();
   renderModule();
 }
 
-/* ============ ШЛЮЗ ДОСТУПА ПО ССЫЛКЕ ============ */
-function fmtExpiry(ts){ try{ const d=new Date(ts); return d.toLocaleString('ru-RU',{day:'2-digit',month:'long',hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } }
-function renderGate(g){
-  const expired = g.mode==='expired';
-  return `<div class="gate-wrap"><button class="theme-fab" data-act="theme" title="Сменить тему">${icon(state.theme==='light'?'moon':'sun')}</button>
-    <div class="gate-card">
-      <div class="gate-icon">${icon(expired?'clock':'lock','lg')}</div>
-      <div class="brand-name" style="font-size:15px;letter-spacing:.04em">Ocean Glass · демо</div>
-      <h1>${expired?'Срок доступа к демо истёк':'Доступ к демо по ссылке'}</h1>
-      <p>${expired
-        ? `Эта демо-ссылка действовала до <b>${fmtExpiry(g.exp)}</b> и больше не активна. Запросите новую ссылку у менеджера Pllato — мы откроем доступ ещё раз.`
-        : 'Демонстрационная версия открывается по персональной ссылке с ограниченным сроком. Попросите у менеджера Pllato актуальную ссылку для просмотра.'}</p>
-      <a class="gate-btn" href="https://wa.me/77011239999" target="_blank" rel="noopener">${icon('wa','sm')} Запросить доступ в WhatsApp</a>
-      <div class="gate-foot">Pllato · кастомные CRM · pllato.kz</div>
-    </div></div>`;
-}
-function shareModal(){
-  const opts=[{h:24,t:'24 часа'},{h:72,t:'3 дня'},{h:168,t:'7 дней'},{h:720,t:'30 дней'}];
-  openModal(`<div class="modal-h">${icon('link')}<div><h3>Ссылка для клиента</h3><div class="mh-sub">Демо откроется по ссылке и закроется по истечении срока</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
-    <div class="modal-b"><div class="constr-body" style="padding:0">
-      <div class="fld full"><label>Срок действия ссылки</label>
-        <div class="share-opts">${opts.map((o,i)=>`<button class="share-opt${i===0?' on':''}" data-act="share-pick" data-h="${o.h}">${o.t}</button>`).join('')}</div>
-      </div>
-      <div class="fld full"><label>Своё значение, часов (необязательно)</label><input type="number" min="1" id="share-hours" placeholder="например 48"></div>
-      <div class="fld full"><label>Кому (метка, необязательно)</label><input id="share-label" placeholder="например: ЖК Алтын, Серик"></div>
-      <div id="share-out"></div>
-    </div></div>
-    <div class="modal-f"><button class="btn" data-act="close-modal">Закрыть</button><button class="btn green" data-act="share-make" data-h="24">${icon('link','sm')} Создать ссылку</button></div>`);
-}
 function renderModule(){
   const view=document.getElementById('view'); if(!view) return;
   const m=state.module;

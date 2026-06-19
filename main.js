@@ -1,6 +1,5 @@
 'use strict';
 /* ============ ACTIONS ============ */
-function login(id){ state.user=userById(id); state.module=defaultModule(state.user.role); state.measureDealId=null; applyHashToState(); render(); flushHashOpen(); }
 // открыть карточку из URL (?deal=/?client=), один раз
 function flushHashOpen(){ const o=__pendingHashOpen; __pendingHashOpen=null; if(!o) return;
   if(o.deal && dealById(o.deal)) openDeal(o.deal);
@@ -1544,35 +1543,6 @@ function doExport(what){
   }
 }
 
-/* ============ ССЫЛКА ДЛЯ КЛИЕНТА ============ */
-function sharePick(t){
-  document.querySelectorAll('.share-opt').forEach(b=>b.classList.remove('on'));
-  t.classList.add('on');
-  const mk=document.querySelector('[data-act="share-make"]'); if(mk) mk.dataset.h=t.dataset.h;
-  const ci=document.getElementById('share-hours'); if(ci) ci.value='';
-}
-function shareMake(t){
-  const custom=parseFloat((document.getElementById('share-hours')||{}).value);
-  const hours = (custom && custom>0) ? custom : (parseFloat(t.dataset.h)||24);
-  const label = ((document.getElementById('share-label')||{}).value||'').trim();
-  const url = demoLink(hours, label);
-  const exp = Date.now()+Math.round(hours*3600*1000);
-  const out=document.getElementById('share-out'); if(!out) return;
-  out.innerHTML = `<div class="share-result">
-    <div class="label">Ссылка готова · активна до ${fmtExpiry(exp)}</div>
-    <textarea class="share-url" id="share-url" readonly rows="2">${url}</textarea>
-    <button class="btn green" data-act="copy-link">${icon('copy','sm')} Скопировать ссылку</button>
-    <a class="btn" href="https://wa.me/?text=${encodeURIComponent('Демо CRM для оконного бизнеса (доступ до '+fmtExpiry(exp)+'): '+url)}" target="_blank" rel="noopener">${icon('wa','sm')} Отправить в WhatsApp</a>
-  </div>`;
-  const ta=document.getElementById('share-url'); if(ta){ ta.focus(); ta.select(); }
-}
-function copyShareLink(){
-  const ta=document.getElementById('share-url'); if(!ta) return;
-  const done=()=>toast('Ссылка скопирована в буфер обмена');
-  try{ navigator.clipboard.writeText(ta.value).then(done, ()=>{ ta.select(); document.execCommand('copy'); done(); }); }
-  catch(e){ ta.select(); try{ document.execCommand('copy'); done(); }catch(_){ toast('Скопируйте ссылку вручную','warn'); } }
-}
-
 /* ============ ГЛОБАЛЬНЫЙ ПОИСК ============ */
 function clearSearch(){
   const dd=document.getElementById('search-dd'); if(dd){ dd.classList.remove('open'); dd.innerHTML=''; }
@@ -1699,7 +1669,6 @@ document.addEventListener('click', e=>{
   if(t.dataset.back==='deal') __cardReturn=()=>openDeal(id);
   else if(t.dataset.back==='client') __cardReturn=()=>openClient(id);
   switch(a){
-    case 'login': login(id); break;
     case 'api-login': apiLoginSubmit(); break;
     case 'logout': logout(); break;
     case 'nav': nav(t.dataset.mod); break;
@@ -1872,10 +1841,6 @@ document.addEventListener('click', e=>{
     case 'move-prod': moveProd(id, t.dataset.stage); break;
     case 'fin-tab': state.financeTab=t.dataset.v; renderModule(); break;
     case 'fin-period': state.financePeriod=t.dataset.v; state.financeFrom=null; state.financeTo=null; renderModule(); break;
-    case 'share-demo': shareModal(); break;
-    case 'share-pick': sharePick(t); break;
-    case 'share-make': shareMake(t); break;
-    case 'copy-link': copyShareLink(t); break;
     case 'close-modal': closeModal(); break;
     case 'modal-bg': if(e.target===t) closeModal(); break;
   }

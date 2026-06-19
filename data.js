@@ -455,37 +455,8 @@ function waTemplatesFor(d){
   return stageTpls.concat(anyTpls);
 }
 
-/* ============ ДОСТУП ПО ССЫЛКЕ (демо-гейт) ============ */
-/* Демка с фейковыми данными: подпись не криптостойкая, задача — мягко ограничить
-   вход клиента по сроку, а не защищать секреты. */
-const GATE_SECRET   = 'okna-pllato-2026';
-const OWNER_UNLOCK  = 'pllato-owner-7c';      // ?owner=<этот ключ> разблокирует владельца навсегда
-const OWNER_KEY     = 'okna_crm_owner';
-const GRANT_KEY     = 'okna_crm_grant';
-function _b64e(s){ return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
-function _b64d(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4)s+='='; return decodeURIComponent(escape(atob(s))); }
-function _sig(p){ let h=2166136261>>>0; const str=GATE_SECRET+p+GATE_SECRET; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36); }
-function makeDemoToken(hours, label){ const exp=Date.now()+Math.round(hours*3600*1000); const p=_b64e(JSON.stringify({exp, label:label||'', iat:Date.now()})); return p+'.'+_sig(p); }
-function parseDemoToken(tok){ if(!tok||tok.indexOf('.')<0) return null; const [p,s]=tok.split('.'); if(_sig(p)!==s) return null; try{ const o=JSON.parse(_b64d(p)); return o.exp ? o : null; }catch(e){ return null; } }
-function demoLink(hours, label){ const t=makeDemoToken(hours,label); return location.origin + location.pathname + '?demo=' + t; }
-function isOwner(){ try{ return localStorage.getItem(OWNER_KEY)==='1'; }catch(e){ return false; } }
-function currentGrant(){ try{ return JSON.parse(localStorage.getItem(GRANT_KEY)||'null'); }catch(e){ return null; } }
-function gateStatus(){
-  if(isOwner()) return {mode:'owner'};
-  const g=currentGrant();
-  if(g && g.exp){ return Date.now()<g.exp ? {mode:'valid', exp:g.exp, label:g.label} : {mode:'expired', exp:g.exp, label:g.label}; }
-  return {mode:'open'}; // публичный доступ: демо открыто всем, без ссылки-гейта
-}
-function initGate(){
-  try{
-    const params=new URLSearchParams(location.search); let changed=false;
-    if(params.get('owner')===OWNER_UNLOCK){ localStorage.setItem(OWNER_KEY,'1'); params.delete('owner'); changed=true; }
-    const demo=params.get('demo');
-    if(demo){ const o=parseDemoToken(demo); if(o){ localStorage.setItem(GRANT_KEY, JSON.stringify(o)); } params.delete('demo'); changed=true; }
-    if(changed){ const q=params.toString(); history.replaceState(null,'', location.pathname+(q?'?'+q:'')+location.hash); }
-  }catch(e){}
-}
-initGate();
+/* Доступ контролирует вход через /api/login (боевой режим). Демо-гейт по ссылке
+   (?demo=/?owner=) и связанный код удалены при переходе на боевую версию. */
 
 /* lookups */
 const userById = id => DB.users.find(u=>u.id===id);
