@@ -180,7 +180,7 @@ const PROFILE_COST = {m1:1200,m2:1300,m3:1700,m4:1900,m5:2600,m6:3100,m7:1500,m8
 // закупочная цена за пог.м с запасным значением (если cost ещё не задан — старые данные/API)
 function matCost(m){ if(!m) return 0; return (m.cost!=null && m.cost>0) ? m.cost : (PROFILE_COST[m.id] || Math.round((m.rate||0)/15)); }
 // добить недостающие поля профиля (хлыст/закуп/обрезки) — для старого localStorage и API
-function migrateMaterials(db){ try{ (db.materials||[]).forEach(m=>{ if(!m.barLen) m.barLen=6; if(m.cost==null) m.cost=matCost(m); delete m.offcut; }); }catch(e){} return db; }
+function migrateMaterials(db){ try{ if(db.offcutMin==null) db.offcutMin=0.3; (db.materials||[]).forEach(m=>{ if(!m.barLen) m.barLen=6; if(m.cost==null) m.cost=matCost(m); delete m.offcut; if(m.bars==null || !Array.isArray(m.offcuts)) normalizeProfile(m); recalcStock(m); }); }catch(e){} return db; }
 
 /* ============ SEED BUILDER ============ */
 function buildSeed(){
@@ -213,10 +213,10 @@ function buildSeed(){
   ];
   // Профиль приходит хлыстами по 6 м: barLen — длина хлыста, cost — закупка за пог.м
   // (отдельно от продажной rate за м²). Обрезок выводится из stock (stock % barLen).
-  materials.forEach(m=>{ m.barLen=6; m.cost=PROFILE_COST[m.id]||Math.round(m.rate/6); });
-  // пара остатков с обрезками для демонстрации (stock не кратен 6)
-  const _m4=materials.find(m=>m.id==='m4'); if(_m4) _m4.stock=358;   // 59 хлыст. (354) + 4 м обрезок
-  const _m5=materials.find(m=>m.id==='m5'); if(_m5) _m5.stock=122.5; // 20 хлыст. (120) + 2.5 м обрезок
+  materials.forEach(m=>{ m.barLen=6; m.cost=PROFILE_COST[m.id]||Math.round(m.rate/6); normalizeProfile(m); recalcStock(m); });
+  // демо-пачки обрезков (список разных длин) для наглядности раскроя
+  const _m4=materials.find(m=>m.id==='m4'); if(_m4){ _m4.bars=58; _m4.offcuts=[4,3.2,2.8]; recalcStock(_m4); }   // 58 хлыст. + 3 обрезка = 358 пог.м
+  const _m5=materials.find(m=>m.id==='m5'); if(_m5){ _m5.bars=19; _m5.offcuts=[4.5,2.5,1.5]; recalcStock(_m5); } // 19 хлыст. + 3 обрезка = 122.5 пог.м
   const components = [
     {id:'c1', name:'Стеклопакет однокам. 24мм', stock:85, min:40, unit:'м²'},
     {id:'c2', name:'Стеклопакет двухкам. 32мм',  stock:62, min:50, unit:'м²'},
@@ -332,7 +332,7 @@ function buildSeed(){
     {id:'t_seed5', dealId:'d2', title:'Уточнить размеры проёмов',          due:daysAgo(2).toISOString(),   assignee:'u_pm',  done:true},
   ];
 
-  return { v:1, seedAnchor: SEED_NOW.toISOString(), company, users, materials, components, clients, deals, payables, activity, movements, waMessages, tasks };
+  return { v:1, seedAnchor: SEED_NOW.toISOString(), offcutMin:0.3, company, users, materials, components, clients, deals, payables, activity, movements, waMessages, tasks };
 }
 
 /* ============ STATE / PERSISTENCE ============ */
@@ -527,30 +527,81 @@ function fittingsNeed(c){
   ensureSashList(c).forEach(s=>{ if(s.active && (s.open==='turn'||s.open==='tilt')){ const cid=FIT_COMP[s.open]; if(cid) out[cid]=(out[cid]||0)+q; } });
   return out;
 }
-// разбивка остатка профиля: целые хлысты (по barLen) + обрезки (пог.м)
+// минимальная полезная длина обрезка (м): короче — в лом. Редактируется на складе.
+function offcutMin(){ return (typeof DB!=='undefined' && DB && DB.offcutMin!=null) ? DB.offcutMin : 0.3; }
+// пересчитать stock (пог.м) из пачки: целые хлысты + список обрезков
+function recalcStock(m){ const barLen=m.barLen||6; m.stock=Math.round(((m.bars||0)*barLen + (m.offcuts||[]).reduce((a,b)=>a+(b||0),0))*10)/10; return m.stock; }
+// разложить старый суммарный stock на хлысты + один обрезок (миграция/создание)
+function normalizeProfile(m){ const barLen=m.barLen||6; const bars=Math.max(0,Math.floor((m.stock||0)/barLen)); const rem=Math.round(((m.stock||0)-bars*barLen)*10)/10; m.bars=bars; m.offcuts=rem>0?[rem]:[]; return m; }
+// разбивка остатка профиля: целые хлысты (по barLen) + список обрезков (пог.м)
 function barBreakdown(m){
-  // единый источник правды — stock (пог.м). Целые хлысты и обрезок выводим из него:
-  // bars×barLen + offcut = stock всегда сходится.
-  const barLen=m.barLen||6; const bars=Math.max(0, Math.floor((m.stock||0)/barLen));
-  const offcut=Math.round(((m.stock||0) - bars*barLen)*10)/10;
-  return {barLen, bars, offcut, total:m.stock||0};
+  const barLen=m.barLen||6;
+  const bars=(m.bars!=null)?m.bars:Math.max(0, Math.floor((m.stock||0)/barLen));
+  const offcuts=Array.isArray(m.offcuts)?m.offcuts.slice():[];
+  const offcutTotal=Math.round(offcuts.reduce((a,b)=>a+(b||0),0)*10)/10;
+  return {barLen, bars, offcuts, offcutTotal, total:m.stock||0};
+}
+// список деталей раскроя одной конструкции (длины в метрах, развёрнуто по qty):
+// рама (2 ширины + 2 высоты) + (n−1) импостов + рамки активных открывающихся створок
+function profileCutList(c){
+  const n=Math.max(1, Math.round(c.sashes||1));
+  const W=(c.w||0)/1000, H=(c.h||0)/1000, qty=c.qty||1;
+  const per=[W,W,H,H];
+  for(let i=0;i<n-1;i++) per.push(H);
+  ensureSashList(c).forEach(s=>{ if(s.active && (s.open==='turn'||s.open==='tilt')) per.push(W/n,W/n,H,H); });
+  const out=[]; for(let q=0;q<qty;q++) per.forEach(l=>out.push(Math.round(l*1000)/1000));
+  return out;
+}
+// раскрой деталей из пачки профиля m: best-fit по обрезкам, иначе вскрываем хлыст.
+// мутирует m.bars/m.offcuts, возвращает сводку. Длинные детали режем первыми.
+function cutPieces(m, pieces){
+  const barLen=m.barLen||6, minOff=offcutMin();
+  let offcuts=(m.offcuts||[]).slice(), bars=m.bars||0;
+  let fromOffcut=0, openedBars=0, scrap=0, totalCut=0;
+  pieces.slice().sort((a,b)=>b-a).forEach(piece=>{
+    if(piece<=0) return; totalCut+=piece;
+    // best-fit: самый короткий обрезок, в который деталь влезает
+    let best=-1, bestLen=Infinity;
+    for(let i=0;i<offcuts.length;i++){ if(offcuts[i]>=piece-1e-9 && offcuts[i]<bestLen){ best=i; bestLen=offcuts[i]; } }
+    if(best>=0){
+      const rem=Math.round((offcuts[best]-piece)*1000)/1000;
+      offcuts.splice(best,1); fromOffcut+=piece;
+      if(rem>=minOff) offcuts.push(rem); else if(rem>0) scrap+=rem;
+    } else {
+      bars--; openedBars++;
+      const rem=Math.round((barLen-piece)*1000)/1000;
+      if(rem>=minOff) offcuts.push(rem); else if(rem>0) scrap+=rem;
+    }
+  });
+  m.bars=Math.max(0,bars); m.offcuts=offcuts.map(x=>Math.round(x*10)/10).filter(x=>x>0); recalcStock(m);
+  return {fromOffcut:Math.round(fromOffcut*10)/10, openedBars, scrap:Math.round(scrap*10)/10, totalCut:Math.round(totalCut*10)/10, offcutsLeft:m.offcuts.length};
+}
+// списать qty пог.м профиля вручную (приоритет: мелкие обрезки → хлысты)
+function drawMeters(m, qty){
+  const barLen=m.barLen||6, minOff=offcutMin();
+  let need=Math.round(qty*10)/10;
+  let offcuts=(m.offcuts||[]).slice().sort((a,b)=>a-b); const kept=[];
+  while(need>1e-9 && offcuts.length){ const o=offcuts.shift();
+    if(o<=need+1e-9){ need=Math.round((need-o)*10)/10; } else { kept.push(Math.round((o-need)*10)/10); need=0; } }
+  offcuts=offcuts.concat(kept);
+  let bars=m.bars||0;
+  while(need>=barLen-1e-9 && bars>0){ bars--; need=Math.round((need-barLen)*10)/10; }
+  if(need>1e-9 && bars>0){ bars--; const rem=Math.round((barLen-need)*10)/10; if(rem>=minOff) offcuts.push(rem); else if(rem>0){} need=0; }
+  m.bars=Math.max(0,bars); m.offcuts=offcuts.map(x=>Math.round(x*10)/10).filter(x=>x>0); recalcStock(m);
 }
 function consumeForStage(d, stage){
   d.consumed = d.consumed || {};
   const used = []; const dec = (item, qty, unit) => { if(!item||qty<=0) return; item.stock=Math.max(0, Math.round((item.stock-qty)*10)/10); used.push(`${item.name} −${qty% 1?qty.toFixed(1):qty} ${unit||item.unit}`); };
   if(stage==='cutting' && !d.consumed.profile){
-    // профиль режется хлыстами по 6 м: сначала пускаем обрезок, потом вскрываем хлысты;
-    // остаток от хлыста уходит в обрезок. Считаем по каждому профилю партией.
-    const byProf={};
-    (d.items||[]).forEach(c=>{ const id=c.profileId; byProf[id]=(byProf[id]||0)+Math.round(profileLen(c)); });
-    Object.keys(byProf).forEach(id=>{ const m=matById(id); if(!m) return; const total=byProf[id]; if(total<=0) return;
-      const bb=barBreakdown(m); const barLen=bb.barLen;          // обрезок до списания (из stock)
-      const fromOff=Math.min(bb.offcut, total); const need=total-fromOff;
-      const bars = need>0 ? Math.ceil(need/barLen) : 0;
-      const newOff = bars>0 ? Math.round((bars*barLen-need)*10)/10 : 0;
-      m.stock=Math.max(0, Math.round((m.stock-total)*10)/10);    // обрезок пересчитается из нового stock
-      const parts=[]; if(fromOff>0) parts.push(`обрезок ${fromOff%1?fromOff.toFixed(1):fromOff} м`); if(bars>0) parts.push(`${bars} хлыст. (${bars*barLen} м)`);
-      used.push(`${m.name}: ${parts.join(' + ')||(total+' м')} → в изделие ${total} м${newOff>0?`, обрезок +${newOff%1?newOff.toFixed(1):newOff} м`:''}`);
+    // раскрой по деталям: для каждого профиля собираем список кусков (рама+импосты+
+    // створки), режем best-fit из обрезков, иначе вскрываем хлыст. Остатки → в обрезки.
+    const f=v=>v%1?Math.round(v*10)/10:v;
+    const cutsByProf={};
+    (d.items||[]).forEach(c=>{ const id=c.profileId; (cutsByProf[id]=cutsByProf[id]||[]).push(...profileCutList(c)); });
+    Object.keys(cutsByProf).forEach(id=>{ const m=matById(id); if(!m) return;
+      const r=cutPieces(m, cutsByProf[id]); if(r.totalCut<=0) return;
+      const parts=[]; if(r.fromOffcut>0) parts.push(`из обрезков ${f(r.fromOffcut)} м`); if(r.openedBars>0) parts.push(`${r.openedBars} хлыст. (${f(r.openedBars*(m.barLen||6))} м)`);
+      used.push(`${m.name}: раскрой ${f(r.totalCut)} м — ${parts.join(' + ')||'остатки'}${r.scrap>0?`, лом ${f(r.scrap)} м`:''} · обрезков на складе: ${r.offcutsLeft}`);
     });
     d.consumed.profile = true;
   } else if(stage==='glass' && !d.consumed.glass){

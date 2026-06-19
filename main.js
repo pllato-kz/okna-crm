@@ -660,6 +660,22 @@ function catDelConfirm(type,id){
   closeModal(); render(); toast('Перемещено в корзину');
 }
 
+/* warehouse — список обрезков профиля (просмотр пачки остатков) */
+function whOffcutsModal(id){
+  const m=matById(id); if(!m) return;
+  const bb=barBreakdown(m); const off=bb.offcuts.slice().sort((a,b)=>b-a);
+  const f=v=>v%1?Math.round(v*10)/10:v;
+  const rows=off.length?off.map((l,i)=>`<tr><td class="muted">${i+1}</td><td style="font-weight:600">${f(l)} м</td>
+      <td>${l>=offcutMin()?'<span class="tag green">годен</span>':'<span class="tag">мелкий</span>'}</td></tr>`).join('')
+    :`<tr><td colspan="3" class="muted" style="text-align:center;padding:18px">Обрезков нет</td></tr>`;
+  openModal(`<div class="modal-h">${icon('box')}<div><h3>Обрезки профиля</h3><div class="mh-sub">${escA(m.name)} · ${off.length} шт · ${bb.offcutTotal} пог.м</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">
+      <div class="muted2" style="font-size:12px;margin-bottom:8px">Полезный обрезок ≥ ${offcutMin()} м. При нарезке система берёт обрезок, в который деталь влезает плотнее всего; остаток возвращается сюда, короткий — в лом.</div>
+      <div class="tbl-scroll"><table class="tbl"><thead><tr><th>#</th><th>Длина</th><th>Статус</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="muted2" style="font-size:12px;margin-top:10px">Целых хлыстов: <b>${bb.bars}</b> (по ${bb.barLen} м) · всего на складе: <b>${m.stock}</b> пог.м</div>
+    </div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Закрыть</button></div>`);
+}
 /* warehouse — приход (пополнение) */
 function whReceiveModal(id, kind){
   const it = kind==='mat' ? matById(id) : compById(id);
@@ -690,12 +706,13 @@ function whConfirmReceive(id, kind){
   if(isProfile){
     const bars=Math.max(0,Math.round(raw)); if(bars<=0){ toast('Укажите количество хлыстов','warn'); return; }
     qtyMeters = bars*barLen; label = `${bars} хлыст. (${qtyMeters} пог.м)`; moveReasonExtra = ` · ${bars} хлыст.`;
+    it.bars=(it.bars||0)+bars; // приход профиля — целые хлысты в пачку
     if(rateEl){ const r=parseFloat(rateEl.value); if(r>0) it.cost=Math.round(r/barLen); } // цена за хлыст → за пог.м
   } else {
     qtyMeters = Math.max(0, Math.round(raw*10)/10); label = `${qtyMeters} ${it.unit}`;
   }
   if(supEl && supEl.value.trim()) it.supplier=supEl.value.trim();
-  it.stock = Math.round((it.stock+qtyMeters)*10)/10;
+  if(isProfile) recalcStock(it); else it.stock = Math.round((it.stock+qtyMeters)*10)/10;
   const reason = ((supEl && supEl.value.trim()) ? 'Поставка — '+supEl.value.trim() : 'Поступление на склад') + moveReasonExtra;
   recordMovement({kind, item:it, dir:'in', type:'receipt', qty:qtyMeters, reason});
   DB.activity.unshift({who:state.user.id,text:`Приход на склад: ${it.name} +${label}`,at:now().toISOString(),kind:'wh'});
@@ -726,7 +743,7 @@ function whConfirmWriteoff(id, kind){
   if(qty>it.stock){ toast(`Нельзя списать больше остатка (${it.stock} ${it.unit})`,'warn'); return; }
   const type=(document.getElementById('wo-type')||{}).value||'writeoff';
   const reason=((document.getElementById('wo-reason')||{}).value||'').trim()||MOVE_TYPES[type].label;
-  it.stock = Math.round((it.stock-qty)*10)/10;
+  if(kind==='mat') drawMeters(it, qty); else it.stock = Math.round((it.stock-qty)*10)/10;
   recordMovement({kind, item:it, dir:'out', type, qty, reason});
   DB.activity.unshift({who:state.user.id,text:`Расход со склада: ${it.name} −${qty} ${it.unit} (${MOVE_TYPES[type].label})`,at:now().toISOString(),kind:'wh'});
   saveDB();
@@ -771,7 +788,7 @@ function whItemSave(kind, id){
     if(id){ const m=matById(id); if(!m) return; m.name=name; m.type=type; m.series=series; m.unit=unit; m.min=min; m.supplier=supplier; if(money$){ m.rate=Math.round(num('wi-rate')); m.cost=Math.round(num('wi-cost')); }
       saveDB(); if(apiOn()) persist(API.persist.saveMaterialCard(m)); }
     else { const nm={id:uid('m'),name,type,series,rate:money$?Math.round(num('wi-rate')):0,cost:money$?Math.round(num('wi-cost')):0,stock:num('wi-stock'),min,unit,supplier,barLen:6};
-      DB.materials.push(nm); saveDB(); if(apiOn()) persist(API.persist.createMaterial(nm)); }
+      normalizeProfile(nm); recalcStock(nm); DB.materials.push(nm); saveDB(); if(apiOn()) persist(API.persist.createMaterial(nm)); }
   } else {
     if(id){ const c=compById(id); if(!c) return; c.name=name; c.unit=unit; c.min=min;
       saveDB(); if(apiOn()) persist(API.persist.saveComponentCard(c)); }
@@ -1843,6 +1860,7 @@ document.addEventListener('click', e=>{
     case 'wh-flt-reset': state.whSearch=''; state.whLow=false; renderModule(); break;
     case 'wh-mv-type': state.whMoveType=t.dataset.v; renderModule(); break;
     case 'wh-mv-period': state.whMovePeriod=t.dataset.v; state.whMoveFrom=null; state.whMoveTo=null; renderModule(); break;
+    case 'wh-offcuts': whOffcutsModal(id); break;
     case 'wh-receive': whReceiveModal(id, t.dataset.kind); break;
     case 'wh-confirm-receive': whConfirmReceive(id, t.dataset.kind); break;
     case 'wh-writeoff': whWriteoffModal(id, t.dataset.kind); break;
@@ -1885,6 +1903,7 @@ document.addEventListener('input', e=>{
   if(t.dataset.act==='search'){ globalSearch(t.value); return; }
   if(t.dataset.act==='cl-search'){ state.clientSearch=t.value; renderModule(); const si=document.getElementById('cl-search'); if(si){ si.focus(); const v=si.value; si.setSelectionRange(v.length,v.length); } return; }
   if(t.dataset.act==='wh-search'){ state.whSearch=t.value; renderModule(); const si=document.getElementById('wh-search'); if(si){ si.focus(); const v=si.value; si.setSelectionRange(v.length,v.length); } return; }
+  if(t.dataset.act==='wh-offmin'){ DB.offcutMin=Math.max(0,Math.round((parseFloat(t.value)||0)*10)/10); saveDB(); return; }
   if(t.dataset.act==='m-discount'){ const d=dealById(t.dataset.id); d.discount=Math.max(0,Math.min(30,parseFloat(t.value)||0)); saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); patchMeasure(); }
   if(t.dataset.act==='m-prepay'){ const d=dealById(t.dataset.id); d.prepayPct=Math.max(0,Math.min(100,parseFloat(t.value)||0)); saveDB(); if(apiOn()) persist(API.persist.saveDeal(d)); patchMeasure(); }
 });
