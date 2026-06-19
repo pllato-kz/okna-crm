@@ -237,6 +237,7 @@ function openDeal(id){
     <div class="modal-f">
       <button class="btn danger" data-act="del-deal" data-id="${d.id}" style="margin-right:auto">${icon('trash','sm')} Удалить</button>
       <button class="btn" data-act="edit-deal" data-back="deal" data-id="${d.id}">${icon('edit','sm')} Изменить</button>
+      ${canWa()&&cl.phone?`<button class="btn" data-act="call" data-phone="${escA(cl.phone)}" data-name="${escA(cl.name)}" data-cl="${cl.id}" data-deal="${d.id}">${icon('phone','sm')} Позвонить</button>`:''}
       ${canWa()?`<button class="btn" data-act="wa-deal" data-back="deal" data-id="${d.id}">${icon('send','sm')} Быстрое сообщение</button>
       <button class="btn green" data-act="wa-deal-chat" data-back="deal" data-id="${d.id}">${icon('wa','sm')} Чат WhatsApp</button>`:''}
       ${d.stage==='measure'?`<button class="btn soft" data-act="go-measure-deal" data-id="${d.id}">${icon('ruler','sm')} Открыть замер</button>`:''}
@@ -267,7 +268,7 @@ function renderClients(){
     const debt=ds.reduce((s,d)=>s+dealDebt(d),0);
     return `<tr class="clickable" data-act="open-client" data-id="${cl.id}">
       <td><div class="cell-name">${avatarXs(cl.name,cl.id)}<div><div style="font-weight:600">${escA(cl.name)}</div><div class="muted2" style="font-size:11.5px">${escA(cl.type)}</div></div></div></td>
-      <td class="muted">${escA(cl.phone)}</td>
+      <td class="muted"><span style="display:inline-flex;align-items:center;gap:6px">${escA(cl.phone||'—')}${canWa()&&cl.phone?`<button class="btn sm icon ghost" data-act="call" data-phone="${escA(cl.phone)}" data-name="${escA(cl.name)}" data-cl="${cl.id}" title="Позвонить">${icon('phone','sm')}</button>`:''}</span></td>
       <td class="muted">${escA(cl.address)}</td>
       <td class="num">${ds.length}</td>
       <td class="num">${total?moneyK(total):'—'}</td>
@@ -319,6 +320,7 @@ function openClient(id){
     </div>
     <div class="modal-f"><button class="btn danger" data-act="del-client" data-id="${cl.id}" style="margin-right:auto">${icon('trash','sm')} Удалить</button>
       <button class="btn" data-act="edit-client" data-back="client" data-id="${cl.id}">${icon('edit','sm')} Изменить</button>
+      ${canWa()&&cl.phone?`<button class="btn" data-act="call" data-phone="${escA(cl.phone)}" data-name="${escA(cl.name)}" data-cl="${cl.id}">${icon('phone','sm')} Позвонить</button>`:''}
       ${canWa()?`<button class="btn" data-act="wa-client" data-back="client" data-id="${cl.id}">${icon('send','sm')} Сообщение</button>
       <button class="btn green" data-act="wa-chat" data-back="client" data-id="${cl.id}">${icon('wa','sm')} Чат WhatsApp</button>`:''}</div>
   `);

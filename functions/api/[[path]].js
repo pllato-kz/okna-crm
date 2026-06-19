@@ -521,6 +521,48 @@ export async function onRequest(context) {
       return ok({ contractNo: fresh.contract_no, contractDate: fresh.contract_date });
     }
 
+    // ---- SIP / WebRTC софтфон («звонки из браузера») ----
+    // GET  /api/sip/token — выдаёт браузеру SIP-креды для подключения к Asterisk.
+    // POST /api/sip/log   — лог завершённого звонка в ленту активности.
+    // Пока Asterisk не поднят (нет SIP_DOMAIN/SIP_ENDPOINT_PASSWORD) → 503,
+    // фронт это понимает и тихо прячет софтфон. Голос через бэкенд НЕ идёт.
+    if (segs[0] === 'sip') {
+      if (!env.SIP_DOMAIN || !env.SIP_ENDPOINT_PASSWORD) return fail(503, 'sip_not_configured');
+      const auth = context.auth;
+      if (segs[1] === 'token' && method === 'GET') {
+        const domain = env.SIP_DOMAIN;
+        const iceServers = [{ urls: `stun:${domain}:3478` }, { urls: 'stun:stun.l.google.com:19302' }];
+        if (env.SIP_TURN_URL && env.SIP_TURN_USERNAME && env.SIP_TURN_PASSWORD) {
+          iceServers.push({ urls: [env.SIP_TURN_URL, env.SIP_TURN_URL + '?transport=tcp'], username: env.SIP_TURN_USERNAME, credential: env.SIP_TURN_PASSWORD });
+        }
+        return ok({
+          user: env.SIP_USER || '100',
+          password: env.SIP_ENDPOINT_PASSWORD,
+          domain,
+          wss: `wss://${domain}:8089/ws`,
+          iceServers,
+          display_name: auth.name || auth.email || '',
+          user_id: auth.sub,
+          role: auth.role,
+        });
+      }
+      if (segs[1] === 'log' && method === 'POST') {
+        const body = await readBody(request);
+        const phone = String(body && (body.phone || body.external_number) || '').replace(/[^\d]/g, '');
+        const durationSec = Math.max(0, Number(body && (body.duration_sec ?? body.durationSec)) || 0);
+        const incoming = !!(body && (body.incoming || body.direction === 'in'));
+        const mmss = `${Math.floor(durationSec / 60)}:${String(durationSec % 60).padStart(2, '0')}`;
+        const text = `${incoming ? '📞 Входящий' : '📞 Исходящий'} звонок · ${mmss}${phone ? ` · +${phone}` : ''}`;
+        // лог в ленту активности; FK на activity_kinds('call') — добавлен в seed.
+        try {
+          await env.DB.prepare(`INSERT INTO activity (id, user_id, text, kind_id, at) VALUES (?,?,?,?,?)`)
+            .bind('a_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now()), auth.sub, text, 'call', new Date().toISOString()).run();
+        } catch (e) { /* не блокируем звонок из-за лога */ }
+        return ok({ ok: true });
+      }
+      return fail(404, 'Неизвестный SIP-эндпоинт');
+    }
+
     // ---- WhatsApp / Green API ----
     if (segs[0] === 'wa') {
       const getCfg = async () => await env.DB.prepare(`SELECT * FROM wa_config WHERE id = 'main'`).first();
