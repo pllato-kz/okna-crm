@@ -401,17 +401,18 @@ async function getStorageStats(env) {
   const out = { d1: null, r2: null };
   // ---- D1 ----
   try {
-    const pc = await env.DB.prepare('PRAGMA page_count').first().catch(() => null);
-    const ps = await env.DB.prepare('PRAGMA page_size').first().catch(() => null);
-    const pageCount = pc ? Number(pc.page_count ?? Object.values(pc)[0]) || 0 : 0;
-    const pageSize = ps ? Number(ps.page_size ?? Object.values(ps)[0]) || 0 : 0;
+    // размер БД: D1 отдаёт его в meta.size_after любого запроса (PRAGMA page_count
+    // в D1 не работает). Подстраховка — dbstat, если доступен.
+    let bytes = 0;
+    try { const r = await env.DB.prepare('SELECT 1').run(); bytes = Number(r && r.meta && r.meta.size_after) || 0; } catch (_) {}
+    if (!bytes) { try { const r = await env.DB.prepare('SELECT SUM(pgsize) AS b FROM dbstat').first(); bytes = Number(r && r.b) || 0; } catch (_) {} }
     const tables = ['clients', 'deals', 'deal_items', 'payments', 'payables', 'materials',
       'components', 'warehouse_movements', 'activity', 'tasks', 'users'];
     let rows = 0; const byTable = {};
     for (const t of tables) {
       try { const r = await env.DB.prepare(`SELECT COUNT(*) AS n FROM ${t}`).first(); const n = Number(r && r.n) || 0; byTable[t] = n; rows += n; } catch (_) {}
     }
-    out.d1 = { bytes: pageCount * pageSize, rows, byTable, limit: 5 * 1024 * 1024 * 1024 };
+    out.d1 = { bytes, rows, byTable, limit: 5 * 1024 * 1024 * 1024 };
   } catch (e) { out.d1 = { error: true, limit: 5 * 1024 * 1024 * 1024 }; }
   // ---- R2 ----
   try {
