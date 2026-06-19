@@ -364,10 +364,9 @@ function renderWarehouse(){
   const tab=state.whTab;
   const moves=(DB.movements||[]);
   const actCell=(itId,knd)=>`<td style="text-align:right;white-space:nowrap"><div class="row-acts" style="display:inline-flex;gap:6px;justify-content:flex-end">
-    <button class="btn sm" data-act="wh-receive" data-id="${itId}" data-kind="${knd}">${icon('plus','sm')} Приход</button>
-    <button class="btn sm danger" data-act="wh-writeoff" data-id="${itId}" data-kind="${knd}">${icon('minus','sm')} Расход</button>
-    <button class="btn sm ghost" data-act="wh-edit" data-id="${itId}" data-kind="${knd}" title="Изменить">${icon('edit','sm')}</button>
-    ${showCost?`<button class="btn sm ghost" data-act="wh-del" data-id="${itId}" data-kind="${knd}" title="Удалить позицию">${icon('trash','sm')}</button>`:''}</div></td>`;
+    <button class="btn sm green icon" data-act="wh-receive" data-id="${itId}" data-kind="${knd}" title="Приход (пополнить)">${icon('plus','sm')}</button>
+    <button class="btn sm danger icon" data-act="wh-writeoff" data-id="${itId}" data-kind="${knd}" title="Расход (списать)">${icon('minus','sm')}</button>
+    <button class="btn sm ghost icon" data-act="wh-edit" data-id="${itId}" data-kind="${knd}" title="Изменить / удалить">${icon('edit','sm')}</button></div></td>`;
   const tabs=`<div class="tabs"><button class="tab ${tab==='profile'?'on':''}" data-act="wh-tab" data-v="profile">Профиль (${DB.materials.length})</button>
     <button class="tab ${tab==='comp'?'on':''}" data-act="wh-tab" data-v="comp">Стеклопакеты и фурнитура (${DB.components.length})</button>
     <button class="tab ${tab==='moves'?'on':''}" data-act="wh-tab" data-v="moves">Движения (${moves.length})</button></div>`;
@@ -381,29 +380,29 @@ function renderWarehouse(){
   if(tab==='profile'){
     const list=DB.materials.filter(m=>(!q||[m.name,m.supplier,m.series].some(v=>(v||'').toLowerCase().includes(q)))&&(!lowOnly||m.stock<m.min));
     const anyOffcut=DB.materials.some(m=>barBreakdown(m).offcutTotal>0);
-    const offminBar=`<div style="display:flex;align-items:center;gap:6px;padding:9px 16px;font-size:12.5px;border-bottom:1px solid var(--line);flex-wrap:wrap">
+    const offminBar=`<div style="display:flex;align-items:center;gap:6px;padding:6px 16px;font-size:12px;border-bottom:1px solid var(--line);flex-wrap:wrap">
       <span class="muted2">Полезный обрезок ≥</span>
-      <input id="wh-offmin" data-act="wh-offmin" type="number" step="0.1" min="0" value="${offcutMin()}" style="width:62px;text-align:center"> <span class="muted2">м — короче уходит в лом и не хранится</span></div>`;
-    const offcutBanner=anyOffcut?`<div style="display:flex;align-items:center;gap:8px;padding:9px 16px;background:var(--amber-soft);color:#b45309;font-size:12.5px;border-bottom:1px solid var(--line)">${icon('alert','sm')} Есть остатки-обрезки профиля — при нарезке система пускает их в дело первыми (экономия материала). Нажмите на бейдж «обрезки», чтобы увидеть список.</div>`:'';
+      <input id="wh-offmin" data-act="wh-offmin" type="number" step="0.1" min="0" value="${offcutMin()}" style="width:56px;text-align:center;padding:4px 6px"> <span class="muted2">м — короче уходит в лом</span></div>`;
+    const offcutBanner=anyOffcut?`<div style="display:flex;align-items:center;gap:8px;padding:6px 16px;background:var(--amber-soft);color:#b45309;font-size:12px;border-bottom:1px solid var(--line)">${icon('alert','sm')} Обрезки профиля идут в дело первыми. Нажмите бейдж «обрезки» в строке, чтобы увидеть список.</div>`:'';
     const rows=list.map(m=>{const low=m.stock<m.min; const pct=Math.min(100,m.stock/(m.min*2)*100); const bb=barBreakdown(m); const cost=matCost(m); const barLen=m.barLen||6;
       return `<tr data-wh-row="${m.id}"><td><div style="font-weight:600">${escA(m.name)}</div><div class="muted2" style="font-size:11.5px">${escA(m.supplier)}</div></td>
         <td><span class="tag ${m.type==='ПВХ'?'cyan':'violet'}">${escA(m.type)}</span></td>
         <td><span class="tag ${m.series==='Премиум'?'amber':m.series==='Средняя'?'blue':''}">${escA(m.series)}</span></td>
         ${showCost?`<td class="num" style="white-space:nowrap">${money(cost)}/пог.м<div class="muted2" style="font-size:11px">${money(cost*barLen)}/хлыст</div></td>`:''}
-        <td style="min-width:180px"><div style="display:flex;align-items:center;gap:10px"><div class="mini-bar"><i style="width:${pct}%;background:${low?'var(--red)':'var(--green)'}"></i></div>
+        <td style="min-width:120px"><div style="display:flex;align-items:center;gap:10px"><div class="mini-bar"><i style="width:${pct}%;background:${low?'var(--red)':'var(--green)'}"></i></div>
           <span style="white-space:nowrap"><b>${bb.bars} хлыст.</b> <span class="muted2">(по ${barLen} м)</span> · ${m.stock} пог.м${bb.offcutTotal>0?` <span class="tag green" data-act="wh-offcuts" data-id="${m.id}" style="font-size:10px;cursor:pointer" title="Показать список обрезков">обрезки: ${bb.offcuts.length} шт · ${bb.offcutTotal} м</span>`:''}</span></div></td>
         <td>${low?`<span class="tag red">${icon('alert','sm')} мало</span>`:'<span class="tag green">в норме</span>'}</td>
         ${actCell(m.id,'mat')}</tr>`;}).join('') || `<tr><td colspan="${showCost?7:6}" class="muted" style="text-align:center;padding:24px">Ничего не найдено</td></tr>`;
-    body=whFilterBar+offminBar+offcutBanner+`<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Профиль</th><th>Тип</th><th>Серия</th>${showCost?'<th class="num">Цена</th>':''}<th>Остаток (хлысты · пог.м)</th><th>Статус</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    body=whFilterBar+offminBar+offcutBanner+`<div class="tbl-scroll wh-compact"><table class="tbl"><thead><tr><th>Профиль</th><th>Тип</th><th>Серия</th>${showCost?'<th class="num">Цена</th>':''}<th>Остаток (хлысты · пог.м)</th><th>Статус</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
   } else if(tab==='comp'){
     const list=DB.components.filter(c=>(!q||(c.name||'').toLowerCase().includes(q))&&(!lowOnly||c.stock<c.min));
     const rows=list.map(c=>{const low=c.stock<c.min; const pct=Math.min(100,c.stock/(c.min*2)*100);
       return `<tr data-wh-row="${c.id}"><td style="font-weight:600">${escA(c.name)}</td>
-        <td style="min-width:200px"><div style="display:flex;align-items:center;gap:10px"><div class="mini-bar"><i style="width:${pct}%;background:${low?'var(--red)':'var(--green)'}"></i></div><span style="font-weight:700;white-space:nowrap">${c.stock} ${escA(c.unit)}</span></div></td>
+        <td style="min-width:120px"><div style="display:flex;align-items:center;gap:10px"><div class="mini-bar"><i style="width:${pct}%;background:${low?'var(--red)':'var(--green)'}"></i></div><span style="font-weight:700;white-space:nowrap">${c.stock} ${escA(c.unit)}</span></div></td>
         <td class="muted">мин. ${c.min}</td>
         <td>${low?`<span class="tag red">${icon('alert','sm')} дозаказать</span>`:'<span class="tag green">в норме</span>'}</td>
         ${actCell(c.id,'comp')}</tr>`;}).join('') || `<tr><td colspan="5" class="muted" style="text-align:center;padding:24px">Ничего не найдено</td></tr>`;
-    body=whFilterBar+`<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Наименование</th><th>Остаток</th><th>Минимум</th><th>Статус</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    body=whFilterBar+`<div class="tbl-scroll wh-compact"><table class="tbl"><thead><tr><th>Наименование</th><th>Остаток</th><th>Минимум</th><th>Статус</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
   } else {
     const ft=state.whMoveType||'all', fp=state.whMovePeriod||'all';
     // фильтр по типу операции
