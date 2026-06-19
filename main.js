@@ -848,7 +848,6 @@ function isDirector(){ return !!(state.user && state.user.role==='director'); }
 function editCompanyModal(){
   if(!isDirector()) return;
   const c=DB.company||{};
-  const tpl = (c.contractTpl && c.contractTpl.trim()) ? c.contractTpl : DEFAULT_CONTRACT_TPL;
   openModal(`<div class="modal-h">${icon('settings')}<h3>Данные компании</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="constr-body" style="padding:0">
       <div class="fld full"><label>Название</label><input id="co-name" value="${escA(c.name)}"></div>
@@ -858,25 +857,6 @@ function editCompanyModal(){
       <div class="fld full"><label>Производство</label><input id="co-workshop" value="${escA(c.workshop)}"></div>
       <div class="fld full"><label>Оборот за год</label><input id="co-rev" value="${escA(c.revenueYear)}"></div>
     </div>
-    <div class="panel-h" style="border:none;padding:14px 0 6px"><h3 style="font-size:13.5px">${icon('doc','sm')} Реквизиты для счетов и договоров</h3></div>
-    <div class="constr-body" style="padding:0">
-      <div class="fld full"><label>Юридический адрес</label><input id="co-address" value="${escA(c.address||'')}"></div>
-      <div class="fld"><label>ИНН</label><input id="co-inn" value="${escA(c.inn||'')}"></div>
-      <div class="fld"><label>ОКПО</label><input id="co-okpo" value="${escA(c.okpo||'')}"></div>
-      <div class="fld full"><label>Банк</label><input id="co-bank" value="${escA(c.bank||'')}"></div>
-      <div class="fld"><label>Расчётный счёт</label><input id="co-account" value="${escA(c.account||'')}"></div>
-      <div class="fld"><label>БИК</label><input id="co-bik" value="${escA(c.bik||'')}"></div>
-      <div class="fld full"><label>Директор (для подписи, полностью)</label><input id="co-director" value="${escA(c.director||'')}"></div>
-      <div class="fld"><label>Директор (кратко, «Фамилия И. О.»)</label><input id="co-director-short" value="${escA(c.directorShort||'')}"></div>
-      <div class="fld"><label>Ставка НДС, %</label><input id="co-vat" type="number" min="0" max="30" value="${c.vatRate!=null?c.vatRate:0}"></div>
-      <div class="fld full"><label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--txt);text-transform:none"><input type="checkbox" id="co-stamp" ${c.stamp?'checked':''} style="width:auto"> Показывать «М.П.» (место печати) в документах</label></div>
-    </div>
-    <div class="panel-h" style="border:none;padding:14px 0 6px"><h3 style="font-size:13.5px">${icon('doc','sm')} Шаблон договора</h3></div>
-    <div class="fld full"><textarea id="co-contract-tpl" rows="11" style="font-family:inherit;line-height:1.5">${escA(tpl)}</textarea></div>
-    <div class="muted2" style="font-size:11.5px;line-height:1.6">Текст применяется ко всем новым договорам. Плейсхолдеры подставляются автоматически:
-      <code>{company}</code> <code>{director}</code> <code>{client}</code> <code>{address}</code> <code>{total}</code> <code>{totalWords}</code> <code>{vat}</code> <code>{prepayPct}</code> <code>{prepay}</code> <code>{rest}</code> <code>{ready}</code> <code>{install}</code>.
-      <b>**жирный**</b> — двойными звёздочками, новый абзац — пустой строкой. Спецификация, реквизиты сторон и подписи добавляются автоматически.
-      <button class="btn sm ghost" data-act="contract-tpl-reset" style="margin-top:6px">${icon('refresh','sm')} Вернуть шаблон по умолчанию</button></div>
     </div>
     <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="save-company">${icon('check','sm')} Сохранить</button></div>`);
 }
@@ -887,14 +867,6 @@ function saveCompany(){
   const c=DB.company;
   c.name=name; c.legal=v('co-legal'); c.city=v('co-city'); c.phone=v('co-phone');
   c.workshop=v('co-workshop'); c.revenueYear=v('co-rev');
-  // реквизиты для счетов и договоров
-  c.address=v('co-address'); c.inn=v('co-inn'); c.okpo=v('co-okpo'); c.bank=v('co-bank');
-  c.account=v('co-account'); c.bik=v('co-bik'); c.director=v('co-director'); c.directorShort=v('co-director-short');
-  const vatEl=document.getElementById('co-vat'); c.vatRate=vatEl?Math.max(0,Math.min(30,Math.round(parseFloat(vatEl.value)||0))):0;
-  const stampEl=document.getElementById('co-stamp'); c.stamp=!!(stampEl&&stampEl.checked);
-  // шаблон договора: если совпал с дефолтным — не храним (чтобы правки дефолта подхватывались)
-  const tplEl=document.getElementById('co-contract-tpl'); const tplVal=tplEl?tplEl.value.trim():'';
-  c.contractTpl = (tplVal && tplVal!==DEFAULT_CONTRACT_TPL.trim()) ? tplVal : '';
   saveDB(); if(apiOn()) persist(API.persist.saveCompany(c));
   closeModal(); render(); toast('Данные компании сохранены');
 }
@@ -1741,7 +1713,6 @@ document.addEventListener('click', e=>{
     case 'notif-read-all': buildNotifs().forEach(n=>notifRead.add(n.id)); saveNotifRead(); render(); notifModal(); break;
     case 'edit-company': editCompanyModal(); break;
     case 'save-company': saveCompany(); break;
-    case 'contract-tpl-reset': { const el=document.getElementById('co-contract-tpl'); if(el){ el.value=DEFAULT_CONTRACT_TPL; toast('Шаблон сброшен — не забудьте сохранить'); } } break;
     case 'add-user': userModal(null); break;
     case 'edit-user': userModal(id); break;
     case 'save-user': saveUser(t.dataset.id||null); break;

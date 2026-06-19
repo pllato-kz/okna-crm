@@ -759,10 +759,6 @@ function renderSettings(){
       <div class="stat-line"><span>Телефон</span><span>${escA(DB.company.phone)}</span></div>
       <div class="stat-line"><span>Производство</span><span style="text-align:right">${escA(DB.company.workshop)}</span></div>
       <div class="stat-line"><span>Оборот</span><span>${escA(DB.company.revenueYear)}</span></div>
-      ${DB.company.inn?`<div class="stat-line"><span>ИНН / ОКПО</span><span>${escA(DB.company.inn)}${DB.company.okpo?' · '+escA(DB.company.okpo):''}</span></div>`:''}
-      ${DB.company.bank?`<div class="stat-line"><span>Банк</span><span style="text-align:right">${escA(DB.company.bank)}</span></div>`:''}
-      ${DB.company.account?`<div class="stat-line"><span>Р/с · БИК</span><span style="text-align:right">${escA(DB.company.account)}${DB.company.bik?' · '+escA(DB.company.bik):''}</span></div>`:''}
-      <div class="stat-line"><span>НДС</span><span>${DB.company.vatRate?escA(DB.company.vatRate)+' %':'без НДС'}</span></div>
     </div></div>
     <div class="panel"><div class="panel-h">${icon('clients')}<h3>Сотрудники</h3><span class="ph-sub">${DB.users.length}</span>${usAdd}</div>
       <div class="tbl-scroll"><table class="tbl"><tbody>${emps}</tbody></table></div></div>
