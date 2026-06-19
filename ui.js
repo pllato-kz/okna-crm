@@ -91,24 +91,12 @@ function renderModule(){
 }
 
 /* ============ LOGIN ============ */
-function renderLogin(g){
-  g = g || gateStatus();
-  const ownerBtn = g.mode==='owner' ? `<button class="share-fab" data-act="share-demo" title="Создать ссылку для клиента">${icon('link','sm')} Поделиться демо</button>` : '';
-  const clientBanner = g.mode==='valid' ? `<div class="demo-banner">${icon('clock','sm')} Демо-доступ активен до <b>${fmtExpiry(g.exp)}</b>${g.label?` · ${escA(g.label)}`:''}</div>` : '';
-  const accts = DB.users.map(u=>{
-    const c=colorFor(u.id);
-    return `<button class="acct" data-act="login" data-id="${u.id}">
-      <span class="av" style="background:${c}">${initials(u.name)}</span>
-      <span class="ai"><span class="an">${escA(u.name)}</span><span class="at">${escA(u.title)}</span></span>
-      <span class="ar">${u.primary?'демо':roleRu(u.role)}</span>
-      ${icon('arrow','go')}
-    </button>`;
-  }).join('');
-  return `<div class="login-wrap"><div class="login-fabs">${ownerBtn}<button class="theme-fab" data-act="theme" title="Сменить тему">${icon(state.theme==='light'?'moon':'sun')}</button></div>${clientBanner}<div class="login-card">
+function renderLogin(){
+  return `<div class="login-wrap"><div class="login-fabs"><button class="theme-fab" data-act="theme" title="Сменить тему">${icon(state.theme==='light'?'moon':'sun')}</button></div><div class="login-card">
     <div class="login-side">
       <div class="brand">
         <div class="brand-logo">${icon('oglass','lg')}</div>
-        <div><div class="brand-name">Ocean Glass</div><div class="brand-sub">окна · стекло · фасады</div></div>
+        <div><div class="brand-name">${escA(DB.company&&DB.company.name||'Ocean Glass')}</div><div class="brand-sub">окна · стекло · фасады</div></div>
       </div>
       <h1>CRM, <span class="grad">собранная под оконный бизнес</span></h1>
       <p>Воронка продаж, выезд на замер с расчётом конструкций прямо на объекте, мгновенное КП клиенту в WhatsApp, склад профиля и стеклопакетов, финансы и дебиторка — в одном окне.</p>
@@ -126,10 +114,7 @@ function renderLogin(g){
         <div class="fld full" style="margin-bottom:12px"><label>Пароль</label><input id="api-pass" type="password" autocomplete="current-password" style="width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:11px;color:var(--txt)"></div>
         <button class="btn primary" data-act="api-login" style="width:100%;justify-content:center">${icon('logout','sm')} Войти</button>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;margin:18px 0 14px;color:var(--muted2);font-size:11px;text-transform:uppercase;letter-spacing:.5px"><span style="flex:1;height:1px;background:var(--line)"></span>или демо-доступ без входа<span style="flex:1;height:1px;background:var(--line)"></span></div>
-      <div class="lead">Каждая роль открывает свой набор модулей. Все данные демонстрационные.</div>
-      <div class="accounts">${accts}</div>
-      <div class="login-extra">Демо: ${escA(DB.company.legal)}, ${escA(DB.company.city)}. ${escA(DB.company.workshop)}. Оборот ${escA(DB.company.revenueYear)}.<br>Все цифры и клиенты вымышленные — можно смело кликать, двигать сделки и принимать оплаты.</div>
+      <div class="login-extra">Доступ только для сотрудников компании. Логин и пароль выдаёт администратор (директор) в разделе «Настройки → Сотрудники».</div>
     </div>
   </div></div>`;
 }
