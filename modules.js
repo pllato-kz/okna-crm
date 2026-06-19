@@ -4,7 +4,6 @@ function renderDashboard(){
   const deals=DB.deals;
   const won=deals.filter(d=>['production','install','done'].includes(d.stage));
   const revenue=DB.deals.reduce((s,d)=>s+dealPaid(d),0);
-  const monthRevenue=DB.deals.reduce((s,d)=>s+(d.payments||[]).filter(p=>(SEED_NOW-new Date(p.date))<32*864e5).reduce((a,p)=>a+p.amount,0),0);
   const debt=deals.reduce((s,d)=>s+dealDebt(d),0);
   const payable=DB.payables.filter(p=>p.status!=='оплачено').reduce((s,p)=>s+p.amount,0);
   const activeLeads=deals.filter(d=>!['done'].includes(d.stage)).length;
@@ -32,10 +31,20 @@ function renderDashboard(){
   const src={}; deals.forEach(d=>{ src[d.source]=(src[d.source]||0)+1; });
   const srcRows=Object.entries(src).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({label:k,value:v,display:v,color:'linear-gradient(90deg,#0891b2,#22d3ee)'}));
 
-  // monthly revenue (mock 6 mo)
-  const mvals=[3.1,3.8,4.2,3.6,4.9,monthRevenue/1e6];
-  const mlabels=['дек','янв','фев','мар','апр','май'];
-  const mmax=Math.max(...mvals);
+  // выручка по месяцам — реально из платежей за последние 6 календарных месяцев
+  const MONTHS_RU=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  const nowD=now();
+  const allPays=[]; DB.deals.forEach(d=>(d.payments||[]).forEach(p=>{ if(p&&p.date) allPays.push(p); }));
+  const monthCells=[]; for(let i=5;i>=0;i--){ monthCells.push(new Date(nowD.getFullYear(), nowD.getMonth()-i, 1)); }
+  const mRevenue=monthCells.map(dt=>{ const y=dt.getFullYear(), m=dt.getMonth();
+    return allPays.reduce((a,p)=>{ const pd=new Date(p.date); return (pd.getFullYear()===y&&pd.getMonth()===m)?a+(p.amount||0):a; },0); });
+  const mlabels=monthCells.map(dt=>MONTHS_RU[dt.getMonth()]);
+  const mvals=mRevenue.map(v=>v/1e6);
+  const mmax=Math.max(0.1,...mvals);
+  // KPI «Выручка за месяц» = текущий календарный месяц + динамика к предыдущему
+  const curMonthRev=mRevenue[5], prevMonthRev=mRevenue[4];
+  const momPct = prevMonthRev>0 ? Math.round((curMonthRev-prevMonthRev)/prevMonthRev*100) : null;
+  const momSub = (momPct!=null) ? `<span class="${momPct>=0?'up':'down'}">${momPct>=0?'▲':'▼'} ${Math.abs(momPct)}%</span> к ${mlabels[4]}` : `за ${mlabels[5]}`;
 
   const feed=DB.activity.slice(0,5).map(a=>{
     const u=userById(a.who);
@@ -62,7 +71,7 @@ function renderDashboard(){
 
   return `
   <div class="cards-row">
-    ${kpi({icon:'money',label:'Выручка за месяц',value:moneyK(monthRevenue),color:'#16a34a',soft:'var(--green-soft)',sub:'<span class="up">▲ 18%</span> к апрелю',subClass:'',nav:'finance',tab:'pl'})}
+    ${kpi({icon:'money',label:'Выручка за месяц',value:moneyK(curMonthRev),color:'#16a34a',soft:'var(--green-soft)',sub:momSub,subClass:'',nav:'finance',tab:'pl'})}
     ${kpi({icon:'trend',label:'Эффективность продаж',value:conv+'%',color:'#2563eb',sub:`${won.length} из ${deals.length} сделок выиграно`,nav:'funnel'})}
     ${kpi({icon:'wallet',label:'Дебиторка (нам должны)',value:moneyK(debt),color:'#d97706',soft:'var(--amber-soft)',sub:'Открыть отчёт →',nav:'finance',tab:'recv'})}
     ${kpi({icon:'doc',label:'Кредиторка (мы должны)',value:moneyK(payable),color:'#dc2626',soft:'var(--red-soft)',sub:`${DB.payables.length} поставщиков`,nav:'finance',tab:'pay'})}
@@ -81,7 +90,7 @@ function renderDashboard(){
     </div>
     <div class="panel">
       <div class="panel-h">${icon('trend')}<h3>Выручка по месяцам</h3></div>
-      <div class="panel-b">${bars(mvals.map((v,i)=>({label:mlabels[i],value:v,display:v.toFixed(1)+' млн',color:i===mvals.length-1?'linear-gradient(90deg,#16a34a,#4ade80)':'linear-gradient(90deg,#2563eb,#3b82f6)'})),mmax)}</div>
+      <div class="panel-b">${bars(mvals.map((v,i)=>({label:mlabels[i],value:v,display:moneyK(mRevenue[i]),color:i===mvals.length-1?'linear-gradient(90deg,#16a34a,#4ade80)':'linear-gradient(90deg,#2563eb,#3b82f6)'})),mmax)}</div>
     </div>
   </div>
 
