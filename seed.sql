@@ -73,7 +73,7 @@ INSERT INTO openings(id,name,rate,sort) VALUES ('deaf','Глухое',0,0),('tur
 INSERT INTO extras(id,name,price,per,sort) VALUES ('mosquito','Москитная сетка',6500,'шт',0),('sill','Подоконник',4500,'м',1),('ebb','Отлив',3200,'м',2),('slopes','Откосы',1500,'периметр',3),('mount','Монтаж',8000,'шт',4),('demount','Демонтаж старого',3000,'шт',5);
 INSERT INTO payment_types(id,name) VALUES ('advance','Аванс'),('surcharge','Доплата');
 INSERT INTO payable_statuses(id,name) VALUES ('await','ожидает'),('overdue','просрочено'),('paid','оплачено');
-INSERT INTO activity_kinds(id,name) VALUES ('money','Оплата'),('measure','Замер'),('funnel','Воронка'),('prod','Производство'),('lead','Лид'),('wh','Склад');
+INSERT INTO activity_kinds(id,name) VALUES ('money','Оплата'),('measure','Замер'),('funnel','Воронка'),('prod','Производство'),('lead','Лид'),('wh','Склад'),('call','Звонок');
 
 -- ============ B. ДЕМО-ДАННЫЕ ============
 -- Счётчик номеров договоров: сиды занимают Д-2026-001..006 → следующий 007.

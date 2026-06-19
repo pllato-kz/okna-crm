@@ -1204,6 +1204,31 @@ function waPreset(cl, d){
   if(tpls.length) return renderWaTpl(tpls[0].text, cl, d);
   return renderWaTpl('Здравствуйте, {client}! Это {company}.', cl, d);
 }
+/* ====== SIP: звонок из браузера (WebRTC-софтфон) ======
+   Голос идёт браузер → Asterisk → SIP-trunk провайдера; бэкенд только отдаёт
+   креды (/api/sip/token). Пока сервер Asterisk не поднят, токен возвращает 503
+   и SipClient.init() тихо не активируется — кнопка сообщит, что не настроено. */
+async function callPhone(phone, opts){
+  phone=(phone||'').trim();
+  if(!phone){ toast('У клиента не указан телефон','warn'); return; }
+  if(!window.SipClient){ toast('Софтфон не загружен','warn'); return; }
+  // быстрая проверка готовности: если SIP не поднят (нет сервера) — сообщаем сразу,
+  // не дожидаясь долгих попыток переподключения внутри call()
+  let st=window.SipClient.state;
+  if(st==='idle'||st==='error'){ try{ await window.SipClient.init(); }catch(_){ } st=window.SipClient.state; }
+  if(st==='idle'||st==='error'){ toast('Звонки пока не настроены — нужен SIP-сервер (Asterisk). Подготовка готова: поднимем сервер — кнопки сразу заработают.','warn'); return; }
+  try{
+    toast('Звоним '+(opts&&opts.contactName?opts.contactName:phone)+'…');
+    await window.SipClient.call(phone, opts||{});
+  }catch(e){
+    const m=String((e&&e.message)||e||'');
+    if(/not_registered|sip_not_configured|failed_to_load_sipjs|http_503/i.test(m))
+      toast('Звонки пока не настроены — нужен SIP-сервер (Asterisk). Подготовка готова, поднимем сервер — заработает.','warn');
+    else if(/microphone|permission|NotAllowed|getUserMedia/i.test(m))
+      toast('Нет доступа к микрофону — разрешите его в браузере','warn');
+    else toast('Не удалось позвонить: '+m,'err');
+  }
+}
 function waSendModal(clientId, dealId){
   const d = dealId ? dealById(dealId) : null;
   const cl = clientId ? clientById(clientId) : (d ? clientById(d.clientId) : null);
@@ -1810,6 +1835,8 @@ document.addEventListener('click', e=>{
     case 'backup-export': exportBackup(); break;
     case 'backup-import': importBackupModal(); break;
     case 'backup-restore': backupRestore(); break;
+    case 'call': if(!canWa()){ toast('Нет доступа к звонкам','warn'); break; } callPhone(t.dataset.phone, {contactName:t.dataset.name, customerId:t.dataset.cl||null, dealId:t.dataset.deal||null}); break;
+    case 'call-hangup': if(window.SipClient) window.SipClient.hangup(); break;
     case 'wa-deal': if(!canWa()){ toast('Нет доступа к WhatsApp','warn'); break; } waSendModal(null, id); break;
     case 'wa-client': if(!canWa()){ toast('Нет доступа к WhatsApp','warn'); break; } waSendModal(id, null); break;
     case 'wa-send': if(!canWa()){ toast('Нет доступа к WhatsApp','warn'); break; } waDoSend(t.dataset.id||null, t.dataset.deal||null); break;
@@ -1982,6 +2009,9 @@ document.addEventListener('drop', e=>{
   applyHashToState(); // учесть deep-link из URL
   render();
   flushHashOpen();
+  // пре-варм софтфона: подключит SIP-UA заранее (первый звонок мгновенный).
+  // Если SIP не настроен на сервере (503) — тихо ничего не делает.
+  if(window.SipClient){ setTimeout(()=>{ try{ window.SipClient.init().catch(()=>{}); }catch(_){ } }, 2000); }
 })();
 /* навигация назад/вперёд браузера и ручная правка #-адреса */
 window.addEventListener('hashchange', ()=>{
