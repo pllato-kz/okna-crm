@@ -60,7 +60,8 @@ CREATE TABLE deal_stages (
   id    TEXT PRIMARY KEY,        -- 'lead', 'measure', 'calc', ...
   name  TEXT NOT NULL,
   color TEXT,                    -- HEX-цвет для UI
-  sort  INTEGER NOT NULL DEFAULT 0
+  sort  INTEGER NOT NULL DEFAULT 0,
+  lost  INTEGER NOT NULL DEFAULT 0  -- 1 = стадия-проигрыш (закрытая, не активная)
 );
 
 -- Этапы цеха (PROD_STAGES): queue → cutting → glass → assembly → ready → installing

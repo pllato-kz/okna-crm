@@ -116,7 +116,7 @@ function apiMapBootstrap(boot){
   }));
 
   // справочники-константы фронта (раньше хардкод в data.js)
-  const STAGES      = apiSortByOrder(cat.deal_stages).map(s => ({ id: s.id, name: s.name, color: s.color }));
+  const STAGES      = apiSortByOrder(cat.deal_stages).map(s => ({ id: s.id, name: s.name, color: s.color, lost: !!s.lost }));
   const PROD_STAGES = apiSortByOrder(cat.prod_stages).map(s => ({ id: s.id, name: s.name, color: s.color }));
   const GLASS       = apiSortByOrder(cat.glass_types).map(g => ({ id: g.id, name: g.name, rate: g.rate }));
   const OPENINGS    = apiSortByOrder(cat.openings).map(o => ({ id: o.id, name: o.name, rate: o.rate }));

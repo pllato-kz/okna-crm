@@ -6,7 +6,7 @@ function renderDashboard(){
   const revenue=DB.deals.reduce((s,d)=>s+dealPaid(d),0);
   const debt=deals.reduce((s,d)=>s+dealDebt(d),0);
   const payable=DB.payables.filter(p=>p.status!=='оплачено').reduce((s,p)=>s+p.amount,0);
-  const activeLeads=deals.filter(d=>!['done'].includes(d.stage)).length;
+  const activeLeads=deals.filter(d=>!isClosedStage(d.stage)).length;
   const conv=Math.round(won.length/Math.max(1,deals.length)*100);
   const avg=Math.round(won.reduce((s,d)=>s+(d.sum||0),0)/Math.max(1,won.length));
   const inProd=deals.filter(d=>['production','install'].includes(d.stage)).length;
@@ -163,7 +163,7 @@ function renderFunnel(){
   const editing = dir && state.stageEdit;
   const matchMS=d=> (fMgr==='all'||d.manager===fMgr) && (fSrc==='all'||d.source===fSrc);
   const deals=DB.deals.filter(matchMS);
-  const totalSum=deals.filter(d=>d.stage!=='done').reduce((s,d)=>s+(d.sum||0),0);
+  const totalSum=deals.filter(d=>!isClosedStage(d.stage)).reduce((s,d)=>s+(d.sum||0),0);
   const stagesShown = (editing || fStage==='all') ? STAGES : STAGES.filter(s=>s.id===fStage);
   const cols=stagesShown.map((s,idx)=>{
     const arr=deals.filter(d=>d.stage===s.id);
