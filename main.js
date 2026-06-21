@@ -196,7 +196,7 @@ function newDealModal(){
         <select id="nd-client" style="${inp}"><option value="__new">➕ Новый клиент</option>${opts}</select></div>
       <div id="nd-newblock" class="constr-body" style="padding:0;margin-bottom:12px">
         <div class="fld full"><label>Имя / организация</label><input id="nd-name" placeholder="Напр. Айгерим" style="${inp}"></div>
-        <div class="fld"><label>Телефон</label><input id="nd-phone" placeholder="+7" style="${inp}"></div>
+        <div class="fld"><label>Телефон</label><input id="nd-phone" placeholder="+996" style="${inp}"></div>
         <div class="fld"><label>Адрес</label><input id="nd-addr" placeholder="${escA(DB.company.city||'')}" style="${inp}"></div>
       </div>
       <div class="fld full"><label>Комментарий</label><input id="nd-note" placeholder="Что нужно клиенту" style="${inp}"></div></div>
@@ -474,7 +474,7 @@ function newClientModal(){
   openModal(`<div class="modal-h">${icon('clients')}<h3>Новый клиент</h3><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b">
       <div class="fld full" style="margin-bottom:12px"><label>Имя / организация</label><input id="nc-name" style="background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--txt)"></div>
-      <div class="fld full" style="margin-bottom:12px"><label>Телефон</label><input id="nc-phone" placeholder="+7" style="background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--txt)"></div>
+      <div class="fld full" style="margin-bottom:12px"><label>Телефон</label><input id="nc-phone" placeholder="+996" style="background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--txt)"></div>
       <div class="fld full"><label>Адрес</label><input id="nc-addr" style="background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--txt)"></div>
     </div>
     <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="create-client">${icon('plus','sm')} Добавить</button></div>`);
