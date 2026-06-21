@@ -109,6 +109,7 @@ const DEFAULT_STAGES = [
   {id:'production',  name:'Производство',color:'#db2777'},
   {id:'install',    name:'Монтаж',      color:'#0d9488'},
   {id:'done',       name:'Выполнено',   color:'#16a34a'},
+  {id:'lost',       name:'Проиграно',   color:'#ef4444', lost:true},
 ];
 // Стадии, на id которых завязаны разделы (Замер, Производство) и расчёты —
 // их можно переименовать и перекрасить, но не удалять.
@@ -118,6 +119,10 @@ function loadStages(){ try{ const raw=localStorage.getItem(STAGES_KEY); if(raw){
 function saveStages(){ try{ localStorage.setItem(STAGES_KEY, JSON.stringify(STAGES)); }catch(e){} }
 let STAGES = loadStages();
 const stageById = id => STAGES.find(s=>s.id===id);
+// стадия-проигрыш: помечена директором как закрытая (сделки не в активной воронке)
+function isLostStage(id){ const s=stageById(id); return !!(s && s.lost); }
+// «закрытая» стадия = выполнено (выигрыш) ИЛИ проигрыш. Не считается активной.
+function isClosedStage(id){ return id==='done' || isLostStage(id); }
 const stageIndex = id => STAGES.findIndex(s=>s.id===id);
 
 // Этапы цеха (производство). Редактируемые (добавить/удалить/изменить/цвет),

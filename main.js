@@ -1059,6 +1059,7 @@ function stageEditModal(id){
     <div class="modal-b"><div class="constr-body" style="padding:0">
       <div class="fld"><label>Название</label><input id="stg-name" value="${escA(s.name)}" autocomplete="off"></div>
       <div class="fld"><label>Цвет</label><input id="stg-color" type="color" value="${s.color}" style="height:42px;padding:4px;cursor:pointer"></div>
+      <div class="fld full"><label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--txt);text-transform:none"><input type="checkbox" id="stg-lost" ${s.lost?'checked':''} style="width:auto"> Стадия-проигрыш (закрытая: сделки не считаются активными)</label></div>
     </div></div>
     <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="stage-save" data-id="${id}">${icon('check','sm')} Сохранить</button></div>`);
 }
@@ -1068,6 +1069,7 @@ function stageAddModal(){
     <div class="modal-b"><div class="constr-body" style="padding:0">
       <div class="fld"><label>Название</label><input id="stg-name" placeholder="напр. Согласование" autocomplete="off"></div>
       <div class="fld"><label>Цвет</label><input id="stg-color" type="color" value="#2563eb" style="height:42px;padding:4px;cursor:pointer"></div>
+      <div class="fld full"><label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--txt);text-transform:none"><input type="checkbox" id="stg-lost" style="width:auto"> Стадия-проигрыш (закрытая: сделки не считаются активными)</label></div>
     </div></div>
     <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn primary" data-act="stage-save">${icon('check','sm')} Добавить</button></div>`);
   const el=document.getElementById('stg-name'); if(el) el.focus();
@@ -1076,15 +1078,16 @@ function stageSave(id){
   if(!isDirector()) return;
   const v=i=>{const el=document.getElementById(i);return el?el.value.trim():'';};
   const name=v('stg-name'); const color=v('stg-color')||'#2563eb';
+  const lost=!!(document.getElementById('stg-lost')||{}).checked;
   if(!name){ toast('Укажите название','warn'); return; }
-  if(id){ const s=stageById(id); if(!s) return; s.name=name; s.color=color;
-    if(apiOn()) persist(API.fetch('deal_stages/'+id,{method:'PUT',body:{name,color}})); }
+  if(id){ const s=stageById(id); if(!s) return; s.name=name; s.color=color; s.lost=lost;
+    if(apiOn()) persist(API.fetch('deal_stages/'+id,{method:'PUT',body:{name,color,lost:lost?1:0}})); }
   else {
-    const ns={id:uid('st'), name, color, sort:STAGES.length};
+    const ns={id:uid('st'), name, color, lost, sort:STAGES.length};
     const doneIdx=STAGES.findIndex(s=>s.id==='done');
     if(doneIdx>=0) STAGES.splice(doneIdx,0,ns); else STAGES.push(ns);
     STAGES.forEach((s,i)=>s.sort=i);
-    if(apiOn()) persist(API.fetch('deal_stages',{method:'POST',body:{id:ns.id,name,color,sort:ns.sort}}));
+    if(apiOn()) persist(API.fetch('deal_stages',{method:'POST',body:{id:ns.id,name,color,lost:lost?1:0,sort:ns.sort}}));
   }
   saveStages(); closeModal(); render(); toast(id?'Стадия изменена':'Стадия добавлена');
 }

@@ -60,6 +60,7 @@ INSERT INTO deal_stages(id,name,color,sort) VALUES ('prepaid','Аванс','#d97
 INSERT INTO deal_stages(id,name,color,sort) VALUES ('production','Производство','#db2777',5);
 INSERT INTO deal_stages(id,name,color,sort) VALUES ('install','Монтаж','#0d9488',6);
 INSERT INTO deal_stages(id,name,color,sort) VALUES ('done','Выполнено','#16a34a',7);
+INSERT INTO deal_stages(id,name,color,sort,lost) VALUES ('lost','Проиграно','#ef4444',8,1);
 INSERT INTO prod_stages(id,name,color,sort) VALUES ('queue','Очередь','#64748b',0);
 INSERT INTO prod_stages(id,name,color,sort) VALUES ('cutting','Резка профиля','#0891b2',1);
 INSERT INTO prod_stages(id,name,color,sort) VALUES ('glass','Стеклопакет','#7c3aed',2);

@@ -26,7 +26,7 @@ const TABLES = {
   module_roles:     { table: 'module_roles',     pk: null, cols: ['module_id','role_id'], composite: ['module_id','role_id'] },
   client_types:     { table: 'client_types',     pk: 'id', cols: ['id','name'] },
   lead_sources:     { table: 'lead_sources',     pk: 'id', cols: ['id','name','sort'] },
-  deal_stages:      { table: 'deal_stages',      pk: 'id', cols: ['id','name','color','sort'] },
+  deal_stages:      { table: 'deal_stages',      pk: 'id', cols: ['id','name','color','sort','lost'] },
   prod_stages:      { table: 'prod_stages',      pk: 'id', cols: ['id','name','color','sort'] },
   material_types:   { table: 'material_types',   pk: 'id', cols: ['id','name'] },
   material_series:  { table: 'material_series',  pk: 'id', cols: ['id','name','sort'] },
