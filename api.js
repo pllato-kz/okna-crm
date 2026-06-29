@@ -75,7 +75,7 @@ function apiMapBootstrap(boot){
   const materials = (boot.materials || []).map(m => {
     const o = {
       id: m.id, name: m.name, type: apiName(matTypes, m.type_id), series: apiName(matSeries, m.series_id),
-      rate: m.rate, cost: m.cost, stock: m.stock, min: m.min_stock, unit: m.unit, supplier: m.supplier, barLen: 6,
+      rate: m.rate, cost: m.cost, stock: m.stock, min: m.min_stock, unit: m.unit, supplier: m.supplier, barLen: (m.bar_len || 6),
     };
     // D1 хранит только суммарный stock — выводим пачку (хлысты+обрезки) из него,
     // иначе раскрой/приход/списание обнулят остаток (bars/offcuts отсутствуют).
@@ -189,11 +189,11 @@ const apiPersist = {
   // управление номенклатурой склада (карточка позиции)
   createMaterial: (m) => apiFetch('materials', { method: 'POST', body: {
     id: m.id, name: m.name, type_id: apiRevId((API._cat || {}).material_types, m.type), series_id: apiRevId((API._cat || {}).material_series, m.series),
-    rate: m.rate || 0, cost: m.cost || 0, stock: m.stock || 0, min_stock: m.min || 0, unit: m.unit, supplier: m.supplier || '',
+    rate: m.rate || 0, cost: m.cost || 0, bar_len: m.barLen || 6, stock: m.stock || 0, min_stock: m.min || 0, unit: m.unit, supplier: m.supplier || '',
   }}),
   saveMaterialCard: (m) => apiFetch('materials/' + m.id, { method: 'PUT', body: {
     name: m.name, type_id: apiRevId((API._cat || {}).material_types, m.type), series_id: apiRevId((API._cat || {}).material_series, m.series),
-    rate: m.rate || 0, cost: m.cost || 0, min_stock: m.min || 0, unit: m.unit, supplier: m.supplier || '',
+    rate: m.rate || 0, cost: m.cost || 0, bar_len: m.barLen || 6, min_stock: m.min || 0, unit: m.unit, supplier: m.supplier || '',
   }}),
   deleteMaterial: (id) => apiFetch('materials/' + id, { method: 'DELETE' }),
   createComponent: (c) => apiFetch('components', { method: 'POST', body: {

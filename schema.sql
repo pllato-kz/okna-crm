@@ -185,6 +185,7 @@ CREATE TABLE materials (
   series_id  TEXT REFERENCES material_series(id),
   rate       INTEGER NOT NULL DEFAULT 0,   -- продажная цена за единицу (за пог.м / м²)
   cost       INTEGER NOT NULL DEFAULT 0,   -- закупочная (себестоимость) за пог.м
+  bar_len    REAL    NOT NULL DEFAULT 6,   -- длина хлыста, м (6 / 6.5 …) — для пересчёта
   stock      REAL    NOT NULL DEFAULT 0,   -- текущий остаток
   min_stock  REAL    NOT NULL DEFAULT 0,   -- минимум (ниже — дозаказ)
   unit       TEXT,                         -- 'пог.м', ...

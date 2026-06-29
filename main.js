@@ -798,6 +798,7 @@ function whItemModal(kind, id){
   const matFields=isMat?`
       <div class="fld"><label>Тип</label><select id="wi-type">${typeOpts}</select></div>
       <div class="fld"><label>Серия</label><select id="wi-series">${serOpts}</select></div>
+      <div class="fld"><label>Длина хлыста, м</label><input id="wi-barlen" type="number" min="0.1" step="0.1" value="${it?(it.barLen||6):6}" placeholder="напр. 6 или 6.5"></div>
       ${money$?`<div class="fld"><label>Закупка, сом/пог.м</label><input id="wi-cost" type="number" min="0" value="${it?matCost(it):''}" placeholder="напр. 1200"></div>
       <div class="fld"><label>Продажа для КП, сом/м²</label><input id="wi-rate" type="number" min="0" value="${it?it.rate:''}" placeholder="напр. 7800"></div>`:''}
       <div class="fld full"><label>Поставщик</label><input id="wi-sup" value="${it?escA(it.supplier||''):''}"></div>`:'';
@@ -819,9 +820,10 @@ function whItemSave(kind, id){
   const unit=v('wi-unit')||(isMat?'пог.м':'шт'); const min=num('wi-min');
   if(isMat){
     const type=v('wi-type')||'ПВХ'; const series=v('wi-series')||'Эконом'; const supplier=v('wi-sup');
-    if(id){ const m=matById(id); if(!m) return; m.name=name; m.type=type; m.series=series; m.unit=unit; m.min=min; m.supplier=supplier; if(money$){ m.rate=Math.round(num('wi-rate')); m.cost=Math.round(num('wi-cost')); }
-      saveDB(); if(apiOn()) persist(API.persist.saveMaterialCard(m)); }
-    else { const nm={id:uid('m'),name,type,series,rate:money$?Math.round(num('wi-rate')):0,cost:money$?Math.round(num('wi-cost')):0,stock:num('wi-stock'),min,unit,supplier,barLen:6};
+    const barLen=Math.max(0.1, parseFloat(v('wi-barlen'))||6);
+    if(id){ const m=matById(id); if(!m) return; m.name=name; m.type=type; m.series=series; m.unit=unit; m.min=min; m.supplier=supplier; m.barLen=barLen; if(money$){ m.rate=Math.round(num('wi-rate')); m.cost=Math.round(num('wi-cost')); } recalcStock(m);
+      saveDB(); if(apiOn()){ persist(API.persist.saveMaterialCard(m)); persist(API.persist.saveMaterial(m)); } }
+    else { const nm={id:uid('m'),name,type,series,rate:money$?Math.round(num('wi-rate')):0,cost:money$?Math.round(num('wi-cost')):0,stock:num('wi-stock'),min,unit,supplier,barLen};
       normalizeProfile(nm); recalcStock(nm); DB.materials.push(nm); saveDB(); if(apiOn()) persist(API.persist.createMaterial(nm)); }
   } else {
     if(id){ const c=compById(id); if(!c) return; c.name=name; c.unit=unit; c.min=min;
