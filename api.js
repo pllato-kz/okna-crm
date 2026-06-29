@@ -286,5 +286,6 @@ const API = {
   wa: apiWa,
   ig: apiIg,
   storage: () => apiFetch('storage'),
+  storageCleanup: (days) => apiFetch('storage/cleanup', { method: 'POST', body: { days } }),
 };
 try { globalThis.API = API; } catch (e) {}

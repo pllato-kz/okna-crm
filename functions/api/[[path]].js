@@ -440,6 +440,24 @@ async function getStorageStats(env) {
   return out;
 }
 
+// удалить из R2 файлы старше N дней. Возвращает {deleted, bytes}.
+async function cleanupOldFiles(env, days) {
+  if (!env.BUCKET) return { deleted: 0, bytes: 0, error: true };
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  let deleted = 0, bytes = 0, cursor, pages = 0;
+  do {
+    const lst = await env.BUCKET.list({ cursor, limit: 1000 });
+    const keys = [];
+    for (const o of (lst.objects || [])) {
+      const up = o.uploaded ? new Date(o.uploaded).getTime() : 0;
+      if (up && up < cutoff) { keys.push(o.key); bytes += (o.size || 0); }
+    }
+    if (keys.length) { await env.BUCKET.delete(keys); deleted += keys.length; }
+    cursor = lst.truncated ? lst.cursor : undefined; pages++;
+  } while (cursor && pages < 50);
+  return { deleted, bytes: Math.round(bytes), days };
+}
+
 /* ============ ТОЧКА ВХОДА ============ */
 export async function onRequest(context) {
   const { request, env, params } = context;
@@ -453,10 +471,9 @@ export async function onRequest(context) {
     // health (публичный)
     if (segs[0] === 'health') return ok({ status: 'ok', time: new Date().toISOString() });
 
-    // статистика хранилища D1+R2 (ПУБЛИЧНАЯ — только инфра-метрики: размер БД,
-    // число строк/файлов; данных клиентов не раскрывает). Нужна, чтобы дашборд
-    // показывал реальное заполнение даже в демо-режиме без входа.
-    if (segs[0] === 'storage') {
+    // статистика хранилища D1+R2 (ПУБЛИЧНАЯ — только инфра-метрики). Очистка файлов
+    // (POST /storage/cleanup) — НЕ здесь, она требует авторизацию (ниже, после гейта).
+    if (segs[0] === 'storage' && !segs[1]) {
       if (method !== 'GET') return fail(405, 'Только GET');
       return ok(await getStorageStats(env));
     }
@@ -524,6 +541,15 @@ export async function onRequest(context) {
       const auth = await verifyJWT(bearerToken(request), env.JWT_SECRET);
       if (!auth) return fail(401, 'Требуется авторизация');
       context.auth = auth;
+    }
+
+    // очистка старых файлов R2 (только директор) — POST /api/storage/cleanup {days}
+    if (segs[0] === 'storage' && segs[1] === 'cleanup') {
+      if (method !== 'POST') return fail(405, 'Только POST');
+      if (context.auth.role !== 'director') return fail(403, 'Недостаточно прав');
+      const body = await readBody(request);
+      const days = Math.max(1, Math.floor(Number(body && body.days) || 90));
+      return ok(await cleanupOldFiles(env, days));
     }
 
     // текущий пользователь
