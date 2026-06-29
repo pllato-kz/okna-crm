@@ -1223,6 +1223,22 @@ function waPreset(cl, d){
    Голос идёт браузер → Asterisk → SIP-trunk провайдера; бэкенд только отдаёт
    креды (/api/sip/token). Пока сервер Asterisk не поднят, токен возвращает 503
    и SipClient.init() тихо не активируется — кнопка сообщит, что не настроено. */
+/* очистка старых файлов R2 из виджета хранилища (директор) */
+function storeCleanModal(){
+  if(!isDirector()){ toast('Только директор','warn'); return; }
+  const el=document.getElementById('store-clean-days'); const days=Math.max(1, parseInt(el&&el.value)||90);
+  openModal(`<div class="modal-h">${icon('trash')}<div><h3>Очистка файлов</h3><div class="mh-sub">Хранилище R2</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
+    <div class="modal-b"><div class="constr-body" style="padding:0">Удалить из хранилища <b>все файлы старше ${days} ${rusPlural(days,['день','дня','дней'])}</b>? Действие необратимо.</div></div>
+    <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="store-clean-do" data-days="${days}">${icon('trash','sm')} Удалить</button></div>`);
+}
+function storeCleanDo(days){
+  days=Math.max(1, parseInt(days)||90);
+  API.storageCleanup(days).then(r=>{
+    closeModal();
+    toast(`Удалено файлов: ${r.deleted||0}${r.bytes?` · освобождено ${fmtBytes(r.bytes)}`:''}`);
+    if(typeof initDashboardBindings==='function') initDashboardBindings();
+  }).catch(e=>{ closeModal(); toast('Не удалось очистить: '+((e&&e.message)||''),'warn'); });
+}
 async function callPhone(phone, opts){
   phone=(phone||'').trim();
   if(!phone){ toast('У клиента не указан телефон','warn'); return; }
@@ -1752,6 +1768,8 @@ document.addEventListener('click', e=>{
     case 'go-finance': state.module='finance'; state.financeTab='recv'; render(); break;
     case 'go-prod': state.module='production'; render(); break;
     case 'kpi-nav': { const mod=t.dataset.mod; if(!canSee(mod)){ toast('Нет доступа к разделу','warn'); break; } state.module=mod; state.sideOpen=false; if(mod==='finance'&&t.dataset.tab) state.financeTab=t.dataset.tab; render(); } break;
+    case 'store-clean': storeCleanModal(); break;
+    case 'store-clean-do': storeCleanDo(t.dataset.days); break;
     case 'go-measure-deal': state.measureDealId=id; state.module='measure'; closeModal(); render(); break;
     case 'open-deal': openDeal(id); clearSearch(); break;
     case 'stage-edit-toggle': state.stageEdit=!state.stageEdit; renderModule(); break;
