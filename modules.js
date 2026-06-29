@@ -145,8 +145,8 @@ function renderStorageStats(s){
   // очистка старых файлов R2 (только в боевом режиме / директору)
   if(apiOn() && s.r2 && !s.r2.error) html+=`<div style="margin-top:8px;padding-top:10px;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px">
     <span class="muted2">Удалить файлы старше</span>
-    <input id="store-clean-days" type="number" min="1" value="90" style="width:62px;text-align:center">
-    <span class="muted2">дней</span>
+    <input id="store-clean-days" type="number" min="30" value="90" style="width:62px;text-align:center">
+    <span class="muted2">дней (мин. 30)</span>
     <button class="btn sm danger" data-act="store-clean">${icon('trash','sm')} Очистить</button></div>`;
   html+='<div class="muted2" style="font-size:11px;margin-top:6px">Лимиты — ориентир Cloudflare (free): D1 5 ГБ, R2 10 ГБ.</div>';
   return html;

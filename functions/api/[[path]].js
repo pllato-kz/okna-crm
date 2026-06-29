@@ -548,7 +548,7 @@ export async function onRequest(context) {
       if (method !== 'POST') return fail(405, 'Только POST');
       if (context.auth.role !== 'director') return fail(403, 'Недостаточно прав');
       const body = await readBody(request);
-      const days = Math.max(1, Math.floor(Number(body && body.days) || 90));
+      const days = Math.max(30, Math.floor(Number(body && body.days) || 90));
       return ok(await cleanupOldFiles(env, days));
     }
 

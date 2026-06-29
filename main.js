@@ -1228,13 +1228,13 @@ function waPreset(cl, d){
 /* очистка старых файлов R2 из виджета хранилища (директор) */
 function storeCleanModal(){
   if(!isDirector()){ toast('Только директор','warn'); return; }
-  const el=document.getElementById('store-clean-days'); const days=Math.max(1, parseInt(el&&el.value)||90);
+  const el=document.getElementById('store-clean-days'); const days=Math.max(30, parseInt(el&&el.value)||90);
   openModal(`<div class="modal-h">${icon('trash')}<div><h3>Очистка файлов</h3><div class="mh-sub">Хранилище R2</div></div><button class="x" data-act="close-modal">${icon('x')}</button></div>
     <div class="modal-b"><div class="constr-body" style="padding:0">Удалить из хранилища <b>все файлы старше ${days} ${rusPlural(days,['день','дня','дней'])}</b>? Действие необратимо.</div></div>
     <div class="modal-f"><button class="btn" data-act="close-modal">Отмена</button><button class="btn danger" data-act="store-clean-do" data-days="${days}">${icon('trash','sm')} Удалить</button></div>`);
 }
 function storeCleanDo(days){
-  days=Math.max(1, parseInt(days)||90);
+  days=Math.max(30, parseInt(days)||90);
   API.storageCleanup(days).then(r=>{
     closeModal();
     toast(`Удалено файлов: ${r.deleted||0}${r.bytes?` · освобождено ${fmtBytes(r.bytes)}`:''}`);
