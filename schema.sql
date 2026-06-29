@@ -183,7 +183,8 @@ CREATE TABLE materials (
   name       TEXT NOT NULL,
   type_id    TEXT REFERENCES material_types(id),
   series_id  TEXT REFERENCES material_series(id),
-  rate       INTEGER NOT NULL DEFAULT 0,   -- цена за единицу (за пог.м / м²)
+  rate       INTEGER NOT NULL DEFAULT 0,   -- продажная цена за единицу (за пог.м / м²)
+  cost       INTEGER NOT NULL DEFAULT 0,   -- закупочная (себестоимость) за пог.м
   stock      REAL    NOT NULL DEFAULT 0,   -- текущий остаток
   min_stock  REAL    NOT NULL DEFAULT 0,   -- минимум (ниже — дозаказ)
   unit       TEXT,                         -- 'пог.м', ...

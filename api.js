@@ -75,7 +75,7 @@ function apiMapBootstrap(boot){
   const materials = (boot.materials || []).map(m => {
     const o = {
       id: m.id, name: m.name, type: apiName(matTypes, m.type_id), series: apiName(matSeries, m.series_id),
-      rate: m.rate, stock: m.stock, min: m.min_stock, unit: m.unit, supplier: m.supplier, barLen: 6,
+      rate: m.rate, cost: m.cost, stock: m.stock, min: m.min_stock, unit: m.unit, supplier: m.supplier, barLen: 6,
     };
     // D1 хранит только суммарный stock — выводим пачку (хлысты+обрезки) из него,
     // иначе раскрой/приход/списание обнулят остаток (bars/offcuts отсутствуют).
@@ -184,16 +184,16 @@ const apiPersist = {
   createPayment: (dealId, p) => apiFetch('payments', { method: 'POST', body: {
     id: p.id, deal_id: dealId, type_id: apiRevId((API._cat || {}).payment_types, p.type), amount: p.amount, date: p.date,
   }}),
-  saveMaterial:  (m) => apiFetch('materials/' + m.id, { method: 'PUT', body: { stock: m.stock, rate: m.rate, supplier: m.supplier } }),
+  saveMaterial:  (m) => apiFetch('materials/' + m.id, { method: 'PUT', body: { stock: m.stock, rate: m.rate, cost: m.cost || 0, supplier: m.supplier } }),
   saveComponent: (c) => apiFetch('components/' + c.id, { method: 'PUT', body: { stock: c.stock } }),
   // управление номенклатурой склада (карточка позиции)
   createMaterial: (m) => apiFetch('materials', { method: 'POST', body: {
     id: m.id, name: m.name, type_id: apiRevId((API._cat || {}).material_types, m.type), series_id: apiRevId((API._cat || {}).material_series, m.series),
-    rate: m.rate || 0, stock: m.stock || 0, min_stock: m.min || 0, unit: m.unit, supplier: m.supplier || '',
+    rate: m.rate || 0, cost: m.cost || 0, stock: m.stock || 0, min_stock: m.min || 0, unit: m.unit, supplier: m.supplier || '',
   }}),
   saveMaterialCard: (m) => apiFetch('materials/' + m.id, { method: 'PUT', body: {
     name: m.name, type_id: apiRevId((API._cat || {}).material_types, m.type), series_id: apiRevId((API._cat || {}).material_series, m.series),
-    rate: m.rate || 0, min_stock: m.min || 0, unit: m.unit, supplier: m.supplier || '',
+    rate: m.rate || 0, cost: m.cost || 0, min_stock: m.min || 0, unit: m.unit, supplier: m.supplier || '',
   }}),
   deleteMaterial: (id) => apiFetch('materials/' + id, { method: 'DELETE' }),
   createComponent: (c) => apiFetch('components', { method: 'POST', body: {

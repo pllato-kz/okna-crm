@@ -40,7 +40,7 @@ const TABLES = {
   // и наружу через generic CRUD не отдаётся/не принимается.
   users:            { table: 'users',            pk: 'id', cols: ['id','name','email','role_id','title','is_primary','is_active'], prefix: 'u' },
   clients:          { table: 'clients',          pk: 'id', cols: ['id','name','phone','address','type_id'], prefix: 'cl' },
-  materials:        { table: 'materials',         pk: 'id', cols: ['id','name','type_id','series_id','rate','stock','min_stock','unit','supplier'], prefix: 'm' },
+  materials:        { table: 'materials',         pk: 'id', cols: ['id','name','type_id','series_id','rate','cost','stock','min_stock','unit','supplier'], prefix: 'm' },
   components:       { table: 'components',        pk: 'id', cols: ['id','name','stock','min_stock','unit'], prefix: 'c' },
   warehouse_movements: { table: 'warehouse_movements', pk: 'id', cols: ['id','kind','item_id','name','unit','dir','type','qty','reason','balance_after','deal_id','user_id','at'], prefix: 'wm' },
   deals:            { table: 'deals',             pk: 'id', cols: ['id','client_id','stage_id','manager_id','source_id','prod_stage_id','sum','note','hot','discount','prepay_pct','consumed_profile','consumed_glass','consumed_fittings','ready_date','install_date','contract_no','contract_date','stage_since'], prefix: 'd' },
@@ -144,7 +144,7 @@ function validateWrite(resource, body) {
     const amt = n(body.amount);
     if (amt !== null && (!isNum(amt) || amt < 0 || amt > 1e12)) return 'Некорректная сумма';
   } else if (resource === 'materials' || resource === 'components') {
-    for (const f of ['rate', 'stock', 'min_stock']) {
+    for (const f of ['rate', 'cost', 'stock', 'min_stock']) {
       const v = n(body[f]);
       if (v !== null && (!isNum(v) || v < 0 || v > 1e9)) return `Некорректное значение поля «${f}»`;
     }
