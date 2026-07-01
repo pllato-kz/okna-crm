@@ -394,7 +394,8 @@ async function readBody(request) {
 }
 
 /* ============ СТАТИСТИКА ХРАНИЛИЩА (D1 + R2) ============ */
-// D1: размер БД = page_count × page_size; число строк по основным таблицам.
+// D1: размер БД — из meta.size_after любого запроса (PRAGMA page_count в D1 НЕ
+// поддерживается); плюс число строк по основным таблицам.
 // R2: суммарный размер и количество объектов (постранично через list).
 // Лимиты — ориентир Cloudflare free (D1 5 ГБ, R2 10 ГБ).
 async function getStorageStats(env) {
